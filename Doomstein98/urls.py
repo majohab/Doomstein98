@@ -18,5 +18,11 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('game/', include('Game.urls'))
+    path('game/', include('Game.urls')),
+    path('login/', include('Login.urls')),
+    path('mainmenu/', include('Mainmenu.urls')),
+    path('api/staticfiles/', include('API.Staticfiles.urls')),
+    path('api/users/', include('API.Users.urls')),
+    path('api/lobbies/', include('API.Lobbies.urls')),
+    path('__debug__/', include('debug_toolbar.urls')),
 ]
