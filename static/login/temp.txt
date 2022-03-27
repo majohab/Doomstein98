@@ -1,0 +1,10 @@
+Start Page
+
+<h2 class="h1 start">
+                    DOOMSTEIN98
+                  </h2>
+                  <button class="button start">
+                    <h2 class="h2 play">
+                      PLAY
+                    </h2>
+                  </button>
