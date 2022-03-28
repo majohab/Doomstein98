@@ -35,7 +35,7 @@ function drawingHandler_drawCells()
         let eyeX = Math.sin(rayAngle);
         let eyeY = Math.cos(rayAngle);
     
-        let sampleX = 0;
+        let sampleX_wall = 0;
     
         while (!hitWall && distanceToWall < depth)
         {      
@@ -62,13 +62,13 @@ function drawingHandler_drawCells()
                 let testAngle = Math.atan2((testPointY - blockMidY), (testPointX - blockMidX));
                 
                 if (testAngle >= -Math.PI * 0.25 && testAngle < Math.PI * 0.25)
-                    sampleX = testPointY - testY;
+                    sampleX_wall = testPointY - testY;
                 if (testAngle >= Math.PI * 0.25 && testAngle < Math.PI * 0.75)
-                    sampleX = testPointX - testX;
+                    sampleX_wall = testPointX - testX;
                 if (testAngle < -Math.PI * 0.25 && testAngle >= -Math.PI * 0.75)
-                    sampleX = testPointX - testX;
+                    sampleX_wall = testPointX - testX;
                 if (testAngle >= Math.PI * 0.75 || testAngle < -Math.PI * 0.75)
-                    sampleX = testPointY - testY;
+                    sampleX_wall = testPointY - testY;
             }
         }
     
@@ -78,31 +78,22 @@ function drawingHandler_drawCells()
     
         for (y = 0; y < screenHeight; y++)
         {
-            if (y < ceiling) // Ceiling
-                ctx.fillStyle = "rgb(0,0,0)";
-            else if (y > ceiling && y <= floor) // Wall
+            let sampleX;
+            let sampleY;
+            let sprite;
+           
+            if (y >= ceiling && y <= floor) // Wall
             {
-                let sampleY_percent = (y - ceiling) / (floor - ceiling); // percent-value between floor and ceiling
-                let sampleY = sampleY_percent * wallHeight;
+                sampleX = sampleX_wall;
+                sampleY_percent = (y - ceiling) / (floor - ceiling); // percent-value between floor and ceiling
+                sampleY = sampleY_percent * wallHeight;
                 //console.log(wallSprite.getImageData(sampleX, sampleY, 1, 1).data);
             
-                let imageData = wallSprite.getPixel(sampleX, sampleY);
+                sprite = wallSprite;
                 //ctx.fillStyle = "rgb(" + sampleX * 255 + "," + sampleX * 255 + "," + sampleX * 255 + ")"; // fill(100 / (distanceToWall / depth));
-                ctx.fillStyle = "rgb(" + imageData[0] + "," + imageData[1] + "," + imageData[2] + ")";
             }
-            else // Floor
+            else // Floor or Ceiling
             {
-                let dirX = Math.sin(playerAngle),
-                    dirY = Math.cos(playerAngle);        //initial direction vector
-                let planeX = dirY,
-                    planeY = -dirX * 0.6;    //the 2d raycaster version of camera plane
-            
-                // rayDir for leftmost ray (x = 0) and rightmost ray (x = w)
-                let rayDirX0 = dirX - planeX;
-                let rayDirY0 = dirY - planeY;
-                let rayDirX1 = dirX + planeX;
-                let rayDirY1 = dirY + planeY;
-            
                 // Current y position compared to the center of the screen (the horizon)
                 let p = y - screenHeight * 0.5;
             
@@ -112,51 +103,35 @@ function drawingHandler_drawCells()
                 // Horizontal distance from the camera to the floor for the current row.
                 // 0.5 is the z position exactly in the middle between floor and ceiling.
                 let rowDistance = posZ / p;
-            
-                // calculate the real world step vector we have to add for each x (parallel to camera plane)
-                // adding step by step avoids multiplications with a weight in the inner loop
-                //let floorStepX = rowDistance * (rayDirX1 - rayDirX0) / screenWidth;
-                //let floorStepY = rowDistance * (rayDirY1 - rayDirY0) / screenWidth;
-            
-                //// real world coordinates of the leftmost column. This will be updated as we step to the right.
-                //let floorX = playerX + rowDistance * rayDirX0;
-                //let floorY = playerY + rowDistance * rayDirY0;
 
-                //let sampleX = floorX + x * floorStepX;
-                //sampleX -= Math.floor(sampleX);
-                //let sampleY = floorY + x * floorStepY;
-                //sampleY -= Math.floor(sampleY);
+                if (y < ceiling) // Ceiling
+                {
+    
+                    sampleX = rowDistance * eyeX; // Zero idea why (0.66 / wallHeight)... It was a late sunday evening and this number just did the trick ^^'
+                    sampleX -= Math.floor(sampleX);
+                    sampleY = rowDistance * eyeY;
+                    sampleY -= Math.floor(sampleY);
+    
+                    sprite = skySprite;
+    
+                    //ctx.fillStyle = "rgb(0,0,0)";
+                }
+                else // Floor
+                {
+                    // 1: 0.66, 1.5: 0.45, 2: 0.33
+                    sampleX = rowDistance * eyeX + playerX * (0.66 / wallHeight); // Zero idea why (0.66 / wallHeight)... It was a late sunday evening and this number just did the trick ^^'
+                    sampleX -= Math.floor(sampleX);
+                    sampleY = rowDistance * eyeY + playerY * (0.66 / wallHeight);
+                    sampleY -= Math.floor(sampleY);
 
-                let sampleX = rowDistance * eyeX + playerX * 0.45;
-                sampleX -= Math.floor(sampleX);
-                let sampleY = rowDistance * eyeY + playerY * 0.45;
-                sampleY -= Math.floor(sampleY);
-
-                let imageData = floorSprite.getPixel(sampleX, sampleY);
+                    sprite = floorSprite;
+                }
 
                 //ctx.fillStyle = "rgb(" + sampleY * 255 + "," + sampleY * 255  + "," + sampleY * 255   + ")";
-                
-
-
-
-                //currentDist = screenHeight / (2.0 * y - screenHeight); // distance from real-world pixel to player
-//
-                //let weight = currentDist / distanceToWall;
-//
-                //let currentFloorX = weight * 1 + (1.0 - weight) * playerX;
-                //let currentFloorY = weight * 1 + (1.0 - weight) * playerY;
-
-                //let imageData = floorSprite.getPixel(currentFloorX, currentFloorY);
-
-                //ctx.fillStyle = "rgb(30,30,30)";
-
-                       
-                //let sampleY = (y - floor) / (floor - ceiling);
-                //sampleY = sampleY * (screenHeight - floor);
-                //sampleY = sampleY / (screenHeight * 0.5);
-
-                ctx.fillStyle = "rgb(" + imageData[0] + "," + imageData[1] + "," + imageData[2] + ")";
             }
+
+            let imageData = sprite.getPixel(sampleX, sampleY);
+            ctx.fillStyle = "rgb(" + imageData[0] + "," + imageData[1] + "," + imageData[2] + ")";
         
             ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
         }
