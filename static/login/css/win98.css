@@ -149,8 +149,10 @@ strong {
 .button.start {
   width: 20%;
   height: 7%;
+  max-width: 20%;
+  max-height: 7%;
   margin: 0;
-  position: absolute;
+  position: fixed;
   top: 60%;
   left: 50%;
   -ms-transform: translate(-50%, -50%);
@@ -158,8 +160,8 @@ strong {
 }
 
 .h2.play {
-  margin: 0;
-  position: absolute;
+  margin: 1%;
+  position: fixed;
   top: 50%;
   left: 50%;
   -ms-transform: translate(-50%, -50%);
@@ -168,10 +170,10 @@ strong {
 
 .h1.start {
   font-weight: bold;
-  font-size: 800%;
+  font-size: 8vw;
   color: black;
   margin: 0;
-  position: absolute;
+  position: fixed;
   top: 40%;
   left: 50%;
   -ms-transform: translate(-50%, -50%);
