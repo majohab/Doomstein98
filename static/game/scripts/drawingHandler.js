@@ -24,8 +24,17 @@ function drawingHandler_clearScreen()
 
 function drawingHandler_drawCells()
 {
+    drawingHandler_drawCells_cpu();
+}
+
+function drawingHandler_drawCells_cpu()
+{
+    let buffer = [];
+
     for (x = 0; x < screenWidth; x++)
     {
+        buffer.push([]);
+
         let rayAngle = (playerAngle - fov * 0.5) + (x / screenWidth) * fov;
     
         let distanceToWall = 0;
@@ -131,7 +140,17 @@ function drawingHandler_drawCells()
             }
 
             let imageData = sprite.getPixel(sampleX, sampleY);
-            ctx.fillStyle = "rgb(" + imageData[0] + "," + imageData[1] + "," + imageData[2] + ")";
+
+            buffer.push("rgb(" + imageData[0] + "," + imageData[1] + "," + imageData[2] + ")");
+        }
+    }
+
+
+    for (x = 0; x < screenWidth; x++)
+    {
+        for (y = 0; y < screenHeight; y++)
+        {
+            ctx.fillStyle = buffer[x][y];
         
             ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
         }
