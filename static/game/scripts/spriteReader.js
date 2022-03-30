@@ -54,6 +54,11 @@ class Sprite
         let uv_y = Math.floor(y_percentRelativeToWidth * this.height * this.iterations_y) % this.height
         return this.data[uv_y][uv_x];
     }
+
+    getData()
+    {
+        return this.data;
+    }
 }
 
 let wallSprite;

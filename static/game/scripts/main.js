@@ -16,22 +16,36 @@ const fov = Math.PI / 3;
 const mapHeight = 16;
 const mapWidth = 16;
 const map = [];
+const mapString =
+"################" +
+"#..............#" +
+"#........#######" +
+"#..............#" +
+"#..............#" +
+"#.....##.......#" +
+"#.....##.......#" +
+"#..............#" +
+"#..............#" +
+"#..............#" +
+"######.........#" +
+"#....#.........#" +
+"#....#.........#" +
+"#............###" +
+"#............###" +
+"################";
 
 // Runtime variables
-let canvas;
 let lastFrameTime;
 
 function init()
 {
     socketHandler_init();
 
-    canvas = document.getElementById("canvas");
-
     initMap(); // To be moved to backend
 
+    drawingHandler_init();
     inputHander_init();
     spriteReader_init();
-    drawingHandler_init();
 
     lastFrameTime = Date.now();
 
@@ -68,10 +82,9 @@ function gameLoop()
     let currFrameTime = Date.now()
     let deltaTime = currFrameTime - lastFrameTime;
     lastFrameTime = currFrameTime;
-
-    drawingHandler_clearScreen();  // For the text
-    //background(0);
+    console.log('fps: ' + 1000 / deltaTime);
     
     inputHandler_updateInput(deltaTime);
+
     drawingHandler_drawCells();
 }
