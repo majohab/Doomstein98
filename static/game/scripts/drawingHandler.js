@@ -1,9 +1,11 @@
 // Config
+const useGPU = true;
 const cellSize = 4;
 const wallHeight = 1.5;
 const depth_cpu = 16.0;
 const depth_gpu = 32.0;
-const useGPU = true;
+const depth_step_cpu = 0.1;
+const depth_step_gpu = 0.05;
 
 // Runtime variables
 let canvas;
@@ -31,6 +33,7 @@ function drawingHandler_init()
         gpu_kernel_settings = {
             output: { x: screenWidth, y: screenHeight },
             graphical: true,
+            loopMaxIterations: 1000,
             constants:
             {
                 screenHeight: screenHeight,
@@ -39,7 +42,9 @@ function drawingHandler_init()
                 depth: depth_gpu,
                 mapWidth: mapWidth,
                 mapHeight: mapHeight,
-                wallHeight: wallHeight
+                wallHeight: wallHeight,
+                cellSize: cellSize,
+                depth_step_gpu: depth_step_gpu
             }
         };
         gpu_kernel = gpu.createKernel(
@@ -78,12 +83,6 @@ function drawingHandler_init()
     ctx = canvas.getContext("2d");
 }
 
-function drawingHandler_cpu_clearScreen()
-{
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
 function drawingHandler_drawCells()
 {
     if (useGPU)
@@ -94,6 +93,14 @@ function drawingHandler_drawCells()
         drawingHandler_draw_cpu_calculateBuffer();
         drawingHandler_draw_cpu_drawFromBuffer();
     }
+}
+
+//#region CPU
+
+function drawingHandler_cpu_clearScreen()
+{
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
 function drawingHandler_draw_cpu_calculateBuffer()
@@ -113,7 +120,7 @@ function drawingHandler_draw_cpu_calculateBuffer()
     
         while (!hitWall && distanceToWall < depth_cpu)
         {      
-            distanceToWall += 0.1;
+            distanceToWall += depth_step_cpu;
             
             let testX = Math.floor(playerX + eyeX * distanceToWall);
             let testY = Math.floor(playerY + eyeY * distanceToWall);
@@ -223,12 +230,12 @@ function drawingHandler_draw_cpu_drawFromBuffer()
     }
 }
 
+//#endregion
+
+//#region  GPU
+
 function drawingHandler_draw_gpu()
 {
-    let map_numbers = new Array(mapString.length);
-    for(i = 0; i < map_numbers.length; i++)
-        map_numbers[i] = mapString.charCodeAt(i);
-
     buffer = gpu_kernel(playerX, playerY, playerAngle, map_numbers, wallSprite.data, floorSprite.data, skySprite.data);
 }
 
@@ -236,13 +243,21 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
 {
     let screenWidth = this.constants.screenWidth;
     let screenHeight = this.constants.screenHeight;
-    let x = this.thread.x;
-    let y = screenHeight-this.thread.y;
     let fov = this.constants.fov;
     let depth = this.constants.depth;
     let mapWidth = this.constants.mapWidth;
     let mapHeight = this.constants.mapHeight;
     let wallHeight = this.constants.wallHeight;
+
+    // Read values (y must be inverted, we're looking from bottom this time)
+    let x = this.thread.x;
+    let y = screenHeight-this.thread.y;
+    // Round all pixels within cell to left of the cell
+    x = Math.floor(x / this.constants.cellSize) * this.constants.cellSize;
+    y = Math.round(y / this.constants.cellSize) * this.constants.cellSize;
+    // Center of the cell
+    x += this.constants.cellSize * 0.5
+    y += this.constants.cellSize * 0.5;
 
     let rayAngle = (playerAngle - fov * 0.5) + (x / screenWidth) * fov;
 
@@ -257,7 +272,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
 
     while (!hitWall && distanceToWall < depth)
     {      
-        distanceToWall += 0.05;
+        distanceToWall += this.constants.depth_step_gpu;
 
         let testX = Math.floor(playerX + eyeX * distanceToWall);
         let testY = Math.floor(playerY + eyeY * distanceToWall);
@@ -332,9 +347,11 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
         else // Floor
         {
             // 1: 0.66, 1.5: 0.45, 2: 0.33
-            sampleX = rowDistance * eyeX + playerX * (0.66 / wallHeight); // Zero idea why (0.66 / wallHeight)... It was a late sunday evening and this number just did the trick ^^'
+             // Zero idea why (0.65 / wallHeight)... It was a late sunday evening and this number just did the trick ^^'
+            let constant = 0.63; // Lower: floor moves in direction of player. Higher: floor moves in opposite direction
+            sampleX = rowDistance * eyeX + playerX * (constant / wallHeight);
             sampleX -= Math.floor(sampleX);
-            sampleY = rowDistance * eyeY + playerY * (0.66 / wallHeight);
+            sampleY = rowDistance * eyeY + playerY * (constant / wallHeight);
             sampleY -= Math.floor(sampleY);
         
             spriteIndex = 1
@@ -343,8 +360,13 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
         //ctx.fillStyle = "rgb(" + sampleY * 255 + "," + sampleY * 255  + "," + sampleY * 255   + ")";
     }
 
-    let uv_x = Math.floor(sampleX * 6 * 6) % 6;
-    let uv_y = Math.floor(sampleY * 6 * 6) % 6;
+    let spriteWidth = spriteIndex == 0 || spriteIndex == 1 ? 6 : 2;
+    let spriteHeight = spriteWidth;
+    let iterations_x = spriteIndex == 0 || spriteIndex == 1 ? 2 : 1;
+    let iterations_y = iterations_x;
+
+    let uv_x = Math.floor(sampleX * spriteWidth * iterations_x) % spriteWidth;
+    let uv_y = Math.floor(sampleY * spriteHeight * iterations_y) % spriteHeight;
 
     this.color(
         (spriteIndex == 0 ? wallSprite[uv_y][uv_x][0] : spriteIndex == 1 ? floorSprite[uv_y][uv_x][0] : skySprite[uv_y][uv_x][0]) / 255,
@@ -354,3 +376,5 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
     //return [wallSprite[uv_y][uv_x][0], wallSprite[uv_y][uv_x][1], wallSprite[uv_y][uv_x][2]];
 
 }
+
+//#endregion

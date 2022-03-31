@@ -16,26 +16,11 @@ const fov = Math.PI / 3;
 const mapHeight = 16;
 const mapWidth = 16;
 const map = [];
-const mapString =
-"################" +
-"#..............#" +
-"#........#######" +
-"#..............#" +
-"#..............#" +
-"#.....##.......#" +
-"#.....##.......#" +
-"#..............#" +
-"#..............#" +
-"#..............#" +
-"######.........#" +
-"#....#.........#" +
-"#....#.........#" +
-"#............###" +
-"#............###" +
-"################";
 
 // Runtime variables
 let lastFrameTime;
+let mapString;
+let map_numbers
 
 function init()
 {
@@ -71,6 +56,27 @@ function initMap()
     map[13] = "#............###";
     map[14] = "#............###";
     map[15] = "################";
+
+    mapString = "################" +
+    "#..............#" +
+    "#........#######" +
+    "#..............#" +
+    "#..............#" +
+    "#.....##.......#" +
+    "#.....##.......#" +
+    "#..............#" +
+    "#..............#" +
+    "#..............#" +
+    "######.........#" +
+    "#....#.........#" +
+    "#....#.........#" +
+    "#............###" +
+    "#............###" +
+    "################";
+
+    map_numbers = new Array(mapString.length);
+    for(i = 0; i < map_numbers.length; i++)
+        map_numbers[i] = mapString.charCodeAt(i);
 }
 
 function gameLoop()
@@ -82,7 +88,7 @@ function gameLoop()
     let currFrameTime = Date.now()
     let deltaTime = currFrameTime - lastFrameTime;
     lastFrameTime = currFrameTime;
-    console.log('fps: ' + 1000 / deltaTime);
+    //console.log('fps: ' + 1000 / deltaTime);
     
     inputHandler_updateInput(deltaTime);
 
