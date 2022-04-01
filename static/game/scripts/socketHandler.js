@@ -3,7 +3,7 @@ function socketHandler_init()
     const lobbyName = JSON.parse(document.getElementById('json-lobbyname').textContent);
     document.title = lobbyName;
 
-    const chatSocket = new WebSocket(
+    const webSocket = new WebSocket(
         'ws://'
         + window.location.host
         + '/ws/game/'
@@ -11,11 +11,11 @@ function socketHandler_init()
         + '/'
     );
 
-    chatSocket.onmessage = function(e) {
+    webSocket.onmessage = function(e) {
         console.log('onmessage');
     };
 
-    chatSocket.onclose = function(e) {
+    webSocket.onclose = function(e) {
         console.log('The socket closed unexpectedly');
     };
 }

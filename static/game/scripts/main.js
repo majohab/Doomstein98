@@ -15,23 +15,21 @@ All this will then be processed by the server and send back to the client for th
 const fov = Math.PI / 3;
 const mapHeight = 16;
 const mapWidth = 16;
-const map = [];
 
 // Runtime variables
-let canvas;
 let lastFrameTime;
+let mapString;
+let map_numbers
 
 function init()
 {
     socketHandler_init();
 
-    canvas = document.getElementById("canvas");
-
     initMap(); // To be moved to backend
 
+    drawingHandler_init();
     inputHander_init();
     spriteReader_init();
-    drawingHandler_init();
 
     lastFrameTime = Date.now();
 
@@ -41,22 +39,28 @@ function init()
 
 function initMap()
 {
-    map[0]  = "################";
-    map[1]  = "#..............#";
-    map[2]  = "#........#######";
-    map[3]  = "#..............#";
-    map[4]  = "#..............#";
-    map[5]  = "#.....##.......#";
-    map[6]  = "#.....##.......#";
-    map[7]  = "#..............#";
-    map[8]  = "#..............#";
-    map[9]  = "#..............#";
-    map[10] = "######.........#";
-    map[11] = "#....#.........#";
-    map[12] = "#....#.........#";
-    map[13] = "#............###";
-    map[14] = "#............###";
-    map[15] = "################";
+
+    mapString =
+    "################" +
+    "#..............#" +
+    "#........#######" +
+    "#..............#" +
+    "#..............#" +
+    "#.....##.......#" +
+    "#.....##.......#" +
+    "#..............#" +
+    "#..............#" +
+    "#..............#" +
+    "######.........#" +
+    "#....#.........#" +
+    "#....#.........#" +
+    "#............###" +
+    "#............###" +
+    "################";
+
+    map_numbers = new Array(mapString.length);
+    for(i = 0; i < map_numbers.length; i++)
+        map_numbers[i] = mapString.charCodeAt(i);
 }
 
 function gameLoop()
@@ -68,10 +72,9 @@ function gameLoop()
     let currFrameTime = Date.now()
     let deltaTime = currFrameTime - lastFrameTime;
     lastFrameTime = currFrameTime;
-
-    drawingHandler_clearScreen();  // For the text
-    //background(0);
+    //console.log('fps: ' + 1000 / deltaTime);
     
     inputHandler_updateInput(deltaTime);
+
     drawingHandler_drawCells();
 }
