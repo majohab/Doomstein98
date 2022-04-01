@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'login/css/register.css' %}">
+    <h2 class="h1 start">
+        DOOMSTEIN98
+    </h2>
+
+    <div class="window register">
+        <div class="title-bar">
+            <div class="title-bar-text">Register</div>
+            <div class="title-bar-controls">
+            <a href="{% url 'play' %}">
+                <button aria-label="Close"></button>
+            </a>
+        </div>
+    </div>
+    <div class="window-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="field-row-stacked register">
+                <label for="text18"><strong>Username</strong></label>
+                <input id="text18" maxlength="150" name="username" type="text" />
+                <span class="helptext">Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.</span>
+            </div>
+
+            <div class="field-row-stacked register">
+                <label for="text18"><strong>Email</strong></label>
+                <input id="text18" maxlength="254" name="email" type="email" />
+                <span class="helptext">Enter a valid email adress.</span>
+            </div>
+
+            <div class="field-row-stacked register">
+                <label for="text18"><strong>Password</strong></label>
+                <input id="text18" maxlength="254" name="password1" type="password" />
+                <span class="helptext">Enter a strong password.</span>
+            </div>
+
+            <div class="field-row-stacked register">
+                <label for="text18"><strong>Confirm Password</strong></label>
+                <input id="text18" name="password2" type="password" />
+                <span class="helptext">Repeat your password.</span>
+            </div>
+            Todo: Form Errors
+            <br>
+
+            <section class="field-row" style="justify-content: flex-end">
+                <a href="{% url 'login' %}">Back to login</a>
+                <button type="submit">Register</button>
+            </section>
+        </form>    
+    </div>
+  </div>
+{% endblock %}
