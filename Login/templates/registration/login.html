@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Stylesheets -->
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'login/css/login.css' %}">
+
+    <h2 class="h1 start">
+        DOOMSTEIN98
+    </h2>
+
+    <div class="window login" style="width: 300px">
+        <div class="title-bar">
+            <div class="title-bar-text">Login</div>
+            <div class="title-bar-controls">
+            <a href="{% url 'play' %}">
+                <button aria-label="Close"></button>
+            </a>
+        </div>
+    </div>
+    <div class="window-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="field-row-stacked"  style="width: 200px">
+                <label for="text18">Username</label>
+                <input id="text18" name="username" type="text" />
+            </div>
+
+            <div class="field-row-stacked" style="width: 200px">
+              <label for="text19">Password</label>
+              <input id="text19" type="password" name="password" />
+            </div>
+            Todo: Form Errors
+            <br>
+
+            <section class="field-row" style="justify-content: flex-end">
+                <a href="{% url 'register' %}">Not a user? Register here!</a>
+                <button type="submit">OK</button>
+            </section>
+            
+        </form>    
+    </div>
+  </div>
+{% endblock %}

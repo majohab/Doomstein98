@@ -39,7 +39,7 @@
             </div>
             
             <div>
-              <div class="window start">
+              <div class="window doombg">
                 <div class="title-bar">
                   <div class="title-bar-text">Doomstein98</div>
                   <div class="title-bar-controls">
@@ -48,14 +48,8 @@
                   </div>
                 </div>
                 <div id="window" class="window-body">
-                  <h2 class="h1 start">
-                    DOOMSTEIN98
-                  </h2>
-                  <button class="button start">
-                    <h2 class="h2 play">
-                      PLAY
-                    </h2>
-                  </button>
+                  {% block content %}
+                  {% endblock %}
                 </div>
               </div>
             </div>

@@ -137,6 +137,29 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Internal IP for debug toolbar
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
+
+# Disables password parsers
+AUTH_PASSWORD_VALIDATORS = [
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    # },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+    # },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    # },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    # },
+]
+
+# Redirect after login
+LOGIN_REDIRECT_URL = "menu"
+
+# Redirect after logout
+LOGOUT_REDIRECT_URL = "login"
