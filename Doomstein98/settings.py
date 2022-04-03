@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-!3!4d$y*&npjmh8d6uf7vr_4ickgw!ti7+a8o-nvw(-7em8g)b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -47,6 +47,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    #"whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
 ROOT_URLCONF = 'Doomstein98.urls'
@@ -68,7 +69,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Doomstein98.wsgi.application'
+<<<<<<< Updated upstream
+=======
+ASGI_APPLICATION = 'Game.routing.application'
+>>>>>>> Stashed changes
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": 6379},
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
