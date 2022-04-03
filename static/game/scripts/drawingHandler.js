@@ -207,9 +207,11 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
             }
             else // Floor
             {
-                // 1: 0.66, 1.5: 0.45, 2: 0.33
-                 // Zero idea why (0.65 / wallHeight)... It was a late sunday evening and this number just did the trick ^^'
-                let constant = 0.63; // Lower: floor moves in direction of player. Higher: floor moves in opposite direction
+                // Zero idea why this constant... It was a late sunday evening and this number just did the trick ^^'
+                // It seems to have a connection with screenHeight and screenWidth though.
+                // Lower: floor moves in direction of player. Higher: floor moves in opposite direction
+                let constant = 0.66;
+
                 sampleX = rowDistance * eyeX + playerX * (constant / wallHeight);
                 sampleX -= Math.floor(sampleX);
                 sampleY = rowDistance * eyeY + playerY * (constant / wallHeight);
