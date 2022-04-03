@@ -10,7 +10,8 @@ django-debug-toolbar = "*"
 gunicorn = "*"
 numpy = "*"
 daphne = "*"
-celery = "*"
+asgi-redis = "*"
+django-redis = "*"
 
 [dev-packages]
 

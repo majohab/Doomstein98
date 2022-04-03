@@ -3,9 +3,12 @@ function socketHandler_init()
     const lobbyName = JSON.parse(document.getElementById('json-lobbyname').textContent);
     document.title = lobbyName;
 
+    const protocol = window.location.protocol.match(/^https/) ? 'wss' : 'ws'
+
     const webSocket = new WebSocket(
-        'ws://'
-        + '//localhost:8001' // window.location.host
+        protocol
+        + '://'
+        + window.location.host
         + '/ws/game/'
         + lobbyName
         + '/'

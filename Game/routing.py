@@ -13,6 +13,8 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Doomstein98.settings')
 
 django.setup()
 
+channel_routing = []
+
 #websocket_urlpatterns = [
 #    re_path(r'ws/game/(?P<lobby_name>\w+)/$', consumers.PlayerConsumer),
 #]
