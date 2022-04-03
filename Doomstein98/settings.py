@@ -69,11 +69,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Doomstein98.wsgi.application'
-<<<<<<< Updated upstream
-=======
-ASGI_APPLICATION = 'Game.routing.application'
->>>>>>> Stashed changes
 
+ASGI_APPLICATION = 'Game.routing.application'
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
