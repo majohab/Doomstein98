@@ -5,7 +5,6 @@ import json
 from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncWebsocketConsumer
 
-#TODO: Erweitern mit den Funktionen, die nötig für die Validierung der Werte sind
 from .engine import GameEngine
 
 MAX_DEGREE = 20
