@@ -5,7 +5,7 @@ function socketHandler_init()
 
     const webSocket = new WebSocket(
         'ws://'
-        + window.location.host
+        + '//localhost:8001' // window.location.host
         + '/ws/game/'
         + lobbyName
         + '/'
