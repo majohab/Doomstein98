@@ -1,0 +1,72 @@
+<HTML lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Doomstein98</title>
+    
+        <!-- CSS only -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://unpkg.com/98.css" />
+        <!-- CDN Scripts -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <!-- Stylesheets -->
+        {% load static %}
+        <link rel="stylesheet" type="text/css" href="{% static 'login/css/win98.css' %}">
+        <!-- Scripts -->
+        {% load static %}
+        <script src="{% static 'login/scripts/win98.js' %}"></script>
+    </head>
+    <body>
+        <div id="desktop">
+  
+            <div class="desktop-icons">
+              <div class="desktop-icon my-computer" title="My Computer">
+                My Computer
+              </div>
+              
+              <div class="desktop-icon my-documents" title="My Documents">
+                My Documents
+              </div>
+              
+               <div class="desktop-icon network" title="Network Neighborhood">
+                Network Neighborhood
+              </div>
+              
+              <div class="desktop-icon trash-empty" title="Recycle Bin">
+                Recycle Bin
+              </div>
+            </div>
+            
+            <div>
+              <div class="window doombg">
+                <div class="title-bar">
+                  <div class="title-bar-text">Doomstein98</div>
+                  <div class="title-bar-controls">
+                    <button aria-label="Help"></button>
+                    <button aria-label="Close"></button>
+                  </div>
+                </div>
+                <div id="window" class="window-body">
+                  {% block content %}
+                  {% endblock %}
+                </div>
+              </div>
+            </div>
+
+            <div id="toolbar">
+              <div class="toolbar-start-menu">
+                <button class="start-button">
+                  Start
+                </button>
+              </div>
+
+              <div class="toolbar-separator"></div>
+           
+              <div class="toolbar-right">
+                <div class="time"><span class="hour"></span>:<span class="minutes"></span> AM</div>
+              </div>
+            </div>
+          </div>
+    </body>
+</HTML>
