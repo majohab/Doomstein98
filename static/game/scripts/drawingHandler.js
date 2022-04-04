@@ -25,7 +25,17 @@ function drawingHandler_init()
     screenWidth = 1200;
     screenHeight = 900;
 
-    gpu = new GPU();
+    canvas = document.createElement('canvas');
+    canvas.setAttribute('width', screenWidth);
+    canvas.setAttribute('height', screenHeight);//gpu_kernel.canvas;
+    document.getElementById("canvas-container").appendChild(canvas);
+    ctx = canvas.getContext("webgl2", { premultipliedAlpha: true });
+
+    gpu = new GPU({
+        canvas,
+        context: ctx
+    });
+
     gpu.addFunction(drawingHandler_draw_gpu_single);
 
     gpu_kernel_settings = {
@@ -72,11 +82,7 @@ function drawingHandler_init()
         gpu_kernel_settings
     );
     
-    canvas = gpu_kernel.canvas;
-
-    document.getElementById("canvas-container").appendChild(canvas);
     
-    ctx = canvas.getContext("2d");
 }
 
 function drawingHandler_drawCells()
@@ -275,7 +281,8 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
         this.color(
             statusBarSprite[uv_y][uv_x][0] / 255,
             statusBarSprite[uv_y][uv_x][1] / 255,
-            statusBarSprite[uv_y][uv_x][2] / 255
+            statusBarSprite[uv_y][uv_x][2] / 255,
+            1
         )
     }
 }

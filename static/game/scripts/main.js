@@ -77,5 +77,5 @@ function gameLoop()
 
     drawingHandler_drawCells();
 
-    console.log("x: " + playerX + ", y: " + playerY);
+    //console.log("x: " + playerX + ", y: " + playerY);
 }
