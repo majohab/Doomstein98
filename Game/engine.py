@@ -157,7 +157,7 @@ class Player:
         # The animation of getting shot shall go on for 1 second
         self.justShot = 1/tick_rate
 
-        log.info("Player %s is hit by player %s",self.name, player.name)
+        print("Player %s is hit by player %s",self.name, player.name)
         if(self.health > 20):
             self.health -= 20
         else:
@@ -211,12 +211,12 @@ class Player:
             # if the on-going move is too close to another player then turn the boolean flag
             if(tmp.get_distance(player.current_position) < 1):
                 
-                log.info("Player %s is too close to another player %s", self.name, player.name)
+                print("Player %s is too close to another player %s", self.name, player.name)
                 too_close = True
 
             if(state.map.check_collision(self.tmp)):
 
-                log.info("Player %s is too close to the wall of the map")
+                print("Player %s is too close to the wall of the map")
                 too_close = True
 
         # if no player is too close to an object
@@ -231,7 +231,7 @@ class Player:
 
     def die(self):
         #What should happen?
-        log.info("Die!")
+        print("Die!")
 
         # Change the status of the player's condition
         self.alive = False
@@ -280,11 +280,11 @@ class Map:
         for string in strings:
             
             if len(string.replace('#','').replace('.','')) != 0:
-                log.info('Map contains invalid values. It only accepts \"#\" or \".\"')
+                print('Map contains invalid values. It only accepts \"#\" or \".\"')
 
             #Check if Map fits the format
             if len(string) != len(strings[-1]):
-                log.info("Map is invalid")
+                print("Map is invalid")
 
         return Map(
             len(string),
@@ -336,7 +336,7 @@ class GameEngine(threading.Thread):
 
     def __init__(self, group_name, players_name : list[str], map_string = MAPS[0], **kwargs):
         
-        log.info("Initializing GameEngine: %s with players: %s", group_name, players_name)
+        print("Initializing GameEngine: %s with players: %s", group_name, players_name)
 
         # Create a thread to run the game
         super(GameEngine, self).__init__(daemon = True, name = "GameEngine", **kwargs)
@@ -358,7 +358,7 @@ class GameEngine(threading.Thread):
     # The main loop for the game engine
     def run(self) -> None:
 
-        log.info("Starting engine loop")
+        print("Starting engine loop")
 
         # infinite loop
         while True:
@@ -388,7 +388,7 @@ class GameEngine(threading.Thread):
 
     def tick(self):
         self.tick_num += 1
-        log.info("Tick %d for game %s", self.tick_num, self.name)
+        print("Tick %d for game %s", self.tick_num, self.name)
         state = self.state
 
         with self.event_lock:
@@ -405,7 +405,7 @@ class GameEngine(threading.Thread):
         return state
 
     def process_players(self, state: State, events):
-        log.info("Proccessing players for game %s", self.name)
+        print("Proccessing players for game %s", self.name)
 
         for player in state.players:
             
@@ -421,7 +421,7 @@ class GameEngine(threading.Thread):
                     player.shoot(state)
             
     def process_collisions(self, state: State):
-        log.info("Proccessing collisions for game %s", self.name)
+        print("Proccessing collisions for game %s", self.name)
 
         for player in state.players:
 
@@ -447,17 +447,17 @@ class GameEngine(threading.Thread):
 
     def apply_events(self, player: str, events):
 
-        log.info("Applying changes for %s", player)
+        print("Applying changes for %s", player)
         with self.event_lock:
             self.event_changes[player] = events
 
-    def join_game(self, state: State, player: str) -> None:
+    def join_game(self, player: str) -> None:
 
-        log.info("Player %s joined game!", player)
+        print("Player %s joined game!", player)
 
         if player in self.state.players:
 
-            log.info("Player %s is already in game!", player)
+            print("Player %s is already in game!", player)
             return
         
         with self.player_lock:
@@ -466,7 +466,7 @@ class GameEngine(threading.Thread):
 
     def process_new_players(self, state: State):
 
-        log.info("Processing new players for game: %s", self.name)
+        print("Processing new players for game: %s", self.name)
 
         state.players += self.player_queue
 

@@ -82,15 +82,23 @@ WSGI_APPLICATION = 'Doomstein98.wsgi.application'
 #ASGI_APPLICATION = 'Doomstein98.asgi.application'
 ASGI_APPLICATION = 'Game.routing.application'
 
+'''
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'asgi_redis.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [('localhost', 6379)],
+            'hosts': [('redis', 6379)],
         },
         'ROUTING': 'example_channels.routing.channel_routing',
     }
 }
+'''
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
+#'''
 
 CACHES = {
     "default": {

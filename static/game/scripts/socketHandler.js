@@ -14,11 +14,24 @@ function socketHandler_init()
         + '/'
     );
 
+    username = "user1"
+
+    webSocket.onopen = function(){ 
+        webSocket.send(JSON.stringify({
+        "type" : "join",
+        "msg"  : {
+            "username" : username
+        }
+        }));
+        console.log("SENDEN")
+    }
+
     webSocket.onmessage = function(e) {
-        console.log('onmessage');
+        let data = JSON-parse(e.data)
+        console.log('Data:', data)
     };
 
     webSocket.onclose = function(e) {
-        console.log('The socket closed unexpectedly');
+        console.log('The socket closed unexpectedly')
     };
 }
