@@ -66,21 +66,22 @@ class Sprite
         //console.log("biWidth: " + readBytes(img, 18, 4));
         //console.log("biHeight: " + readBytes(img, 22, 4));
         //console.log("biPlanes: " + readBytes(img, 26, 2));
-        console.log("biBitCount: " + readBytes(img, 28, 2));
+        //console.log("biBitCount: " + readBytes(img, 28, 2));
         //console.log("biCompression: " + readBytes(img, 30, 4));
         //console.log("biSizeImage: " + readBytes(img, 34, 4));
         //console.log("biXPelsPerMeter: " + readBytes(img, 38, 4));
         //console.log("biYPelsPerMeter: " + readBytes(img, 42, 4));
         //console.log("biClrUsed: " + readBytes(img, 46, 4));
         //console.log("biClrImportant: " + readBytes(img, 50, 4));
-        console.log(data);
+        //console.log(data);
     }
 
     getPixel(x_percent, y_percentRelativeToWidth) // x: [0, 1], y: [0, wallHeight]
+        // Note that this method sadly cannot be used anymore with the new GPU-based system
     {
-        let uv_x = Math.floor(x_percent * this.width * this.iterations_x) % this.width;
-        let uv_y = Math.floor(y_percentRelativeToWidth * this.height * this.iterations_y) % this.height
-        return this.data[uv_y][uv_x];
+        let pix_x = Math.floor(x_percent * this.width * this.iterations_x) % this.width;
+        let pix_y = Math.floor(y_percentRelativeToWidth * this.height * this.iterations_y) % this.height
+        return this.data[pix_y][pix_x];
     }
 }
 
@@ -90,19 +91,26 @@ let ceilingSprite;
 
 let statusBarSprite;
 
+let gunSprite;
+let bulletSprite;
+
 async function spriteReader_init()
 {
     let inits = 0;
+    const initCount = 6;
 
-    spriteReader_getSpriteString('Wall',    (img) => { wallSprite = new Sprite(img, 2, 2); inits++; });
+    spriteReader_getSpriteString('Wall',    (img) => { wallSprite = new Sprite(img, 1, 1); inits++; });
     spriteReader_getSpriteString('Floor',   (img) => { floorSprite = new Sprite(img, 2, 2); inits++; })
     spriteReader_getSpriteString('Sky',     (img) => { ceilingSprite = new Sprite(img, 1, 1); inits++; })
 
-    spriteReader_getSpriteString('StatusBar_Doom', (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
+    spriteReader_getSpriteString('StatusBar_Doom',  (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
+
+    spriteReader_getSpriteString('Shotgun_1_32Bit', (img) => { gunSprite = new Sprite(img, 1, 1); inits++; });
+    spriteReader_getSpriteString('Bullet_1',        (img) => { bulletSprite = new Sprite(img, 1, 1); inits++; });
 
     // Check each checkIntervall ms whether all ressources are loaded now
-    let checkIntervall = 50;
-    while(!(inits == 4))
+    const checkIntervall = 50;
+    while(inits != initCount)
         await new Promise(resolve => setTimeout(resolve, checkIntervall));
 }
 
