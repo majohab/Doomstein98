@@ -29,7 +29,7 @@ function drawingHandler_init()
     canvas.setAttribute('width', screenWidth);
     canvas.setAttribute('height', screenHeight);//gpu_kernel.canvas;
     document.getElementById("canvas-container").appendChild(canvas);
-    ctx = canvas.getContext("webgl2", { premultipliedAlpha: true });
+    ctx = canvas.getContext("webgl2", { premultipliedAlpha: false });
 
     gpu = new GPU({
         canvas,
