@@ -25,7 +25,17 @@ function drawingHandler_init()
     screenWidth = 1200;
     screenHeight = 900;
 
-    gpu = new GPU();
+    canvas = document.createElement('canvas');
+    canvas.setAttribute('width', screenWidth);
+    canvas.setAttribute('height', screenHeight);//gpu_kernel.canvas;
+    document.getElementById("canvas-container").appendChild(canvas);
+    ctx = canvas.getContext("webgl2", { premultipliedAlpha: false });
+
+    gpu = new GPU({
+        canvas,
+        context: ctx
+    });
+
     gpu.addFunction(drawingHandler_draw_gpu_single);
 
     gpu_kernel_settings = {
@@ -72,11 +82,7 @@ function drawingHandler_init()
         gpu_kernel_settings
     );
     
-    canvas = gpu_kernel.canvas;
-
-    document.getElementById("canvas-container").appendChild(canvas);
     
-    ctx = canvas.getContext("2d");
 }
 
 function drawingHandler_drawCells()
@@ -207,9 +213,11 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
             }
             else // Floor
             {
-                // 1: 0.66, 1.5: 0.45, 2: 0.33
-                 // Zero idea why (0.65 / wallHeight)... It was a late sunday evening and this number just did the trick ^^'
-                let constant = 0.63; // Lower: floor moves in direction of player. Higher: floor moves in opposite direction
+                // Zero idea why this constant... It was a late sunday evening and this number just did the trick ^^'
+                // It seems to have a connection with screenHeight and screenWidth though.
+                // Lower: floor moves in direction of player. Higher: floor moves in opposite direction
+                let constant = 0.66;
+
                 sampleX = rowDistance * eyeX + playerX * (constant / wallHeight);
                 sampleX -= Math.floor(sampleX);
                 sampleY = rowDistance * eyeY + playerY * (constant / wallHeight);
@@ -273,7 +281,8 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
         this.color(
             statusBarSprite[uv_y][uv_x][0] / 255,
             statusBarSprite[uv_y][uv_x][1] / 255,
-            statusBarSprite[uv_y][uv_x][2] / 255
+            statusBarSprite[uv_y][uv_x][2] / 255,
+            1
         )
     }
 }

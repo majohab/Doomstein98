@@ -21,7 +21,7 @@ let lastFrameTime;
 let mapString;
 let map_numbers
 
-function init()
+async function init()
 {
     socketHandler_init();
 
@@ -29,7 +29,7 @@ function init()
 
     drawingHandler_init();
     inputHander_init();
-    spriteReader_init();
+    await spriteReader_init();
 
     lastFrameTime = Date.now();
 
@@ -39,7 +39,6 @@ function init()
 
 function initMap()
 {
-
     mapString =
     "################" +
     "#..............#" +
@@ -77,4 +76,6 @@ function gameLoop()
     inputHandler_updateInput(deltaTime);
 
     drawingHandler_drawCells();
+
+    //console.log("x: " + playerX + ", y: " + playerY);
 }
