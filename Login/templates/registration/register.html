@@ -1,17 +1,15 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<!-- Stylesheets -->
-{% load static %}
-<link rel="stylesheet" type="text/css" href="{% static 'login/css/login.css' %}">
-
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'login/css/register.css' %}">
     <h2 class="h1 start">
         DOOMSTEIN98
     </h2>
 
-    <div class="window login" style="width: 300px">
+    <div class="window register">
         <div class="title-bar">
-            <div class="title-bar-text">Login</div>
+            <div class="title-bar-text">Register</div>
             <div class="title-bar-controls">
             <a href="{% url 'play' %}">
                 <button aria-label="Close"></button>
@@ -23,7 +21,7 @@
             {% csrf_token %}
 
             {% for field in form %}
-                <div class="field-row-stacked register" style="width: 200px">
+                <div class="field-row-stacked register">
                     <label for="text18"><strong>{{ field.label_tag }}</strong></label>
                     {{ field }}
                     {% if field.help_text %}
@@ -35,14 +33,11 @@
                     <span class="error">{{ field.help_text }}</span>
                 {% endfor %}
             {% endfor %}
-
             <br>
-
             <section class="field-row" style="justify-content: flex-end">
-                <a href="{% url 'register' %}">Not a user? Register here!</a>
-                <button type="submit">OK</button>
+                <a href="{% url 'login' %}">Back to login</a>
+                <button type="submit">Register</button>
             </section>
-            
         </form>    
     </div>
   </div>

@@ -57,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
 ]
 
 ROOT_URLCONF = 'Doomstein98.urls'
@@ -158,8 +159,13 @@ AUTH_PASSWORD_VALIDATORS = [
     # },
 ]
 
+# Config for user management
+
 # Redirect after login
 LOGIN_REDIRECT_URL = "menu"
 
 # Redirect after logout
 LOGOUT_REDIRECT_URL = "login"
+
+# Specify user model
+AUTH_USER_MODEL = 'Login.User'

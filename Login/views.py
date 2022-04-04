@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from Login.forms import CustomUserCreationForm
+from Login.forms import RegistrationForm
 
 # Create your views here.
 def play(request):
@@ -16,14 +16,20 @@ def menu(request):
     return render(request, 'menu.html', {})
 
 def register(request):
-    if request.method == "GET":
-        return render(
-            request, "Login/register.html",
-            {"form": CustomUserCreationForm}
-        )
-    elif request.method == "POST":
-        form = CustomUserCreationForm(request.POST)
+    context = {}
+    if request.method == "POST":
+        form = RegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            authenticate(email=form.cleaned_data.get('email'), password=form.cleaned_data.get('password1'))
             login(request, user)
             return redirect(reverse("dashboard"))
+        else:
+            context['registration_form'] = form
+    else:
+        form = RegistrationForm()
+        context['registration_form'] = form
+    return render(
+        request, "registration/register.html",
+        {"form": RegistrationForm}
+    )

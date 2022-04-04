@@ -4,11 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = "*"
 channels = "*"
-django-debug-toolbar = "*"
+django = "*"
 
 [dev-packages]
+django-debug-toolbar = "*"
+coverage = "*"
 
 [requires]
 python_version = "3.10"
