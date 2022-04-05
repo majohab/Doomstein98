@@ -22,7 +22,7 @@
 
             {% for field in form %}
                 <div class="field-row-stacked register">
-                    <label for="text18"><strong>{{ field.label_tag }}</strong></label>
+                    <label><strong>{{ field.label_tag }}</strong></label>
                     {{ field }}
                     {% if field.help_text %}
                         <span class="helptext">{{ field.help_text }}</span>
