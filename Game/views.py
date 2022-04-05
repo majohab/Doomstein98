@@ -4,7 +4,7 @@ from os import path
 from django.conf import settings
 
 def game(request, lobby_name):
-    return render(request, 'Game/game.html', {'lobby_name': lobby_name})
+    return render(request, 'gamewindow.html', {'lobby_name': lobby_name})
 
 def get_sprite_name(request, sprite_name):
     with open(
