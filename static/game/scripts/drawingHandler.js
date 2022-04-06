@@ -85,8 +85,8 @@ function drawingHandler_init()
         }
     };
     gpu_kernel = gpu.createKernel(
-        function(playerX, playerY, playerAngle, map_numbers, wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite, movingObjects_Array) {
-            drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbers, wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite, movingObjects_Array);
+        function(playerX, playerY, playerAngle, map_numbers, wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite, movingObjects_Array, movingObjects_Array_length) {
+            drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbers, wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite, movingObjects_Array, movingObjects_Array_length);
         },
         gpu_kernel_settings
     );
@@ -109,12 +109,17 @@ function drawingHandler_draw_gpu()
             5,
             5,
             5
+        ],
+        [
+            4,
+            4,
+            5
         ]
     ];
-    buffer = gpu_kernel(playerX, playerY, playerAngle, map_numbers, wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, gunSprite.data, bulletSprite.data, movingObjects_Array);
+    buffer = gpu_kernel(playerX, playerY, playerAngle, map_numbers, wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, gunSprite.data, bulletSprite.data, movingObjects_Array, movingObjects_Array.length);
 }
 
-function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbers, wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite, movingObjects_Array)
+function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbers, wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite, movingObjects_Array, movingObjects_Array_length)
 {
     let screenWidth = this.constants.screenWidth;
     let screenHeight = this.constants.screenHeight;
@@ -138,10 +143,11 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
     let r = 0;
     let g = 0;
     let b = 0;
-    let a = 0;
 
     if (y <= gameWindowHeight) // Main-Screen
     {
+        let depth = this.constants.depth;
+        let depthBuffer = depth;
 
         //#region Gun-Img
         
@@ -157,23 +163,25 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
             let pix_x = Math.floor(((x - gun_xMin) / gun_ImgWidth) * this.constants.gunSprite_width);
             let pix_y = Math.floor(((gameWindowHeight - y) / gun_ImgHeight) * this.constants.gunSprite_height);
             
-            r = gunSprite[pix_y][pix_x][0]
-            g = gunSprite[pix_y][pix_x][1]
-            b = gunSprite[pix_y][pix_x][2]
-            a = gunSprite[pix_y][pix_x][3]
+            if (gunSprite[pix_y][pix_x][3] > 0)
+            {
+                r = gunSprite[pix_y][pix_x][0]
+                g = gunSprite[pix_y][pix_x][1]
+                b = gunSprite[pix_y][pix_x][2]
+
+                depthBuffer = 0;
+            }
         }
         
         //#endregion
 
         //#region 3D Ray-Casting
 
-        if (a == 0)
+        if (depthBuffer > 0)
         {
-
             //#region Wall, Ceiling, Floor
 
             let fov = this.constants.fov;
-            let depth = this.constants.depth;
             let mapWidth = this.constants.mapWidth;
             let mapHeight = this.constants.mapHeight;
             let wallHeight = this.constants.wallHeight;
@@ -315,37 +323,33 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
             r = spriteIndex == 0 ? wallSprite[pix_y][pix_x][0] : spriteIndex == 1 ? floorSprite[pix_y][pix_x][0] : ceilingSprite[pix_y][pix_x][0];
             g = spriteIndex == 0 ? wallSprite[pix_y][pix_x][1] : spriteIndex == 1 ? floorSprite[pix_y][pix_x][1] : ceilingSprite[pix_y][pix_x][1];
             b = spriteIndex == 0 ? wallSprite[pix_y][pix_x][2] : spriteIndex == 1 ? floorSprite[pix_y][pix_x][2] : ceilingSprite[pix_y][pix_x][2];
-            a = 255;
+            
+            depthBuffer = distanceToWall;
 
             //#endregion
 
-            for (let obj = 0; obj < 1; obj++)
+            for (let obj = 0; obj < movingObjects_Array_length; obj++)
             {
-                let objX = movingObjects_Array[3 * obj + 0];
-                let objY = movingObjects_Array[3 * obj + 1];
-                let spriteIndex = movingObjects_Array[3 * obj + 2];
+                let objX = movingObjects_Array[obj][0];
+                let objY = movingObjects_Array[obj][1];
+                let spriteIndex = movingObjects_Array[obj][2];
                 let spriteWidth = this.constants.bulletSprite_width;
                 let spriteHeight = this.constants.bulletSprite_height;
 
                 let vecX = objX - playerX;
                 let vecY = objY - playerY;
-                let dstFromPlayer = Math.sqrt(vecX*vecX + vecY*vecY); // Pythagoras
+                let dstFromPlayer = Math.sqrt(vecX*vecX + vecY*vecY);
 
-                // Note that those are different values than the last eyeX and eyeY;
-                // these new ones are relative to playerAngle instead of rayAngle
-                let eyeX = Math.sin(playerAngle); let eyeY = Math.cos(playerAngle);
+                let forwardX = Math.sin(playerAngle); let forwardY = Math.cos(playerAngle);
 
-                let objAngle = Math.atan2(eyeY, eyeX) - Math.atan2(vecY, vecX);
-                if (objAngle < -Math.PI)
-                    objAngle += 2 * Math.PI;
-                if (objAngle > Math.PI)
-                    objAngle -= 2 * Math.PI;
+                let objAngle = Math.atan2(forwardY, forwardX) - Math.atan2(vecY, vecX);
 
-                let inPlayerFOV = Math.abs(objAngle) < fov * 0.5;
+                let inFrontOfPlayer = (forwardX * vecX + forwardY * vecY) > 0;
 
-                if (inPlayerFOV &&
+                if (inFrontOfPlayer &&
                     dstFromPlayer >= this.constants.nearClippingPane &&
-                    dstFromPlayer < depth)
+                    dstFromPlayer < depth &&
+                    dstFromPlayer < depthBuffer)
                 {
                     let objCeiling = (screenHeight * 0.5) - (screenHeight / dstFromPlayer);
                     let objFloor = screenHeight - objCeiling;
@@ -353,10 +357,16 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
                     let objRatio = spriteWidth / spriteHeight;
                     let objWidth = objHeight * objRatio;
                     let middleOfObject = (0.5 * (objAngle / (fov * 0.5)) + 0.5) * screenWidth;
+
+                    // Absolutely zero idea what the following does and why the f*ck it works... It just works okay?! It just works... for now...
+                    // Also, note that this only seems to work for fov = PI / 3, we probably need to adapt that sh*t calculation for other fovs.
+                    if (middleOfObject < 0 + objWidth * 0.5) middleOfObject += screenWidth * 3;
+                    if (middleOfObject > screenWidth * 3 - objWidth * 0.5) middleOfObject -= screenWidth * 3;
+
                     let objMinX = middleOfObject - objWidth * 0.5;
                     let objMaxX = middleOfObject + objWidth * 0.5;
                     let objMinY = screenHeight * 0.5 - objHeight * 0.5;
-                    let objMaxY = screenHeight * 0.5 + objHeight * 0.5
+                    let objMaxY = screenHeight * 0.5 + objHeight * 0.5;
 
                     if (x >= objMinX && x <= objMaxX && y >= objMinY && y <= objMaxY)
                     {
@@ -368,6 +378,8 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
                             r = bulletSprite[pix_y][pix_x][0];
                             g = bulletSprite[pix_y][pix_x][1];
                             b = bulletSprite[pix_y][pix_x][2];
+
+                            depthBuffer = dstFromPlayer;
                         }
                     }
                 }
@@ -390,10 +402,9 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, map_numbe
         r = statusBarSprite[pix_y][pix_x][0];
         g = statusBarSprite[pix_y][pix_x][1];
         b = statusBarSprite[pix_y][pix_x][2];
-        a = 255;
     }
             
-    this.color(r / 255, g / 255, b / 255, a / 255)
+    this.color(r / 255, g / 255, b / 255)
 }
 
 //#endregion
