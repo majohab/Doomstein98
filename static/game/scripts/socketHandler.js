@@ -27,7 +27,7 @@ function socketHandler_init()
     }
 
     webSocket.onmessage = function(e) {
-        let data = JSON-parse(e.data)
+        let data = JSON.parse(e.data)
         console.log('Data:', data)
     };
 

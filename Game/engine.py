@@ -87,7 +87,7 @@ AVAILABLE_WEAPONS = {
 class Player:
 
     # Initiate player
-    def __init__(self, username : str, spawn_x : float = 0, spawn_y : float = 0, direction : float = 0, weapons: list[Weapon] = [AVAILABLE_WEAPONS["P99"]]):
+    def __init__(self, username : str, spawn_x : float = 3, spawn_y : float = 3, direction : float = 0, weapons: list[Weapon] = [AVAILABLE_WEAPONS["P99"]]):
         
         # Initiate the Username
         self.username = username
@@ -275,7 +275,8 @@ class Map:
         self.tick = 0
     
     # validate the input string of map
-    def from_list(self, strings: list):
+    # Static Method
+    def from_list(strings: list):
         
         for string in strings:
             
@@ -312,10 +313,12 @@ class Map:
 # Class for handling the states of the game
 class State:
 
-    def __init__(self, map : Map, players : list[Player]):
+    def __init__(self, map : Map, players : list[Player] = [], bullets : list[Bullet] = []):
         self.map     : Map          = map
         self.players : list[Player] = players
-        self.bullets : list[Bullet] = []
+        self.bullets : list[Bullet] = bullets
+
+        print(self.bullets)
 
     def render(self) -> Mapping[str, Any]:
         return { 
@@ -334,9 +337,10 @@ class GameEngine(threading.Thread):
         (Direction.RIGHT, Direction.LEFT),
     }
 
-    def __init__(self, group_name, players_name : list[str], map_string = MAPS[0], **kwargs):
+    # Constructor function for GameEngine
+    def __init__(self, group_name, players_name : list[str] = [], map_string = MAPS[0], **kwargs):
         
-        print("Initializing GameEngine: %s with players: %s", group_name, players_name)
+        print(F"Initializing GameEngine: {group_name} with players: {players_name}")
 
         # Create a thread to run the game
         super(GameEngine, self).__init__(daemon = True, name = "GameEngine", **kwargs)
@@ -348,7 +352,9 @@ class GameEngine(threading.Thread):
         self.event_changes = {}
         self.event_lock = threading.Lock()
         self.player_lock = threading.Lock()
-        self.player_queue = list[Player]
+        self.player_queue = []
+
+        map_string = MAPS[0]
 
         self.state = State(
             Map.from_list(map_string), 
@@ -359,7 +365,6 @@ class GameEngine(threading.Thread):
     def run(self) -> None:
 
         print("Starting engine loop")
-
         # infinite loop
         while True:
 
@@ -370,34 +375,46 @@ class GameEngine(threading.Thread):
             self.broadcast_state(self.state)
 
             # Sleep for a specific time, in which the game will calculate every new status
-            time.sleep(self.tick_rate)
+            time.sleep(tick_rate)
 
     # The broadcast method which broadcast the current game state
     def broadcast_state(self, state: State) -> None: 
         
+        print("Broadcasting state to all players in game")
+
         # Get the current information about the game state
         state_json = state.render()
 
-        # Get the channel
-        channel_layer = get_channel_layer()
-
         # Synchronize the channel's information and send them to all participants
-        async_to_sync(channel_layer.group_send)(
-            self.group_name, {"type": "game_update", "state": state_json}
+        async_to_sync(self.channel_layer.group_send)(
+            self.group_name, 
+            {
+             "type": "game.update",
+             "state": state_json
+            }
         )
 
+    # What happens in every tick
     def tick(self):
+
         self.tick_num += 1
-        print("Tick %d for game %s", self.tick_num, self.name)
+        
+        print(F"Tick {self.tick_num} for game {self.name}")
+        
         state = self.state
 
         with self.event_lock:
             events = self.event_changes.copy()
             self.event_changes.clear()
 
-        state = self.process_players(state, events)
-        state = self.process_bullets(state)
+        if state.players:
+            state = self.process_players(state, events)
+
+        if state.bullets:
+            state = self.process_bullets(state)
+        
         state = self.process_collisions(state)
+        
         state = self.process_new_players(state)
 
         state.map.tick = self.tick_num
@@ -405,7 +422,8 @@ class GameEngine(threading.Thread):
         return state
 
     def process_players(self, state: State, events):
-        print("Proccessing players for game %s", self.name)
+
+        print(F"Proccessing players for game {self.name}")
 
         for player in state.players:
             
@@ -419,9 +437,12 @@ class GameEngine(threading.Thread):
 
                 if(event["LeftClick"]):
                     player.shoot(state)
+        
+        return state
             
     def process_collisions(self, state: State):
-        print("Proccessing collisions for game %s", self.name)
+
+        print(F"Proccessing collisions for game {self.name}")
 
         for player in state.players:
 
@@ -435,29 +456,38 @@ class GameEngine(threading.Thread):
                     got_hit = True
                     break
 
+            # if the player got hit change the state of the player
             if got_hit: 
 
                 player.get_hit(bullet.player)
 
+        return state
+
     def process_bullets(self, state: State):
-        
+
+        print(F"Proccessing bullets for game {self.name}")
+
         for bullet in state.bullets:
 
+            # Make the next move for all bullets
             bullet.update_pos()
+
+        return state
 
     def apply_events(self, player: str, events):
 
-        print("Applying changes for %s", player)
+        print("Applying changes for " + player)
+        
         with self.event_lock:
             self.event_changes[player] = events
 
     def join_game(self, player: str) -> None:
 
-        print("Player %s joined game!", player)
+        print(F"Player {player} joined game!", )
 
         if player in self.state.players:
 
-            print("Player %s is already in game!", player)
+            print(F"Player {player} is already in game!")
             return
         
         with self.player_lock:
@@ -466,9 +496,13 @@ class GameEngine(threading.Thread):
 
     def process_new_players(self, state: State):
 
-        print("Processing new players for game: %s", self.name)
+        #print(F"Processing new players for game: {self.name}")
 
+        # add the players to the game
         state.players += self.player_queue
+
+        # Clear the queue
+        self.player_queue = []
 
         return state
 

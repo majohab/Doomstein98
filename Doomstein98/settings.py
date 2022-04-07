@@ -82,23 +82,23 @@ WSGI_APPLICATION = 'Doomstein98.wsgi.application'
 #ASGI_APPLICATION = 'Doomstein98.asgi.application'
 ASGI_APPLICATION = 'Game.routing.application'
 
-'''
+#'''
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'asgi_redis.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [('redis', 6379)],
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
         },
-        'ROUTING': 'example_channels.routing.channel_routing',
-    }
+    },
 }
+
 '''
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     }
 }
-#'''
+
 
 CACHES = {
     "default": {
@@ -109,6 +109,7 @@ CACHES = {
         }
     }
 }
+#'''
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
@@ -192,3 +193,24 @@ LOGIN_REDIRECT_URL = "menu"
 
 # Redirect after logout
 LOGOUT_REDIRECT_URL = "login"
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}
