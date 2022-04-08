@@ -16,7 +16,7 @@ from channels.layers import get_channel_layer
 log = logging.getLogger(__name__)
 
 #TODO: fit that for customized fps
-tick_rate = 0.16
+tick_rate = 1
 
 MAPS = [
     [
@@ -59,9 +59,8 @@ class Coordinate:
         # If direction is  90° then the object only moves on x axis in positive direction
         # If direction is 180° then the object only moves on y axis in negative direction
         # If direction is 270° then the object only moves on x axis in negative direction
-        return Coordinate(self.x_coordinate + speed * np.sin(direction),
-                          self.y_coordinate + speed * np.cos(direction)
-        )
+        self.x_coordinate += speed * np.sin(direction)
+        self.y_coordinate += speed * np.cos(direction)
 
     def get_distance(self, sec_cod):
 
@@ -112,7 +111,7 @@ class Player:
         # Represents the current available weapons
         self.weapons = weapons
 
-        self.speed = 0.01
+        self.speed = 1
 
         self.alive = True
 
@@ -170,7 +169,7 @@ class Player:
         too_close = False
 
         # Copy the direction of the player, so that it can be manipulated
-        dir = self.direction.copy()
+        dir = self.direction
 
         # upper right: 45° == math.pi/4
         if(up and right):
@@ -202,26 +201,27 @@ class Player:
 
         tmp = copy.deepcopy(self.current_position)
 
+        print("direction: " + str(dir))
         #Move only in direction of max math.pi
         tmp.move(self.speed, dir%math.pi)
 
         # Look for collision
-        for player in state.players:
-
-            # if the on-going move is too close to another player then turn the boolean flag
-            if(tmp.get_distance(player.current_position) < 1):
-                
-                print("Player %s is too close to another player %s", self.name, player.name)
-                too_close = True
-
-            if(state.map.check_collision(self.tmp)):
-
-                print("Player %s is too close to the wall of the map")
-                too_close = True
+        #for player in state.players:
+#
+        #    # if the on-going move is too close to another player then turn the boolean flag
+        #    if(tmp.get_distance(player.current_position) < 1):
+        #        
+        #        #print("Player %s is too close to another player %s", self.name, player.name)
+        #        too_close = True
+#
+        #    if(state.map.check_collision(tmp)):
+#
+        #        #print("Player %s is too close to the wall of the map")
+        #        too_close = True
 
         # if no player is too close to an object
         if(not too_close):
-
+            print (str(tmp.x_coordinate) + ", " + str(tmp.y_coordinate))
             self.current_position = tmp
 
 
@@ -231,7 +231,7 @@ class Player:
 
     def die(self):
         #What should happen?
-        print("Die!")
+        #print("Die!")
 
         # Change the status of the player's condition
         self.alive = False
@@ -318,7 +318,7 @@ class State:
         self.players : list[Player] = players
         self.bullets : list[Bullet] = bullets
 
-        print(self.bullets)
+        #print(self.bullets)
 
     def render(self) -> Mapping[str, Any]:
         return { 
@@ -340,7 +340,7 @@ class GameEngine(threading.Thread):
     # Constructor function for GameEngine
     def __init__(self, group_name, players_name : list[str] = [], map_string = MAPS[0], **kwargs):
         
-        print(F"Initializing GameEngine: {group_name} with players: {players_name}")
+        #print(F"Initializing GameEngine: {group_name} with players: {players_name}")
 
         # Create a thread to run the game
         super(GameEngine, self).__init__(daemon = True, name = "GameEngine", **kwargs)
@@ -364,7 +364,7 @@ class GameEngine(threading.Thread):
     # The main loop for the game engine
     def run(self) -> None:
 
-        print("Starting engine loop")
+        #print("Starting engine loop")
         # infinite loop
         while True:
 
@@ -380,7 +380,7 @@ class GameEngine(threading.Thread):
     # The broadcast method which broadcast the current game state
     def broadcast_state(self, state: State) -> None: 
         
-        print("Broadcasting state to all players in game")
+        #print("Broadcasting state to all players in game")
 
         # Get the current information about the game state
         state_json = state.render()
@@ -423,7 +423,7 @@ class GameEngine(threading.Thread):
 
     def process_players(self, state: State, events):
 
-        print(F"Proccessing players for game {self.name}")
+        #print(F"Proccessing players for game {self.name}")
 
         for player in state.players:
             
@@ -431,18 +431,18 @@ class GameEngine(threading.Thread):
                 
                 event = events[player.username]
 
-                player.move(event["Up"],event["Right"],event["Down"],event["Left"])
+                player.move(state, event["up"],event["right"],event["down"],event["left"])
 
-                player.change_direction(event("MouseX"), event["MouseY"])
+                #player.change_direction(event("MouseX"), event["MouseY"])
 
-                if(event["LeftClick"]):
-                    player.shoot(state)
+                #if(event["LeftClick"]):
+                 #   player.shoot(state)
         
         return state
             
     def process_collisions(self, state: State):
 
-        print(F"Proccessing collisions for game {self.name}")
+        #print(F"Proccessing collisions for game {self.name}")
 
         for player in state.players:
 
@@ -465,7 +465,7 @@ class GameEngine(threading.Thread):
 
     def process_bullets(self, state: State):
 
-        print(F"Proccessing bullets for game {self.name}")
+        #print(F"Proccessing bullets for game {self.name}")
 
         for bullet in state.bullets:
 
@@ -476,18 +476,18 @@ class GameEngine(threading.Thread):
 
     def apply_events(self, player: str, events):
 
-        print("Applying changes for " + player)
+        #print("Applying changes for " + player)
         
         with self.event_lock:
             self.event_changes[player] = events
 
     def join_game(self, player: str) -> None:
 
-        print(F"Player {player} joined game!", )
+        #print(F"Player {player} joined game!", )
 
         if player in self.state.players:
 
-            print(F"Player {player} is already in game!")
+            #print(F"Player {player} is already in game!")
             return
         
         with self.player_lock:

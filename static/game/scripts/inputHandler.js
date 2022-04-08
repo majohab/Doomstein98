@@ -60,40 +60,40 @@ function inputHandler_initPointerLock()
     });
 }
 
-function inputHandler_updateInput(deltaTime) // Ultimately to be handled on server-side
-{
-    let dTime = deltaTime / 1000;
-
-    if (lastRecordedMouseX)
-    {
-        let newMouseX = lastRecordedMouseX
-    
-        let mouseMovedX = newMouseX - lastMouseX;
-        playerAngle += mouseMovedX * mouseRotationSpeed * dTime;
-        lastMouseX = newMouseX;
-    }
-
-    if (keyStates)
-    {
-        if (keyStates[87])
-        {
-            playerX += Math.sin(playerAngle) * walkingSpeed * dTime;
-            playerY += Math.cos(playerAngle) * walkingSpeed * dTime;
-        }
-        if (keyStates[65])
-        {
-            playerX -= Math.cos(playerAngle) * walkingSpeed * dTime;
-            playerY += Math.sin(playerAngle) * walkingSpeed * dTime;
-        }
-        if (keyStates[68])
-        {
-            playerX += Math.cos(playerAngle) * walkingSpeed * dTime;
-            playerY -= Math.sin(playerAngle) * walkingSpeed * dTime;
-        }
-        if (keyStates[83])
-        {
-            playerX -= Math.sin(playerAngle) * walkingSpeed * dTime;
-            playerY -= Math.cos(playerAngle) * walkingSpeed * dTime;
-        }
-    }
-}
+//function inputHandler_updateInput(deltaTime) // Ultimately to be handled on server-side
+//{
+//    let dTime = deltaTime / 1000;
+//
+//    if (lastRecordedMouseX)
+//    {
+//        let newMouseX = lastRecordedMouseX
+//    
+//        mouseDeltaX = newMouseX - lastMouseX;
+//        playerAngle += mouseDeltaX * mouseRotationSpeed * dTime;
+//        lastMouseX = newMouseX;
+//    }
+//
+//    if (keyStates)
+//    {
+//        if (keyStates[87])
+//        {
+//            playerX += walkingSpeed * dTime;
+//            playerY += walkingSpeed * dTime;
+//        }
+//        if (keyStates[65])
+//        {
+//            playerX -= walkingSpeed * dTime;
+//            playerY += walkingSpeed * dTime;
+//        }
+//        if (keyStates[68])
+//        {
+//            playerX += Math.cos(playerAngle) * walkingSpeed * dTime;
+//            playerY -= Math.sin(playerAngle) * walkingSpeed * dTime;
+//        }
+//        if (keyStates[83])
+//        {
+//            playerX -= Math.sin(playerAngle) * walkingSpeed * dTime;
+//            playerY -= Math.cos(playerAngle) * walkingSpeed * dTime;
+//        }
+//    }
+//}

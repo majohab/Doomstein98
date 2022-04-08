@@ -28,6 +28,20 @@ function socketHandler_init()
 
     webSocket.onmessage = function(e) {
         let data = JSON.parse(e.data)
+
+        let mouseDeltaX = lastRecordedMouseX - lastMouseX;
+        lastMouseX = lastRecordedMouseX
+
+        webSocket.send(JSON.stringify({
+            "type" : "loop",
+            "msg"  : {
+                "up" : keyStates[87] | false,
+                "down" : keyStates[83] | false,
+                "left" : keyStates[65] | false,
+                "right" : keyStates[68] | false,
+                "mouseDeltaX" : mouseDeltaX
+            }
+        }));
         console.log('Data:', data)
     };
 

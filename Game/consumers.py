@@ -111,7 +111,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         content = json.loads(text_data)
 
-        print(content)
+        #print(content)
 
         #Den Message-Typ extrahieren
         msg_type = content["type"]
@@ -129,7 +129,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     # Send game data to room group after a Tick is processed
     async def game_update(self, event):
 
-        print(F"Game Update: {event}")
+        #print(F"Game Update: {event}")
 
         # Send message to WebSocket
         state = event["state"]
@@ -167,33 +167,29 @@ class GameConsumer(SyncConsumer):
         print(F"Player changed: {event}")
         
         # If the mouse was recently pressed, ignore that click
-        if(event["msg"]["LeftClick"] == True and self.mouseClicked > 0):
-            event["msg"]["LeftClick"] = False
-            print("Too often clicked!")
+        #if(event["msg"]["LeftClick"] == True and self.mouseClicked > 0):
+        #    event["msg"]["LeftClick"] = False
+        #    print("Too often clicked!")
 
-        elif(event["msg"]["LeftClick"] == True and self.mouseClicked == 0):
-            self.mouseClicked = 10
-            print("Click was successful!")
+        #elif(event["msg"]["LeftClick"] == True and self.mouseClicked == 0):
+        #    self.mouseClicked = 10
+        #    print("Click was successful!")
 
         # If both directions are pressed then dont move in those directions
-        if event["msg"]["Up"] == True and event["msg"]["Down"] == True:
-            event["msg"]["Up"] = False
-            event["msg"]["Down"] = False
+        if event["msg"]["up"] == True and event["msg"]["down"] == True:
+            event["msg"]["up"] = False
+            event["msg"]["down"] = False
             print("Opposite key were pressed!")
 
         # If both directions are pressed then dont move in those directions
-        if event["msg"]["Left"] == True and event["msg"]["Right"] == True:
-            event["msg"]["Left"] = False
-            event["msg"]["Right"] = False
+        if event["msg"]["left"] == True and event["msg"]["right"] == True:
+            event["msg"]["left"] = False
+            event["msg"]["right"] = False
             print("Opposite key were pressed!")
 
-        if event["msg"]["MouseX"] > MAX_DEGREE:
-            event["msg"]["MouseX"] = MAX_DEGREE
-            print("Mouse change invalid!")
-
-        if event["msg"]["MouseY"] > MAX_DEGREE:    
-            event["msg"]["MouseY"] = MAX_DEGREE
-            print("Mouse cahnge invalid!")
+        #if event["msg"]["mouseDeltaX"] > MAX_DEGREE:
+        #    event["msg"]["mouseDeltaX"] = MAX_DEGREE
+        #    print("Mouse change invalid!")
 
         # Send the data to 
         self.engine.apply_events(event["player"], event["msg"])
