@@ -17,13 +17,14 @@ function socketHandler_init()
     username = "user1"
 
     webSocket.onopen = function(){ 
-        webSocket.send(JSON.stringify({
-        "type" : "join",
-        "msg"  : {
-            "username" : username
-        }
-        }));
-        console.log("SENDEN")
+        webSocket.send(
+            JSON.stringify({
+                "type" : "join",
+                "msg"  : {
+                    "username" : username
+                }
+            })
+        );
     }
 
     webSocket.onmessage = function(e) {
@@ -35,6 +36,9 @@ function socketHandler_init()
         let mouseDeltaX = lastRecordedMouseX - lastMouseX;
         lastMouseX = lastRecordedMouseX
 
+        console.log("pointerLocked     : " + pointerLocked)
+        console.log("pointerLockedClick: " + pointerLockedClick)
+
         webSocket.send(JSON.stringify({
             "type" : "loop",
             "msg"  : {
@@ -43,8 +47,14 @@ function socketHandler_init()
                 "left" : keyStates[65] | false,
                 "right" : keyStates[68] | false,
                 "mouseDeltaX" : ((mouseDeltaX) ? mouseDeltaX : 0),
+                "leftClick" :  (pointerLocked ? (pointerLockedClick ? false : clicked) : false) //if the click was to catch the mouse and the mouse has to be catched
             }
         }));
+
+        if(clicked) {
+            pointerLockedClick = false;
+            clicked = false;
+        }
         console.log('Data:', data)
     };
 

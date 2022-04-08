@@ -13,6 +13,8 @@ let playerAngle;
 let pointerLocked;
 let lastRecordedMouseX;
 let lastMouseX;
+let clicked;
+let pointerLockedClick; //The click for initialization of pointerLocked should not shoot
 let keyStates; // Maybe not how we want to solve this in the final game
 
 function inputHander_init()
@@ -21,6 +23,8 @@ function inputHander_init()
     playerY = playerStartY;
     playerAngle = playerStartAngle
     pointerLocked = false;
+    pointerLockedClick = false;
+    clicked = false;
     keyStates = [];
     
     inputHandler_initMouseEvents();
@@ -48,6 +52,9 @@ function inputHandler_initKeyEvents()
     document.addEventListener('keyup',function(e){
         keyStates[e.keyCode || e.which] = false;
     },true);
+    document.addEventListener('click',function (){
+        clicked = true;
+    })
 }
 
 function inputHandler_initPointerLock()
@@ -56,7 +63,11 @@ function inputHandler_initPointerLock()
     {
         canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
         canvas.requestPointerLock();
-        pointerLocked = true;
+        // if mouse is already caught
+        if(pointerLocked == false){
+            pointerLockedClick = true;
+            pointerLocked = true;
+        }
     });
 }
 

@@ -61,7 +61,7 @@ class Coordinate:
 
     def get_distance(self, sec_cod):
 
-        return math.sqrt((self.x - sec_cod.x_coordinate) ** 2 + (self.y - sec_cod.y_coordinate) ** 2)
+        return math.sqrt((self.x - sec_cod.x) ** 2 + (self.y - sec_cod.y) ** 2)
 
 
 class Weapon:
@@ -112,9 +112,13 @@ class Player:
 
         self.alive = True
 
-    #Describes the function to be called when the player shoots
     def shoot(self, state):
+        '''
+        Describes the function to be called when the player shoots
+        '''
         
+        print(F"{self.username} just shot a bullet!")
+
         speed = 0.5/tick_rate
 
         # The animation of shooting shall go on for 1 seconds
@@ -168,13 +172,13 @@ class Player:
         #print(F"Current position: x: {self.current_position.x}, y: {self.current_position.y}")
 
         #print("current direction: " + str(self.direction))
-        print("\nrad: " + str(math.atan2(x, y)))
-        print("deg: " + str(math.degrees(math.atan2(x, y))) + "\n")
+        #print("\nrad: " + str(math.atan2(x, y)))
+        #print("deg: " + str(math.degrees(math.atan2(x, y))) + "\n")
 
         #Move only in direction of max math.pi
         tmp.move(self.speed, dir % 360)
 
-        print(F"Current position: x: {self.current_position.x}, y: {self.current_position.y}")
+        #print(F"Current position: x: {self.current_position.x}, y: {self.current_position.y}")
         #print(F"Tmp position: x: {tmp.x}, y: {tmp.y}")
 
         # Look for collision with other Players
@@ -231,6 +235,8 @@ class Bullet:
     # Initiate bullet
     def __init__(self, origin_player : Player, origin_pos : Coordinate, direction : float):
 
+        print("A bullet has been created")
+
         self.player           = origin_player
         self.origin_pos       = origin_pos
         self.current_position = origin_pos
@@ -286,7 +292,7 @@ class Map:
         
         #print(self.map_string)
 
-        #print(F"\ny_coordinate : {int(coordinate.y_coordinate)}\nx_coordinate : {int(coordinate.x_coordinate)}\n")
+        #print(F"\ny : {int(coordinate.y)}\nx : {int(coordinate.x)}\n")
 
         #coordinate.derf
 
@@ -423,15 +429,15 @@ class GameEngine(threading.Thread):
                 
                 event = events[player.username]
 
-                print(F"x: {event['x']}, y: {event['y']}")
+                #print(F"x: {event['x']}, y: {event['y']}")
 
                 player.change_direction(event["mouseDeltaX"])
 
                 if(event["x"] != 0 or event["y"] != 0):
                     player.move(state, event["x"], event["y"])
 
-                #if(event["LeftClick"]):
-                 #   player.shoot(state)
+                if(event["leftClick"]):
+                   player.shoot(state)
         
         return state
             
@@ -460,7 +466,7 @@ class GameEngine(threading.Thread):
 
     def process_bullets(self, state: State):
 
-        #print(F"Proccessing bullets for game {self.name}")
+        print(F"Proccessing bullets {state.bullets}")
 
         for bullet in state.bullets:
 

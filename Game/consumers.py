@@ -13,6 +13,9 @@ from .engine import GameEngine
 #TODO: Anpassen
 MAX_DEGREE = 360
 
+#TODO: fit that for customized fps
+tick_rate = 1
+
 log = logging.getLogger(__name__)
 
 #Die serverseitige Spielerklasse
@@ -89,21 +92,49 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
     #Die Interaktionen des Spielers werden übertragen
     async def forward(self, msg):
-
-        self.mouseClicked -= 1
+        
+        if(self.mouseClicked > 0):
+            '''
+                To protect spamming there is a latency for shooting
+            '''
+            self.mouseClicked -= 1
 
         if not self.username:
             print(F"User {self.username}: Attempting to join game")
             return
         
-        print(F"User {self.username}: {msg}")
+        print(F"User {self.username}: {msg} with latency of mouseClick: {self.mouseClicked}")
+
+        # If the mouse was recently pressed, ignore that click
+        if(msg["leftClick"] == True and self.mouseClicked > 0):
+            msg["leftClick"] = False
+            print("Too often clicked!")
+
+        elif(msg["leftClick"] == True and self.mouseClicked == 0):
+            #TODO: Anpassen
+            self.mouseClicked = 1/tick_rate
+            print("Click was successful!")
+
+        if msg["mouseDeltaX"] > MAX_DEGREE:
+            msg["mouseDeltaX"] = MAX_DEGREE
+            print("Mouse change invalid!")
+
+        # If both directions are pressed then dont move in those directions
+        msg["y"] = msg["up"] - msg["down"]
+
+        msg["x"] = msg["right"] - msg["left"]
 
         await self.channel_layer.send(
             "game_engine",
             { 
               "type"    : "player.validate", 
               "player"  : self.username, 
-              "msg"     : msg,
+              "msg"     : {
+                  "mouseDeltaX" : msg["mouseDeltaX"],
+                  "leftClick"   : msg["leftClick"],
+                  "y"           : msg["y"],
+                  "x"           : msg["x"]
+              },
             }
         )
  
@@ -166,26 +197,8 @@ class GameConsumer(SyncConsumer):
     def player_validate(self, event):
         
         #print(F"Player changed: {event}")
-        
-        # If the mouse was recently pressed, ignore that click
-        #if(event["msg"]["LeftClick"] == True and self.mouseClicked > 0):
-        #    event["msg"]["LeftClick"] = False
-        #    print("Too often clicked!")
-
-        #elif(event["msg"]["LeftClick"] == True and self.mouseClicked == 0):
-        #    self.mouseClicked = 10
-        #    print("Click was successful!")
-
-        # If both directions are pressed then dont move in those directions
-        event["msg"]["y"] = event["msg"]["up"] - event["msg"]["down"]
-
-        event["msg"]["x"] = event["msg"]["right"] - event["msg"]["left"]
 
         print(event["msg"])
-
-        if event["msg"]["mouseDeltaX"] > MAX_DEGREE:
-            event["msg"]["mouseDeltaX"] = MAX_DEGREE
-            print("Mouse change invalid!")
 
         '''
         Send the data to engine
