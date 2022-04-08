@@ -10,7 +10,8 @@ from channels.layers import get_channel_layer
 
 from .engine import GameEngine
 
-MAX_DEGREE = 20
+#TODO: Anpassen
+MAX_DEGREE = 360
 
 log = logging.getLogger(__name__)
 
@@ -164,7 +165,7 @@ class GameConsumer(SyncConsumer):
 
     def player_validate(self, event):
         
-        print(F"Player changed: {event}")
+        #print(F"Player changed: {event}")
         
         # If the mouse was recently pressed, ignore that click
         #if(event["msg"]["LeftClick"] == True and self.mouseClicked > 0):
@@ -176,20 +177,17 @@ class GameConsumer(SyncConsumer):
         #    print("Click was successful!")
 
         # If both directions are pressed then dont move in those directions
-        if event["msg"]["up"] == True and event["msg"]["down"] == True:
-            event["msg"]["up"] = False
-            event["msg"]["down"] = False
-            print("Opposite key were pressed!")
+        event["msg"]["y"] = event["msg"]["up"] - event["msg"]["down"]
 
-        # If both directions are pressed then dont move in those directions
-        if event["msg"]["left"] == True and event["msg"]["right"] == True:
-            event["msg"]["left"] = False
-            event["msg"]["right"] = False
-            print("Opposite key were pressed!")
+        event["msg"]["x"] = event["msg"]["right"] - event["msg"]["left"]
 
-        #if event["msg"]["mouseDeltaX"] > MAX_DEGREE:
-        #    event["msg"]["mouseDeltaX"] = MAX_DEGREE
-        #    print("Mouse change invalid!")
+        print(event["msg"])
 
-        # Send the data to 
+        if event["msg"]["mouseDeltaX"] > MAX_DEGREE:
+            event["msg"]["mouseDeltaX"] = MAX_DEGREE
+            print("Mouse change invalid!")
+
+        '''
+        Send the data to engine
+        '''
         self.engine.apply_events(event["player"], event["msg"])

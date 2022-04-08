@@ -42,7 +42,7 @@ function socketHandler_init()
                 "down" : keyStates[83] | false,
                 "left" : keyStates[65] | false,
                 "right" : keyStates[68] | false,
-                "mouseDeltaX" : mouseDeltaX
+                "mouseDeltaX" : ((mouseDeltaX) ? mouseDeltaX : 0),
             }
         }));
         console.log('Data:', data)
