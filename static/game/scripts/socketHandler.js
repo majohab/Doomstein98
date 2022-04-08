@@ -29,6 +29,9 @@ function socketHandler_init()
     webSocket.onmessage = function(e) {
         let data = JSON.parse(e.data)
 
+        playerX = data['players']['user1']['x'];
+        playerY = data['players']['user1']['y'];
+
         let mouseDeltaX = lastRecordedMouseX - lastMouseX;
         lastMouseX = lastRecordedMouseX
 
