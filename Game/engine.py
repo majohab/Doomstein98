@@ -157,7 +157,7 @@ class Player:
         # The animation of getting shot shall go on for 1 second
         self.justShot = 1/tick_rate
 
-        print("Player %s is hit by player %s",self.name, player.name)
+        #print("Player %s is hit by player %s",self.name, player.name)
         if(self.health > 20):
             self.health -= 20
         else:
@@ -211,12 +211,12 @@ class Player:
             # if the on-going move is too close to another player then turn the boolean flag
             if(tmp.get_distance(player.current_position) < 1):
                 
-                print("Player %s is too close to another player %s", self.name, player.name)
+                #print("Player %s is too close to another player %s", self.name, player.name)
                 too_close = True
 
             if(state.map.check_collision(self.tmp)):
 
-                print("Player %s is too close to the wall of the map")
+                #print("Player %s is too close to the wall of the map")
                 too_close = True
 
         # if no player is too close to an object
@@ -231,7 +231,7 @@ class Player:
 
     def die(self):
         #What should happen?
-        print("Die!")
+        #print("Die!")
 
         # Change the status of the player's condition
         self.alive = False
@@ -318,7 +318,7 @@ class State:
         self.players : list[Player] = players
         self.bullets : list[Bullet] = bullets
 
-        print(self.bullets)
+        #print(self.bullets)
 
     def render(self) -> Mapping[str, Any]:
         return { 
@@ -340,7 +340,7 @@ class GameEngine(threading.Thread):
     # Constructor function for GameEngine
     def __init__(self, group_name, players_name : list[str] = [], map_string = MAPS[0], **kwargs):
         
-        print(F"Initializing GameEngine: {group_name} with players: {players_name}")
+        #print(F"Initializing GameEngine: {group_name} with players: {players_name}")
 
         # Create a thread to run the game
         super(GameEngine, self).__init__(daemon = True, name = "GameEngine", **kwargs)
@@ -364,7 +364,7 @@ class GameEngine(threading.Thread):
     # The main loop for the game engine
     def run(self) -> None:
 
-        print("Starting engine loop")
+        #print("Starting engine loop")
         # infinite loop
         while True:
 
@@ -380,7 +380,7 @@ class GameEngine(threading.Thread):
     # The broadcast method which broadcast the current game state
     def broadcast_state(self, state: State) -> None: 
         
-        print("Broadcasting state to all players in game")
+        #print("Broadcasting state to all players in game")
 
         # Get the current information about the game state
         state_json = state.render()
@@ -399,7 +399,7 @@ class GameEngine(threading.Thread):
 
         self.tick_num += 1
         
-        print(F"Tick {self.tick_num} for game {self.name}")
+        #print(F"Tick {self.tick_num} for game {self.name}")
         
         state = self.state
 
@@ -423,7 +423,7 @@ class GameEngine(threading.Thread):
 
     def process_players(self, state: State, events):
 
-        print(F"Proccessing players for game {self.name}")
+        #print(F"Proccessing players for game {self.name}")
 
         for player in state.players:
             
@@ -442,7 +442,7 @@ class GameEngine(threading.Thread):
             
     def process_collisions(self, state: State):
 
-        print(F"Proccessing collisions for game {self.name}")
+        #print(F"Proccessing collisions for game {self.name}")
 
         for player in state.players:
 
@@ -465,7 +465,7 @@ class GameEngine(threading.Thread):
 
     def process_bullets(self, state: State):
 
-        print(F"Proccessing bullets for game {self.name}")
+        #print(F"Proccessing bullets for game {self.name}")
 
         for bullet in state.bullets:
 
@@ -476,18 +476,18 @@ class GameEngine(threading.Thread):
 
     def apply_events(self, player: str, events):
 
-        print("Applying changes for " + player)
+        #print("Applying changes for " + player)
         
         with self.event_lock:
             self.event_changes[player] = events
 
     def join_game(self, player: str) -> None:
 
-        print(F"Player {player} joined game!", )
+        #print(F"Player {player} joined game!", )
 
         if player in self.state.players:
 
-            print(F"Player {player} is already in game!")
+            #print(F"Player {player} is already in game!")
             return
         
         with self.player_lock:

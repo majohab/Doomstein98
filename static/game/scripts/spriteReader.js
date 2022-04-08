@@ -1,8 +1,10 @@
 class Sprite
 {
+    // https://de.wikipedia.org/wiki/Windows_Bitmap
     // https://gibberlings3.github.io/iesdp/file_formats/ie_formats/bmp.htm
 
-    constructor(img, iterations_x, iterations_y) {
+    constructor(img, iterations_x, iterations_y)
+    {
         
         // ToDo: Load from server
 
@@ -87,6 +89,113 @@ class Sprite
     }
 }
 
+class Letter
+{
+    constructor(letter, startX, startY, sizeX, sizeY)
+    {
+        this.letter = letter;
+        this.startX = startX;
+        this.startY = startY;
+        this.sizeX = sizeX;
+        this.sizeY = sizeY;
+    }
+}
+
+class Font
+{
+    constructor(img, letters)
+    {
+        let imgData = new Sprite(img, 1, 1).data;
+
+        let imgHeight = imgData.length;
+
+        console.log ('Loaded imgData for Font:');
+        console.log (imgData); 
+
+        let dict = {};
+
+        for (let letter of letters)
+        {
+            let letterData = [];
+            for (let y = 0; y < letter.sizeY; y++)
+            {
+                letterData.push([]);
+                for (let x = 0; x < letter.sizeX; x++)
+                {
+                    letterData[y].push([]);
+
+                    letterData[y][x] = imgData[imgHeight - (letter.startY + y) - 1][letter.startX + x];
+                }
+            }
+
+            dict[letter.letter] = letterData;
+
+            console.log('New Letter: ');
+            console.log(letterData);
+        }
+
+        this.dict = dict;
+        
+        console.log ('New Font: ' + JSON.stringify(dict));
+    }
+
+    getTextImg(text)
+    {
+        let dict = this.dict;
+        let data = [];
+        let textWidth = 0;
+        let textHeight = 0;
+
+        console.log ("Generating image from text");
+
+        for (let i = 0; i < text.length; i++)
+        {
+            let char = text.charAt(i);
+
+            textWidth += dict[char][0].length;
+            textHeight = Math.max(textHeight, dict[char].length);
+        }
+                
+        console.log ("with width = " + textWidth);
+        console.log ("and height = " + textHeight);
+
+        for (let y = 0; y < textHeight; y++)
+        {
+            data.push([]);
+            for (let x = 0; x < textWidth; x++)
+            {
+                data[y].push([]);
+
+                let i = 0
+                let currWidth = 0;
+                let char;
+
+                while (currWidth <= x)
+                {
+                    char = text.charAt(i);
+                    currWidth += dict[char][0].length;
+
+                    i++;
+                }
+
+                let letterData = dict[char];
+                let letterWidth = letterData[0].length;
+                let letterHeight = letterData.length
+                let yMargin = (textHeight - letterHeight) * 0.5;
+
+                if (y < yMargin || y >= textHeight - yMargin)
+                    data[y][x].push([0, 0, 0]); // ToDo: Don't just assume imgData is 24Bits
+                else
+                {
+                    data[y][x] = letterData[y - yMargin][x - currWidth + letterWidth];
+                }
+            }
+        }
+
+        return data;
+    }
+}
+
 let wallSprite;
 let floorSprite;
 let ceilingSprite;
@@ -96,10 +205,14 @@ let statusBarSprite;
 let gunSprite;
 let bulletSprite;
 
+
+let font;
+
+
 async function spriteReader_init()
 {
     let inits = 0;
-    const initCount = 6;
+    const initCount = 7;
 
     spriteReader_getSpriteString('Wall',    (img) => { wallSprite = new Sprite(img, 2, 2); inits++; });
     spriteReader_getSpriteString('Floor',   (img) => { floorSprite = new Sprite(img, 1, 1); inits++; })
@@ -110,12 +223,25 @@ async function spriteReader_init()
     spriteReader_getSpriteString('Shotgun_1_32Bit', (img) => { gunSprite = new Sprite(img, 1, 1); inits++; });
     spriteReader_getSpriteString('Bullet_1',        (img) => { bulletSprite = new Sprite(img, 1, 1); inits++; });
 
+
+    spriteReader_getSpriteString('DoomBigFontSquare_NO', (img) =>
+    {
+        font = new Font(img,
+            [
+                new Letter(' ', 1, 1, 8, 12),
+                new Letter('!', 10, 1, 6, 12)
+            ]
+        );
+        inits++;
+    });
+
+
     // Check each checkIntervall ms whether all ressources are loaded now
     const checkIntervall = 50;
     while(inits != initCount)
         await new Promise(resolve => setTimeout(resolve, checkIntervall));
 
-        console.log(bulletSprite.data);
+    console.log(font.getTextImg("! !"))
 }
 
 function spriteReader_getSpriteString(spriteName, callback)
