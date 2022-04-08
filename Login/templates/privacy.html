@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Stylesheets -->
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'login/css/privacy.css' %}">
+
+    <h2 class="h1 start">
+        DOOMSTEIN98
+    </h2>
+
+    <div class="window privacy">
+        <div class="title-bar">
+            <div class="title-bar-text">Privacy</div>
+            <div class="title-bar-controls">
+            <a href="{% url 'play' %}">
+                <button aria-label="Close"></button>
+            </a>
+        </div>
+    </div>
+    <div class="window-body">
+        <form method="post">
+            {% csrf_token %}
+
+                xxx
+            
+        </form>    
+    </div>
+  </div>
+{% endblock %}

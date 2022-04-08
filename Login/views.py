@@ -27,3 +27,9 @@ def register(request):
             user = form.save()
             login(request, user)
             return redirect(reverse("dashboard"))
+
+def impressum(request):
+    return render(request, 'impressum.html', {})
+
+def privacy(request):
+    return render(request, 'privacy.html', {})
