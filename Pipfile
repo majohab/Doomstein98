@@ -7,6 +7,10 @@ name = "pypi"
 django = "*"
 channels = "*"
 django-debug-toolbar = "*"
+numpy = "*"
+daphne = "*"
+django-redis = "*"
+channels-redis = "*"
 
 [dev-packages]
 

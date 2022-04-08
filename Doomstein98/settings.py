@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-!3!4d$y*&npjmh8d6uf7vr_4ickgw!ti7+a8o-nvw(-7em8g)b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -57,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    #"whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
 ROOT_URLCONF = 'Doomstein98.urls'
@@ -78,8 +79,37 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Doomstein98.wsgi.application'
-ASGI_APPLICATION = 'Doomstein98.asgi.application'
+#ASGI_APPLICATION = 'Doomstein98.asgi.application'
+ASGI_APPLICATION = 'Game.routing.application'
 
+#'''
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
+'''
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+#'''
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
@@ -163,3 +193,24 @@ LOGIN_REDIRECT_URL = "menu"
 
 # Redirect after logout
 LOGOUT_REDIRECT_URL = "login"
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}

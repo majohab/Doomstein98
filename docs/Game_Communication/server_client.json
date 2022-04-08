@@ -32,5 +32,15 @@
         }
     ],
     "ammunition": 16,
-    "score": 10
+    "score": 10,
+    "type" : "loop",
+    "msg"  : {
+        "Up" : true,
+        "Right" : true,
+        "Bottom" : true,
+        "Down" : true,
+        "LeftClick" : true,
+        "MouseX" : 0,
+        "MouseY" : 0
+    }
 }

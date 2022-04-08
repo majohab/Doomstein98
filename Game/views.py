@@ -1,7 +1,8 @@
 from django.http import JsonResponse
 from django.shortcuts import render
-from os import path
+from django.http import HttpResponse
 from django.conf import settings
+from os import path
 
 def game(request, lobby_name):
     return render(request, 'gamewindow.html', {'lobby_name': lobby_name})
