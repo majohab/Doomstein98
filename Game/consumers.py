@@ -28,7 +28,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         print("Connect")
         self.channel_layer = get_channel_layer()
         self.group_name = "doom_game"
-        self.game = None
+        #self.game = None
         self.username = None
 
         # Countdown for mouse restriction
@@ -90,8 +90,10 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     async def message(self, msg):
         print(msg)
 
-    #Die Interaktionen des Spielers werden übertragen
     async def forward(self, msg):
+        '''
+        Die Interaktionen des Spielers werden übertragen
+        '''
         
         if(self.mouseClicked > 0):
             '''
@@ -138,12 +140,12 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             }
         )
  
-    #Die Daten werden erhalten und in Variablen verpackt, um sie der weiteren Verarbeitung zu übergeben
     async def receive(self, text_data=None, byte_data=None):
+        '''
+        Die Daten werden erhalten und in Variablen verpackt, um sie der weiteren Verarbeitung zu übergeben
+        '''
 
         content = json.loads(text_data)
-
-        #print(content)
 
         #Den Message-Typ extrahieren
         msg_type = content["type"]
@@ -158,8 +160,10 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             #Der Typ der Message ist unbekannt
             print(F"Incoming msg {msg_type} is unknown")
 
-    # Send game data to room group after a Tick is processed
     async def game_update(self, event):
+        '''
+        Send game data to room group after a Tick is processed
+        '''
 
         #print(F"Game Update: {event}")
 
@@ -175,10 +179,12 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             self.map = True
 
         await self.send(json.dumps(state))
- 
-# Class, which can communicate with the game engine, specifically it runs the infinite game loop ENGINE
-# They communicate through channels
+
 class GameConsumer(SyncConsumer): 
+    '''
+    Class, which can communicate is the game engine channel, specifically it runs the infinite game loop ENGINE of one game
+    They communicate through channels.
+    '''
 
     def __init__(self, *args, **kwargs):
         """

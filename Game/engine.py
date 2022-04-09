@@ -315,8 +315,10 @@ class Map:
     def render(self) -> Mapping[str, Any]:
         return self.map_string
 
-# Class for handling the states of the game
 class State:
+    '''
+    Class for handling the states of the game
+    '''
 
     def __init__(self, map : Map, players : list[Player] = [], bullets : list[Bullet] = []):
         self.map     : Map          = map
@@ -375,8 +377,10 @@ class GameEngine(threading.Thread):
             # Sleep for a specific time, in which the game will calculate every new status
             time.sleep(tick_rate)
 
-    # The broadcast method which broadcast the current game state
     def broadcast_state(self, state: State) -> None: 
+        '''
+        The broadcast method which broadcast the current game state to the channel
+        '''
         
         #print("Broadcasting state to all players in game")
 
@@ -392,8 +396,11 @@ class GameEngine(threading.Thread):
             }
         )
 
-    # What happens in every tick
     def tick(self):
+        ''' 
+        Function in which every tick it describes
+
+        '''
 
         self.tick_num += 1
         
@@ -419,7 +426,7 @@ class GameEngine(threading.Thread):
 
         return state
 
-    def process_players(self, state: State, events):
+    def process_players(self, state: State, events) -> State:
 
         #print(F"Proccessing players for game {events}")
 
@@ -441,7 +448,7 @@ class GameEngine(threading.Thread):
         
         return state
             
-    def process_hits(self, state: State):
+    def process_hits(self, state: State) -> State:
 
         #print(F"Proccessing collisions for game {self.name}")
 
@@ -464,7 +471,7 @@ class GameEngine(threading.Thread):
 
         return state
 
-    def process_bullets(self, state: State):
+    def process_bullets(self, state: State) -> State:
 
         print(F"Proccessing bullets {state.bullets}")
 
@@ -475,7 +482,10 @@ class GameEngine(threading.Thread):
 
         return state
 
-    def apply_events(self, player: str, events):
+    def apply_events(self, player: str, events) -> None:
+        '''
+        Transfer the changes from the GameConsumer to the GameEngine
+        '''
 
         #print("Applying changes for " + player)
         
