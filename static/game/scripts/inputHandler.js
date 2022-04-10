@@ -37,6 +37,7 @@ function inputHandler_initMouseEvents()
     lastMouseX = 0;
     
     document.onmousemove = (event) => {
+        //console.log("event.movementX: " + event.movementX)
         if (pointerLocked)
             lastRecordedMouseX += event.movementX;
         else

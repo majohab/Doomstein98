@@ -95,7 +95,12 @@ function gameLoop()
 
     //console.log("objAngle: " + objAngle);
     //console.log("middleOfObject: " + middleOfObject);
-    //console.log("In Front of Player: " + ((forwardX * vecX + forwardY * vecY) > 0));          
+    //console.log("In Front of Player: " + ((forwardX * vecX + forwardY * vecY) > 0));   
+    
+    //if (!!document.pointerLockElement) {
+    //} else {
+    //    pointerLocked = false;
+    //}
 }
 
 class MovingObject

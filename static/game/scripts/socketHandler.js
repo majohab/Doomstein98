@@ -1,6 +1,7 @@
 function socketHandler_init()
 {
     const lobbyName = JSON.parse(document.getElementById('json-lobbyname').textContent);
+    const username = "user1"; //temporary variable
     document.title = lobbyName;
 
     const protocol = window.location.protocol.match(/^https/) ? 'wss' : 'ws'
@@ -14,14 +15,22 @@ function socketHandler_init()
         + '/'
     );
 
-    username = "user1"
-
     webSocket.onopen = function(){ 
         webSocket.send(
             JSON.stringify({
-                "type" : "join",
+                "type" : "joinLobby",
                 "msg"  : {
-                    "username" : username
+                    "username" : username,
+                    "lobby"    : lobbyName,
+                }
+            })
+        );
+        webSocket.send(
+            JSON.stringify({
+                "type" : "joinGame",
+                "msg"  : {
+                    "username" : username,
+                    "lobby"    : lobbyName,
                 }
             })
         );
@@ -30,14 +39,16 @@ function socketHandler_init()
     webSocket.onmessage = function(e) {
         let data = JSON.parse(e.data)
 
-        playerX = data['players']['user1']['x'];
-        playerY = data['players']['user1']['y'];
+        playerX     = data['players']['user1']['x'];
+        playerY     = data['players']['user1']['y'];
+        playerAngle = data['players']['user1']['dir'];
 
         let mouseDeltaX = lastRecordedMouseX - lastMouseX;
         lastMouseX = lastRecordedMouseX
 
-        console.log("pointerLocked     : " + pointerLocked)
-        console.log("pointerLockedClick: " + pointerLockedClick)
+        //console.log("pointerLocked     : " + pointerLocked)
+        //console.log("pointerLockedClick: " + pointerLockedClick)
+        //console.log("mouseDeltaX: " + mouseDeltaX)
 
         webSocket.send(JSON.stringify({
             "type" : "loop",

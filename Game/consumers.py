@@ -1,7 +1,7 @@
 
 import logging
 import json
-import time
+
 
 from asgiref.sync import  async_to_sync
 from channels.consumer import SyncConsumer
@@ -11,10 +11,10 @@ from channels.layers import get_channel_layer
 from .engine import GameEngine
 
 #TODO: Anpassen
-MAX_DEGREE = 360
+MAX_DEGREE = 1000
 
 #TODO: fit that for customized fps
-tick_rate = 1
+tick_rate = 0.01
 
 log = logging.getLogger(__name__)
 
@@ -22,27 +22,6 @@ log = logging.getLogger(__name__)
 class PlayerConsumer(AsyncWebsocketConsumer):
  
     async def connect(self):
-        """
-        Perform things on connection start
-        """
-        print("Connect")
-        self.channel_layer = get_channel_layer()
-        self.group_name = "doom_game"
-        #self.game = None
-        self.username = None
-
-        # Countdown for mouse restriction
-        self.mouseClicked = 0
-
-        # Has map already been sent?
-        self.map = False
-
-        # Join a common group with all other Players
-        await self.channel_layer.group_add(
-            self.group_name, 
-            self.channel_name
-        )
-        print("User connected successfully")
 
         # Accept the connection with Browser
         await self.accept()
@@ -54,12 +33,59 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             self.group_name,
             self.channel_name
         )
+    
+    async def receive(self, text_data=None, byte_data=None):
+        '''
+        Die Daten werden erhalten und in Variablen verpackt, um sie der weiteren Verarbeitung zu übergeben
+        '''
 
-    async def join(self, msg: dict):
+        content = json.loads(text_data)
 
-        self.username = msg["username"]
+        #Den Message-Typ extrahieren
+        msg_type = content["type"]
+        msg      = content["msg"]
 
-        print("join wurde mit der msg " + msg["username"] + " aufgerufen\n\n",)
+        #print(content)
+
+        forwarding = {
+            "loop"      :  self.validate(msg),
+            "joinGame"  :  self.join_game(msg),
+            "joinLobby" :  self.join_lobby(msg),
+        }
+
+        try:
+            return await forwarding[content["type"]]
+        except:
+            #Der Typ der Message ist unbekannt
+            print(F"Incoming msg {msg_type} is unknown")
+
+
+    '''Functions which will be commanded to something'''
+
+    async def join_lobby(self, msg):
+        
+        print(F"Join lobby {msg['lobby']}")
+
+        self.channel_layer = get_channel_layer()
+        self.group_name = msg['lobby']
+        self.username = msg['username']
+
+        # Countdown for mouse restriction set to null
+        self.mouseClicked = 0
+
+        # Has map already been sent?
+        self.map = False
+
+        # Join a common group with all other Players
+        await self.channel_layer.group_add(
+            self.group_name, 
+            self.channel_name
+        )
+
+
+    async def join_game(self, msg: dict):
+
+        print("join_game wurde mit der msg " + msg["username"] + " aufgerufen\n\n",)
 
         #if "username" not in self.scope["session"]:
         #    self.scope["session"]["username"] = username
@@ -67,34 +93,40 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         #self.username = self.scope["session"]["username"]
 
-        await self.channel_layer.send(
+        await self.channel_layer.group_send(
             self.group_name,
             {
                 "type": "message", 
-                "message": "Spieler " + self.username + " tritt dem Spiel bei", 
-                "channel": self.channel_name
+                "msg": {
+                    "message": F"Spieler {self.username} tritt dem Spiel bei", 
+                    "channel": self.channel_name,
+                },
             },
         )
         
         await self.channel_layer.send(
             "game_engine",
             {
-                "type": "player.new", 
-                "player": self.username, 
-                "channel": self.channel_name
+                "type"    : "player.new", 
+                "player"  : self.username, 
+                "channel" : self.channel_name,
+                "lobby"   : msg['lobby'],
             },
         )
 
-        print("User: " + self.username + " joining game")
+        print(self.username + " joining game")
 
     async def message(self, msg):
-        print(msg)
 
-    async def forward(self, msg):
+        print(F"{msg['msg']['message']} was sent by {msg['msg']['channel']}")
+
+    #Validate movements
+    async def validate(self, msg):
         '''
         Die Interaktionen des Spielers werden übertragen
         '''
         
+        # Reduce the waiting time by one
         if(self.mouseClicked > 0):
             '''
                 To protect spamming there is a latency for shooting
@@ -105,7 +137,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             print(F"User {self.username}: Attempting to join game")
             return
         
-        print(F"User {self.username}: {msg} with latency of mouseClick: {self.mouseClicked}")
+        #print(F"User {self.username}: {msg} with latency of mouseClick: {self.mouseClicked}")
 
         # If the mouse was recently pressed, ignore that click
         if(msg["leftClick"] == True and self.mouseClicked > 0):
@@ -117,7 +149,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             self.mouseClicked = 1/tick_rate
             print("Click was successful!")
 
-        if msg["mouseDeltaX"] > MAX_DEGREE:
+        if abs(msg["mouseDeltaX"]) > MAX_DEGREE:
             msg["mouseDeltaX"] = MAX_DEGREE
             print("Mouse change invalid!")
 
@@ -140,26 +172,6 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             }
         )
  
-    async def receive(self, text_data=None, byte_data=None):
-        '''
-        Die Daten werden erhalten und in Variablen verpackt, um sie der weiteren Verarbeitung zu übergeben
-        '''
-
-        content = json.loads(text_data)
-
-        #Den Message-Typ extrahieren
-        msg_type = content["type"]
-        msg      = content["msg"]
-
-        #Was soll bei verschiedenen Message-Typen passieren?
-        if msg_type == "loop":
-            return await self.forward(msg)
-        elif msg_type == "join":
-            return await self.join(msg)
-        else:
-            #Der Typ der Message ist unbekannt
-            print(F"Incoming msg {msg_type} is unknown")
-
     async def game_update(self, event):
         '''
         Send game data to room group after a Tick is processed
@@ -174,9 +186,12 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             try:
                 state.pop("map")
             except KeyError as e:
-                print(e)       
+                pass
+                #print(e)       
         else:
             self.map = True
+
+        print(state)
 
         await self.send(json.dumps(state))
 
@@ -192,21 +207,53 @@ class GameConsumer(SyncConsumer):
         """
         print(F"Game Consumer: {args} {kwargs}")
         super().__init__(*args, **kwargs)
-        self.group_name = "doom_game"
-        self.engine = GameEngine(self.group_name)
-        self.engine.start()
+
+        self.channel_layer = get_channel_layer()
+        self.engine = {} #The games are saved in there
+        self.lobby = {} #What player is in what game
 
     def player_new(self, event):
-        print("Player Joined: " + event["player"] )
-        self.engine.join_game(event["player"])
+        '''
+        Join an existing game or Create a new game
+        '''
+
+        lobbyname = event['lobby']
+        username = event['player']
+
+        print(F"Player {username} joined lobby: {lobbyname}")
+
+
+        try:
+            if len(self.engine[lobbyname].state.players) < self.engine[lobbyname].max_players:
+                self.engine[lobbyname].join_game(username)
+            else:
+                async_to_sync(self.channel_layer.send)(
+                event['channel'],
+                {
+                    "type": "message", 
+                    "msg": {
+                        "message": F"Es gibt schon zu viele Spieler in der Lobby: {event['lobby']}",
+                        "channel": self.channel_name,
+                    }, 
+                },
+            )
+        # if the game does not exist, create it
+        except KeyError:
+            self.engine[lobbyname] = GameEngine(lobbyname)
+            self.engine[lobbyname].start()
+            self.engine[lobbyname].join_game(username)
+            # for further information in what game the player is
+            self.lobby[username] = lobbyname
 
     def player_validate(self, event):
         
         #print(F"Player changed: {event}")
 
-        print(event["msg"])
+        username = event["player"]
+
+        #print(event["msg"])
 
         '''
         Send the data to engine
         '''
-        self.engine.apply_events(event["player"], event["msg"])
+        self.engine[self.lobby[username]].apply_events(username, event["msg"])

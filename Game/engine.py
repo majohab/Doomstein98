@@ -16,24 +16,24 @@ from channels.layers import get_channel_layer
 log = logging.getLogger(__name__)
 
 #TODO: fit that for customized fps
-tick_rate = 1
+tick_rate = 0.01
 
 MAPS = [
     [
     "################",
-    "#..............#",
+    "#............W.#",
     "#........#######",
-    "#..............#",
+    "#............S.#",
     "#..............#",
     "#.....##.......#",
     "#.....##.......#",
     "#..............#",
-    "#..............#",
+    "#.E............#",
     "#..............#",
     "######.........#",
     "#....#.........#",
-    "#....#.........#",
-    "#............###",
+    "#.S..#.........#",
+    "#..........N.###",
     "#............###",
     "################"
     ]
@@ -47,22 +47,44 @@ class Coordinate:
         self.x = x
         self.y = y
 
-    def move(self, speed : float, direction : int):
+    def cod_move(self, speed : float = 0, dir : float = 0):
+
         # If direction is   0° then the object only moves on y axis in positive direction
         # If direction is  90° then the object only moves on x axis in positive direction
         # If direction is 180° then the object only moves on y axis in negative direction
         # If direction is 270° then the object only moves on x axis in negative direction
-        self.x += speed * np.sin(math.radians(direction))
-
-        #print(F"tmp: x_direction: {speed * np.sin(math.radians(direction))}")
-        #print(F"tmp: y_direction: {speed * np.cos(math.radians(direction))}")
-
-        self.y += speed * np.cos(math.radians(direction))
+        self.x += speed * np.sin(dir)
+        self.y += speed * np.cos(dir)
 
     def get_distance(self, sec_cod):
 
         return math.sqrt((self.x - sec_cod.x) ** 2 + (self.y - sec_cod.y) ** 2)
 
+class Spawn:
+
+    def __init__(self, coordinate : Coordinate = Coordinate(3.5,3.5), direction : float = 0):
+
+        self.coordinate = coordinate
+
+        self.direction = direction
+
+        self.player = None
+
+        self.lock_time = 0
+
+    def use(self, player):
+
+        self.player = player
+
+        # The Spawn is occupied for 5 Seconds
+        self.lock_time = 5/tick_rate
+
+    def update(self):
+
+        if(self.lock_time == 0):
+            self.player = None
+        else:
+            self.lock_time -= 1
 
 class Weapon:
 
@@ -79,23 +101,148 @@ AVAILABLE_WEAPONS = {
     )
 }
 
-# Class for handling players
+# Class for handling map
+class Map:
+
+    def __init__(self, width : int, height : int, map_list : list, spawns : list[Spawn]):
+        self.width = width
+        self.height = height
+        self.map_string = map_list
+        self.spawns = spawns
+        self.tick = 0
+    
+    # validate the input string of map
+    # Static Method
+    def from_list(strings: list):
+
+        spawns = list()
+        
+        for idx_s, string in enumerate(strings):
+            
+            if len(string.replace('#','').replace('.','').replace('N','').replace('E','').replace('S','').replace('W','')) != 0:
+                print('Map contains invalid values. It only accepts \"#\" or \".\" and spawn fields')
+
+                        #Check if Map fits the format
+            if len(string) != len(strings[-1]):
+                print("Map is invalid")
+
+            #Handling for spawns
+            for idx_c, char in enumerate(string):
+
+                #Check if the direction fits to the coordinate
+                if(char == 'N' and strings[idx_s-1][idx_c] == '.'):
+                    spawns.append(
+                        Spawn(
+                            Coordinate(
+                            idx_c + 0.5,
+                            idx_s + 0.5,
+                            ),
+                            0,
+                        )
+                    )
+
+                #Check if the direction fits to the coordinate
+                if(char == 'E' and strings[idx_s][idx_c+1] == '.'):
+                    spawns.append(
+                        Spawn(
+                            Coordinate(
+                            idx_c + 0.5,
+                            idx_s + 0.5,
+                            ),
+                            math.pi/2,
+                        )
+                    )
+            
+                #Check if the direction fits to the coordinate
+                if(char == 'S' and strings[idx_s+1][idx_c] == '.'):
+                    spawns.append(
+                        Spawn(
+                            Coordinate(
+                            idx_c + 0.5,
+                            idx_s + 0.5,
+                            ),
+                            math.pi,
+                        )
+                    )
+            
+                #Check if the direction fits to the coordinate
+                if(char == 'W' and strings[idx_s][idx_c-1] == '.'):
+                    spawns.append(
+                        Spawn(
+                            Coordinate(
+                            idx_c + 0.5,
+                            idx_s + 0.5,
+                            ),
+                            -math.pi/2,
+                        )
+                    )
+            
+        if(len(spawns) == 0):
+            print("Map contains no spawn fields")
+
+        return Map(
+            len(string),
+            len(strings),
+            strings,
+            spawns,
+        )
+
+    # Check if Object collides with Map
+    def check_collision(self, coordinate : Coordinate) -> bool:        
+
+        # check collision in for fields around the object
+        try:
+            if(
+                self.map_string[int(coordinate.y)    ][int(coordinate.x)    ] == "#" or
+                self.map_string[int(coordinate.y)    ][int(coordinate.x) + 1] == "#" or
+                self.map_string[int(coordinate.y) + 1][int(coordinate.x)    ] == "#" or
+                self.map_string[int(coordinate.y) + 1][int(coordinate.x) + 1] == "#"
+            ):
+                return True
+            else:
+                return False
+        except IndexError:
+            return True  
+        
+    def render(self) -> Mapping[str, Any]:
+        return self.map_string
+
 class Player:
+    '''
+    Class for handling players
+    '''
+
 
     # Initiate player
-    def __init__(self, username : str, spawn_x : float = 3, spawn_y : float = 3, direction : float = 0, weapons: list[Weapon] = [AVAILABLE_WEAPONS["P99"]]):
+    def __init__(self, username : str, map : Map, weapons: list[Weapon] = [AVAILABLE_WEAPONS["P99"]], speed : float = tick_rate/0.1, rotation_speed : float = tick_rate/1,):
         
         # Initiate the Username
-        self.username = username
+        self.name = username
+
+        # While no the right the spawn is found
+        while True:
+
+            print("Find spawn")
+
+            self.spawn = random.choice(map.spawns)
+
+            # if the spawn is not yet occupied
+            if(self.spawn.player is None):
+                break
+
+        print(F"\nSpawn: x: {self.spawn.coordinate.x} y: {self.spawn.coordinate.y}")
+
+        #Declare the Spawn as used
+        self.spawn.use(self)
 
         # Initiate the current position
-        self.current_position = Coordinate(spawn_x + 0.5, spawn_y + 0.5)
+        self.current_position = self.spawn.coordinate
 
         # Represents the health
         self.health = 100
 
-        # Represents the angle, in which the player is facing in degrees
-        self.direction = direction
+        # Represents the angle, in which the player is facing in radians
+        self.direction = self.spawn.direction
 
         # Counts down from a specific number to zero for every tick, when it got activated
         self.justShot = 0
@@ -108,16 +255,30 @@ class Player:
         # Represents the current available weapons
         self.weapons = weapons
 
-        self.speed = 1
+        '''
+        Float describes how fast the Player is moving
+        '''
+        self.speed = speed
 
+        '''Float describes how fast the Player is rotating'''
+        self.rotation_speed = rotation_speed
+
+        '''
+        Boolean whether player is alive or died
+        '''
         self.alive = True
+
+        '''
+        Counts how many times a player did not send something in a row
+        '''
+        self.delayed_tick = 0
 
     def shoot(self, state):
         '''
         Describes the function to be called when the player shoots
         '''
         
-        print(F"{self.username} just shot a bullet!")
+        print(F"{self.name} just shot a bullet!")
 
         speed = 0.5/tick_rate
 
@@ -127,7 +288,7 @@ class Player:
         # Reduce the current ammo of current weapon by one
         self.weapons[self.current_weapon].curr_ammunition -= 1
 
-        dir = math.radians(self.direction)
+        dir = self.direction
 
         # Add bullet to current state
         state.bullets.append(
@@ -150,54 +311,53 @@ class Player:
         # The animation of getting shot shall go on for 1 second
         self.justShot = 1/tick_rate
 
-        print("Player %s is hit by player %s",self.name, player.name)
+        print(F"Player {self.name} is hit by player {player.name}")
         if(self.health > 20):
             self.health -= 20
         else:
             self.health = 0
-            #TODO: Was soll nach dem Sterben passieren?
+            self.die()
 
     #Describes the function to be called when the player moves
     def move(self, state, x : int = 0, y: int = 0):
 
         too_close = False
 
-        # Copy the direction of the player, so that it can be manipulated
+        # Copy the direction of the players, so that it can be manipulated
         dir = self.direction
 
-        dir += math.degrees(math.atan2(x, y))
+        dir += math.atan2(x, y)
 
         tmp = Coordinate(self.current_position.x, self.current_position.y)
 
-        #print(F"Current position: x: {self.current_position.x}, y: {self.current_position.y}")
-
-        #print("current direction: " + str(self.direction))
-        #print("\nrad: " + str(math.atan2(x, y)))
-        #print("deg: " + str(math.degrees(math.atan2(x, y))) + "\n")
+        if dir < 0:
+            dir = (dir % -(2*math.pi)) 
+            if dir < -math.pi:
+                dir = dir % (math.pi + 0.00001)
+        else:
+            dir = (dir % (2*math.pi))
+            if dir > math.pi:
+                dir = dir % -(math.pi + 0.00001)
 
         #Move only in direction of max math.pi
-        tmp.move(self.speed, dir % 360)
-
-        #print(F"Current position: x: {self.current_position.x}, y: {self.current_position.y}")
-        #print(F"Tmp position: x: {tmp.x}, y: {tmp.y}")
+        tmp.cod_move(self.speed, dir)
 
         # Look for collision with other Players
         for player in state.players:
 
             # if the on-going move is too close to another player then turn the boolean flag
-            if(player.username != self.username and tmp.get_distance(player.current_position) < 1):
+            if(player.name != self.name and tmp.get_distance(player.current_position) < 1):
                 
-                #print("Player %s is too close to another player %s", self.name, player.name)
+                print(F"Player {self.name} is too close to another player {player.name}")
                 too_close = True
 
         if(state.map.check_collision(tmp)):
 
-            print("Player %s is too close to the wall of the map")
+            print(F"Player {self.name} is too close to the wall of the map")
             too_close = True
 
         # if no player is too close to an object
         if(not too_close):
-            print (str(tmp.x) + ", " + str(tmp.y))
             self.current_position = tmp
 
     '''
@@ -205,16 +365,27 @@ class Player:
     '''
     def change_direction(self, mouseX):
 
-        self.direction = (self.direction + mouseX) % 360
+        dir = self.direction + mouseX * self.rotation_speed
 
-        print(F"current direction: {self.direction}")
+        if dir < 0:
+            dir = (dir % -(2*math.pi)) 
+            if dir < -math.pi:
+                dir = dir % (math.pi + 0.00001)
+        else:
+            dir = (dir % (2*math.pi))
+            if dir > math.pi:
+                dir = dir % -(math.pi + 0.00001)
+        
+        self.direction = dir
+
 
     def die(self):
         #What should happen?
-        #print("Die!")
+        print("Die!")
 
         # Change the status of the player's condition
         self.alive = False
+
 
     def render(self) -> Mapping[str, Any]:
         return{
@@ -224,9 +395,9 @@ class Player:
             "dir"       : self.direction,
             "shot"      : self.justShot,
             "hit"       : self.justHit,
-            "ammo"      : self.weapons[self.current_weapon].curr_ammunition   
+            "ammo"      : self.weapons[self.current_weapon].curr_ammunition,
+            "alive"     : self.alive,
         }
-
 
 
 # Class for handling bullets
@@ -249,7 +420,7 @@ class Bullet:
     # Execute for every bullet this function
     def update_pos(self):
 
-        self.current_position.move(self.speed, self.direction)
+        self.current_position.cod_move(self.speed, self.direction)
 
     # If information is requested for rendering and update the game
     def render(self) -> Mapping[str, Any]:
@@ -259,78 +430,21 @@ class Bullet:
         }
 
 
-# Class for handling map
-class Map:
-
-    def __init__(self, width : int, height : int, map_list : list):
-        self.width = width
-        self.height = height
-        self.map_string = map_list
-        self.tick = 0
-    
-    # validate the input string of map
-    # Static Method
-    def from_list(strings: list):
-        
-        for string in strings:
-            
-            if len(string.replace('#','').replace('.','')) != 0:
-                print('Map contains invalid values. It only accepts \"#\" or \".\"')
-
-            #Check if Map fits the format
-            if len(string) != len(strings[-1]):
-                print("Map is invalid")
-
-        return Map(
-            len(string),
-            len(strings),
-            strings
-        )
-
-    # Check if Object collides with Map
-    def check_collision(self, coordinate : Coordinate) -> bool:        
-        
-        #print(self.map_string)
-
-        #print(F"\ny : {int(coordinate.y)}\nx : {int(coordinate.x)}\n")
-
-        #coordinate.derf
-
-        # check collision in for fields around the object
-        try:
-            if(
-                self.map_string[int(coordinate.y)    ][int(coordinate.x)    ] == "#" or
-                self.map_string[int(coordinate.y)    ][int(coordinate.x) + 1] == "#" or
-                self.map_string[int(coordinate.y) + 1][int(coordinate.x)    ] == "#" or
-                self.map_string[int(coordinate.y) + 1][int(coordinate.x) + 1] == "#"
-            ):
-                return True
-            else:
-                return False
-        except IndexError:
-            return True  
-        
-        
-    
-    def render(self) -> Mapping[str, Any]:
-        return self.map_string
-
 class State:
     '''
     Class for handling the states of the game
     '''
 
-    def __init__(self, map : Map, players : list[Player] = [], bullets : list[Bullet] = []):
+    def __init__(self, map : Map, players_name : list[str] = [], bullets : list[Bullet] = []):
         self.map     : Map          = map
-        self.players : list[Player] = players
+        self.players : list[Player] = [Player(name, map) for name in players_name]
         self.bullets : list[Bullet] = bullets
 
-        #print(self.bullets)
 
     def render(self) -> Mapping[str, Any]:
         return { 
             "map" :     self.map.render(),
-            "players" : {p.username: p.render() for p in self.players},
+            "players" : {p.name: p.render() for p in self.players},
             "bullets" : [b.render() for b in self.bullets]
         }
 
@@ -338,7 +452,7 @@ class State:
 class GameEngine(threading.Thread):
 
     # Constructor function for GameEngine
-    def __init__(self, group_name, players_name : list[str] = [], map_string = MAPS[0], **kwargs):
+    def __init__(self, group_name, players_name : list[str] = [], map_string = MAPS[0], max_players : int = 6, **kwargs):
         
         print(F"Initializing GameEngine: {group_name} with players: {players_name}")
 
@@ -352,19 +466,23 @@ class GameEngine(threading.Thread):
         self.event_changes = {}
         self.event_lock = threading.Lock()
         self.player_lock = threading.Lock()
+
         self.player_queue = []
+
+        #How man players are allowed in the game
+        self.max_players = max_players
 
         map_string = MAPS[0]
 
         self.state = State(
             Map.from_list(map_string), 
-            [Player(name) for name in players_name]
+            players_name
             )
 
     # The main loop for the game engine
     def run(self) -> None:
 
-        #print("Starting engine loop")
+        print("Starting engine loop")
         # infinite loop
         while True:
 
@@ -432,11 +550,27 @@ class GameEngine(threading.Thread):
 
         for player in state.players:
             
-            if player.username in events.keys():
-                
-                event = events[player.username]
+            #if player did not respond for one second or more
+            if player.delayed_tick >= 1/tick_rate:
 
-                #print(F"x: {event['x']}, y: {event['y']}")
+                #TODO: What happens if the User does not respond
+
+                print(F"Player {player.name} did not respond for one second or more! So he was removed!")
+
+                self.state.players.remove(player)
+
+                continue
+
+            if player.name in events.keys():
+
+                
+                if(player.delayed_tick > 1):
+                    print(F"Player {player.name} did not respond for {player.delayed_tick} ticks")
+
+                #reset the delayed_tick
+                player.delayed_tick = 0
+                
+                event = events[player.name]
 
                 player.change_direction(event["mouseDeltaX"])
 
@@ -445,7 +579,11 @@ class GameEngine(threading.Thread):
 
                 if(event["leftClick"]):
                    player.shoot(state)
-        
+            else:
+                #Increase the delayed tick of the player
+                player.delayed_tick += 1
+
+
         return state
             
     def process_hits(self, state: State) -> State:
@@ -473,7 +611,7 @@ class GameEngine(threading.Thread):
 
     def process_bullets(self, state: State) -> State:
 
-        print(F"Proccessing bullets {state.bullets}")
+        #print(F"Proccessing bullets {state.bullets}")
 
         for bullet in state.bullets:
 
@@ -494,26 +632,29 @@ class GameEngine(threading.Thread):
 
     def join_game(self, player: str) -> None:
 
-        #print(F"Player {player} joined game!", )
+        print(F"\n\nPlayer {player} joined game!\n\n", )
 
-        if player in self.state.players:
+        # Look if player is already in the game
+        if not next((obj for obj in self.state.players if obj.name == player), None) is None:
 
-            #print(F"Player {player} is already in game!")
+            print(F"\n\nPlayer {player} is already in game!\n")
             return
         
         with self.player_lock:
-
-            self.player_queue.append(Player(player, 3, 3))
+            # Append Player to the queue so it can be appended to the game
+            self.player_queue.append(Player(player, self.state.map))
 
     def process_new_players(self, state: State):
 
-        #print(F"Processing new players for game: {self.name}")
+        #print("Process new Players")
 
-        # add the players to the game
-        state.players += self.player_queue
+        if(len(self.player_queue) != 0):
 
-        # Clear the queue
-        self.player_queue = []
+            # add the players to the game
+            state.players += self.player_queue
+
+            # Clear the queue
+            self.player_queue = []
 
         return state
 
