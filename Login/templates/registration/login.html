@@ -35,8 +35,14 @@
                     <span class="error">{{ field.help_text }}</span>
                 {% endfor %}
             {% endfor %}
-
+            
+            {% if messages %}
+            {% for message in messages %}
+                    <span class="error">{{ message }}</span>
+            {% endfor %}
+            {% else %}
             <br>
+            {% endif %}
 
             <section class="field-row" style="justify-content: flex-end">
                 <a href="{% url 'register' %}">Not a user? Register here!</a>

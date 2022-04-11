@@ -5,6 +5,7 @@
       Menu
     </h2>
     {% if user.is_authenticated %}
+        {{ user.user_name |default:'Guest' }}
         <a href="{% url 'logout' %}">Logout</a>
         <a href="{% url 'password_change' %}">Change password</a>
     {% else %}

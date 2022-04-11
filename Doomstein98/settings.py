@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-!3!4d$y*&npjmh8d6uf7vr_4ickgw!ti7+a8o-nvw(-7em8g)b'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = str(os.environ.get('DEBUG')) == '1' # 1 equals True
 
 ALLOWED_HOSTS = []
 
@@ -159,7 +159,7 @@ AUTH_PASSWORD_VALIDATORS = [
     # },
 ]
 
-# Config for user management
+# USERMANAGEMENT CONFIG
 
 # Redirect after login
 LOGIN_REDIRECT_URL = "menu"
@@ -169,3 +169,11 @@ LOGOUT_REDIRECT_URL = "login"
 
 # Specify user model
 AUTH_USER_MODEL = 'Login.User'
+
+# EMAIL CONFIG
+EMAIL_FROM_USER = os.environ.get('EMAIL_FROM_USER')
+EMAIL_HOST = os.environ.get('EMAIL_HOST')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS')
+EMAIL_PORT = os.environ.get('EMAIL_PORT')

@@ -10,6 +10,7 @@ Hello, {{ user.username|default:'Guest' }}!
     {% else %}
         <a href="{% url 'login' %}">Login</a>
     {% endif %}
+
 </div>
 
 {% endblock %}
