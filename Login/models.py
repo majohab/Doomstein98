@@ -11,9 +11,25 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseU
 # Create your models here.
 
 class AccountManager(BaseUserManager):
+    """Manages custom user model
 
+    Inheritance:
+        BaseUserManager (Class): _description_
+    """
     def create_user(self, email, user_name, password, **other_fields):
+        """Creates a new user.
 
+        Args:
+            email (str): Unique email
+            user_name (str): Unique username
+            password (str): password
+
+        Raises:
+            ValueError: No email provided
+
+        Returns:
+            User: created user
+        """
         if not email:
             raise ValueError(_("You must provie an email adress"))
 
@@ -25,7 +41,18 @@ class AccountManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, user_name, **other_fields):
+        """Creates admin account.
 
+        Args:
+            email (str): Unique email
+            user_name (str): Unique username
+
+        Raises:
+            ValueError: No email provided
+
+        Returns:
+            User: created admin user
+        """
         other_fields.setdefault('is_staff', True)
         other_fields.setdefault('is_superuser', True)
         other_fields.setdefault('is_active', True)
@@ -37,6 +64,12 @@ class AccountManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    """Custom user model
+
+    Inheritance:
+        AbstractBaseUser (Class): Contains basic user model
+        PermissionsMixin (Class): Manages permissions
+    """
     email = models.EmailField(_('email'), max_length=100, unique=True)
     user_name = models.CharField(max_length=100, unique=True)
     creation_date = models.DateTimeField(default=timezone.now)
@@ -49,4 +82,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['user_name']
 
     def __str__(self) -> str:
+        """Prints user data
+
+        Returns:
+            str: Username
+        """
         return self.user_name

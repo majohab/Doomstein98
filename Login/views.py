@@ -52,7 +52,7 @@ def menu(request):
 class EmailThread(Thread):
     """Sends verification email to user.
 
-    Args:
+    Inheritance:
         Thread (Class): Inherits Thread class.
     """
     def __init__(self, email):

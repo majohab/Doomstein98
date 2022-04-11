@@ -6,7 +6,11 @@ from django.contrib.auth.admin import UserAdmin
 admin.site.register(User)
 
 class UserAdminConfig(UserAdmin):
-    
+    """Configuration for user table
+
+    Args:
+        UserAdmin (Class): Admin config
+    """
     search_fields = ('email', 'user_name')
     list_filter = ('email', 'user_name', 
                    'is_active', 'is_staff')

@@ -3,6 +3,11 @@ from django import forms
 from .models import User
 
 class RegistrationForm(UserCreationForm):
+    """Registration from for user creation
+
+    Inheritance:
+        UserCreationForm (Class): Basic form for user registration
+    """
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.fields['user_name'].widget.attrs.update({
@@ -37,6 +42,14 @@ class RegistrationForm(UserCreationForm):
                   "password1", "password2")
 
     def save(self, commit=True):
+        """Saves the data from the form
+
+        Args:
+            commit (bool, optional): Save the data. Defaults to True.
+
+        Returns:
+            User: user data
+        """
         user = super().save(commit=False)
         user.set_password(self.cleaned_data["password1"])
         user.email = self.cleaned_data.get('email')
@@ -47,6 +60,11 @@ class RegistrationForm(UserCreationForm):
         return user
 
 class UserLoginForm(AuthenticationForm):
+    """Login form for user authentification
+
+    Inheritance:
+        AuthenticationForm (Class): Basic authentification form
+    """
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.fields['username'].widget.attrs.update({
