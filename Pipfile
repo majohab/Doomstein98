@@ -8,6 +8,11 @@ channels = "*"
 django = "*"
 six = "*"
 django-dotenv = "*"
+django-debug-toolbar = "*"
+numpy = "*"
+daphne = "*"
+django-redis = "*"
+channels-redis = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"
