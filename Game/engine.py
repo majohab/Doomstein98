@@ -18,12 +18,13 @@ log = logging.getLogger(__name__)
 #TODO: fit that for customized fps
 tick_rate = 0.01
 
+#Reversed direction
 MAPS = [
     [
     "################",
     "#............W.#",
     "#........#######",
-    "#............S.#",
+    "#............N.#",
     "#..............#",
     "#.....##.......#",
     "#.....##.......#",
@@ -32,8 +33,8 @@ MAPS = [
     "#..............#",
     "######.........#",
     "#....#.........#",
-    "#.S..#.........#",
-    "#..........N.###",
+    "#.N..#.........#",
+    "#..........S.###",
     "#............###",
     "################"
     ]
@@ -88,21 +89,32 @@ class Spawn:
 
 class Weapon:
 
-    def __init__(self, name : str, max_ammunition : int):
+    def __init__(self, name : str, max_ammunition : int, latency : int):
         self.name = name
         self.max_ammunition = max_ammunition
         self.curr_ammunition = max_ammunition
+        self.latency = latency
+        self.curr_latency = 0
 
 # List for all available weapons
 AVAILABLE_WEAPONS = {
     "P99" : Weapon(
         "P99",
-        50
-    )
+        50,
+        0.2/tick_rate,
+    ),
+    "MP5" : Weapon(
+        "MP5",
+        200,
+        1/tick_rate,        
+    ),
 }
 
-# Class for handling map
 class Map:
+    '''
+    Class for handling the map
+    It can read a map from strings array
+    '''
 
     def __init__(self, width : int, height : int, map_list : list, spawns : list[Spawn]):
         self.width = width
@@ -188,19 +200,34 @@ class Map:
         )
 
     # Check if Object collides with Map
-    def check_collision(self, coordinate : Coordinate) -> bool:        
+    # 0: blocked   1: x   2: y  3: free 
+    def check_collision(self, coordinate : Coordinate) -> int:        
+
+        tol = 0.4
 
         # check collision in for fields around the object
         try:
-            if(
-                self.map_string[int(coordinate.y)    ][int(coordinate.x)    ] == "#" or
-                self.map_string[int(coordinate.y)    ][int(coordinate.x) + 1] == "#" or
-                self.map_string[int(coordinate.y) + 1][int(coordinate.x)    ] == "#" or
-                self.map_string[int(coordinate.y) + 1][int(coordinate.x) + 1] == "#"
-            ):
-                return True
+            if   self.map_string[round(coordinate.y      )][round(coordinate.x      )] == "#":
+                return 3
+            elif self.map_string[round(coordinate.y      )][round(coordinate.x + tol)] == "#":
+                #coordinate.x -= tol
+                return 2              
+            elif self.map_string[round(coordinate.y + tol)][round(coordinate.x      )] == "#":
+                #coordinate.y -= tol
+                return 1
+            elif self.map_string[round(coordinate.y + tol)][round(coordinate.x + tol)] == "#":
+                return 0
+            elif self.map_string[round(coordinate.y      )][round(coordinate.x - tol)] == "#":
+                #coordinate.x += tol
+                return 1
+            elif self.map_string[round(coordinate.y - tol)][round(coordinate.x      )] == "#":
+                #coordinate.y += tol
+                return 2
+            elif self.map_string[round(coordinate.y - tol)][round(coordinate.x - tol)] == "#":
+                return 0
             else:
-                return False
+                return 3
+
         except IndexError:
             return True  
         
@@ -278,20 +305,27 @@ class Player:
         Describes the function to be called when the player shoots
         '''
         
-        print(F"{self.name} just shot a bullet!")
+        weapon = self.weapons[self.current_weapon]
 
-        speed = 0.5/tick_rate
+        if weapon.curr_ammunition > 0 and weapon.curr_latency == 0:
 
-        # The animation of shooting shall go on for 1 seconds
-        self.justShot = 1/tick_rate
+            print(F"{self.name} just shot a bullet!")
 
-        # Reduce the current ammo of current weapon by one
-        self.weapons[self.current_weapon].curr_ammunition -= 1
+            speed = 0.5/tick_rate
 
-        dir = self.direction
+            # The animation of shooting shall go on for 1 seconds
+            self.justShot = 1/tick_rate
 
-        # Add bullet to current state
-        state.bullets.append(
+            # Reduce the current ammo of current weapon by one
+            weapon.curr_ammunition -= 1
+
+            # Start the delay of the weapon
+            weapon.curr_latency = weapon.latency
+
+            dir = self.direction
+
+            # Add bullet to current state
+            state.bullets.append(
             Bullet(
                 # From whom was a bullet shot?
                 self,
@@ -304,7 +338,11 @@ class Player:
                 self.direction
             )
         )
-    
+        else:
+
+            print(F"{self.name} has no bullets: {weapon.curr_ammunition} or latency is still active : {weapon.curr_latency} ")
+
+
     #Describes the function to be called when the player is hit
     def get_hit(self, player):
 
@@ -351,10 +389,15 @@ class Player:
                 print(F"Player {self.name} is too close to another player {player.name}")
                 too_close = True
 
-        if(state.map.check_collision(tmp)):
+        col = state.map.check_collision(tmp)
 
-            print(F"Player {self.name} is too close to the wall of the map")
+        if(col == 0):
+            print(F"Player {self.name} is too close to the wall of the map x: {tmp.x} y: {tmp.y}")
             too_close = True
+        elif(col == 1):
+            tmp.x = self.current_position.x
+        elif(col == 2):
+            tmp.y = self.current_position.y
 
         # if no player is too close to an object
         if(not too_close):
@@ -378,7 +421,9 @@ class Player:
         
         self.direction = dir
 
-
+    '''
+    Function for Player died
+    '''
     def die(self):
         #What should happen?
         print("Die!")
@@ -386,7 +431,9 @@ class Player:
         # Change the status of the player's condition
         self.alive = False
 
-
+    '''
+    Returns all relevant information about the Player for the Client
+    '''
     def render(self) -> Mapping[str, Any]:
         return{
             "x"         : self.current_position.x,
@@ -400,8 +447,10 @@ class Player:
         }
 
 
-# Class for handling bullets
 class Bullet:
+    '''
+    Creating and handling Bullets
+    '''
 
     # Initiate bullet
     def __init__(self, origin_player : Player, origin_pos : Coordinate, direction : float):
@@ -569,6 +618,12 @@ class GameEngine(threading.Thread):
 
                 #reset the delayed_tick
                 player.delayed_tick = 0
+
+                weapon = player.weapons[player.current_weapon]
+
+                if(weapon.curr_latency > 0):
+                    # reduce the latency of the current weapon
+                    weapon.curr_latency -= 1
                 
                 event = events[player.name]
 

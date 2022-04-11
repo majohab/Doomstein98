@@ -58,15 +58,15 @@ function socketHandler_init()
                 "left" : keyStates[65] | false,
                 "right" : keyStates[68] | false,
                 "mouseDeltaX" : ((mouseDeltaX) ? mouseDeltaX : 0),
-                "leftClick" :  (pointerLocked ? (pointerLockedClick ? false : clicked) : false) //if the click was to catch the mouse and the mouse has to be catched
+                "leftClick" :  longClicked || shortClicked,
             }
         }));
 
-        if(clicked) {
-            pointerLockedClick = false;
-            clicked = false;
+        if(shortClicked) {
+            shortClicked = false;
         }
-        console.log('Data:', data)
+
+        //console.log('Data:', data)
     };
 
     webSocket.onclose = function(e) {

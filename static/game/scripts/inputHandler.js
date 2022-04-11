@@ -13,7 +13,8 @@ let playerAngle;
 let pointerLocked;
 let lastRecordedMouseX;
 let lastMouseX;
-let clicked;
+let shortClicked;
+let longClicked;
 let pointerLockedClick; //The click for initialization of pointerLocked should not shoot
 let keyStates; // Maybe not how we want to solve this in the final game
 
@@ -24,7 +25,8 @@ function inputHander_init()
     playerAngle = playerStartAngle
     pointerLocked = false;
     pointerLockedClick = false;
-    clicked = false;
+    shortClicked = false;
+    longClicked = false;
     keyStates = [];
     
     inputHandler_initMouseEvents();
@@ -53,8 +55,17 @@ function inputHandler_initKeyEvents()
     document.addEventListener('keyup',function(e){
         keyStates[e.keyCode || e.which] = false;
     },true);
-    document.addEventListener('click',function (){
-        clicked = true;
+    //document.addEventListener('click',function (){
+    //    console.log("click")
+    //    shortClicked = true;
+    //})
+    document.addEventListener('mousedown',function (){
+        console.log("down")
+        longClicked = true;
+    })
+    document.addEventListener('mouseup', function(){
+        console.log("up")
+        longClicked = false;
     })
 }
 

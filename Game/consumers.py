@@ -45,7 +45,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         msg_type = content["type"]
         msg      = content["msg"]
 
-        #print(content)
+        print(content)
 
         forwarding = {
             "loop"      :  self.validate(msg),
@@ -69,9 +69,6 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         self.channel_layer = get_channel_layer()
         self.group_name = msg['lobby']
         self.username = msg['username']
-
-        # Countdown for mouse restriction set to null
-        self.mouseClicked = 0
 
         # Has map already been sent?
         self.map = False
@@ -126,28 +123,9 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         Die Interaktionen des Spielers werden übertragen
         '''
         
-        # Reduce the waiting time by one
-        if(self.mouseClicked > 0):
-            '''
-                To protect spamming there is a latency for shooting
-            '''
-            self.mouseClicked -= 1
-
         if not self.username:
             print(F"User {self.username}: Attempting to join game")
             return
-        
-        #print(F"User {self.username}: {msg} with latency of mouseClick: {self.mouseClicked}")
-
-        # If the mouse was recently pressed, ignore that click
-        if(msg["leftClick"] == True and self.mouseClicked > 0):
-            msg["leftClick"] = False
-            print("Too often clicked!")
-
-        elif(msg["leftClick"] == True and self.mouseClicked == 0):
-            #TODO: Anpassen
-            self.mouseClicked = 1/tick_rate
-            print("Click was successful!")
 
         if abs(msg["mouseDeltaX"]) > MAX_DEGREE:
             msg["mouseDeltaX"] = MAX_DEGREE
@@ -191,7 +169,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         else:
             self.map = True
 
-        print(state)
+        #print(state)
 
         await self.send(json.dumps(state))
 
