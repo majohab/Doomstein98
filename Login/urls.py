@@ -1,10 +1,11 @@
 from django.urls import path, include
-from . import views
+from django.contrib.auth import views as auth_views
+from . import views as defined_views
 
 urlpatterns = [
+    path('accounts/login/', defined_views.loginUser, name='login'),
+    path('accounts/register/', defined_views.registerUser, name="register"),
+    path('accounts/activate/<uidb64>/<token>', defined_views.activate_user, name="activate"),
     path('accounts/', include("django.contrib.auth.urls")),
-    path('play/', views.play, name="play"),
-    path('dashboard/', views.dashboard, name="dashboard"),
-    path('menu/', views.menu, name="menu"),
-    path('register/', views.register, name="register")
+    path('play/', defined_views.play, name="play"),
 ]
