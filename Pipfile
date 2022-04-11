@@ -13,6 +13,7 @@ numpy = "*"
 daphne = "*"
 django-redis = "*"
 channels-redis = "*"
+pipfile = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"
