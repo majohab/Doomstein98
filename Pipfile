@@ -4,8 +4,10 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = "*"
 channels = "*"
+django = "*"
+six = "*"
+django-dotenv = "*"
 django-debug-toolbar = "*"
 numpy = "*"
 daphne = "*"
@@ -13,6 +15,8 @@ django-redis = "*"
 channels-redis = "*"
 
 [dev-packages]
+django-debug-toolbar = "*"
+coverage = "*"
 
 [requires]
 python_version = "3.10"
