@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
-from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
@@ -11,7 +10,7 @@ from django.core.mail import EmailMessage
 from django.conf import settings
 from threading import Thread
 from .utils import generate_token
-from Login.forms import RegistrationForm, UserLoginForm
+from .forms import RegistrationForm, UserLoginForm
 from .models import User
 
 # Create your views here.
@@ -25,29 +24,6 @@ def play(request):
         HTTP Response: Start page
     """
     return render(request, 'play.html', {})
-
-def dashboard(request):
-    """Renders HTML document and sends the response.
-
-    Args:
-        request (GET): Get user dashboard
-
-    Returns:
-        HTTP Response: Dashboard
-    """
-    return render(request, 'dashboard.html', {})
-
-@login_required(login_url='/accounts/login/')
-def menu(request):
-    """Renders HTML document and sends the response.
-
-    Args:
-        request (GET): Get menu 
-
-    Returns:
-        HTTP Response: Menu page
-    """
-    return render(request, 'menu.html', {})
 
 class EmailThread(Thread):
     """Sends verification email to user.
