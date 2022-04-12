@@ -45,7 +45,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         msg_type = content["type"]
         msg      = content["msg"]
 
-        print(content)
+        #print(content)
 
         forwarding = {
             "loop"      :  self.validate(msg),

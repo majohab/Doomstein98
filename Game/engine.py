@@ -12,6 +12,7 @@ import math
 import copy
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from pyparsing import col
 
 log = logging.getLogger(__name__)
 
@@ -200,36 +201,70 @@ class Map:
         )
 
     # Check if Object collides with Map
-    # 0: blocked   1: x   2: y  3: free 
-    def check_collision(self, coordinate : Coordinate) -> int:        
-
-        tol = 0.4
+    # Returns True if Oject collide with wall in any way
+    def check_collision(self, coordinate : Coordinate, object) -> int:        
 
         # check collision in for fields around the object
+        collision = False
+
         try:
-            if   self.map_string[round(coordinate.y      )][round(coordinate.x      )] == "#":
-                return 3
-            elif self.map_string[round(coordinate.y      )][round(coordinate.x + tol)] == "#":
-                #coordinate.x -= tol
-                return 2              
-            elif self.map_string[round(coordinate.y + tol)][round(coordinate.x      )] == "#":
-                #coordinate.y -= tol
-                return 1
-            elif self.map_string[round(coordinate.y + tol)][round(coordinate.x + tol)] == "#":
-                return 0
-            elif self.map_string[round(coordinate.y      )][round(coordinate.x - tol)] == "#":
-                #coordinate.x += tol
-                return 1
-            elif self.map_string[round(coordinate.y - tol)][round(coordinate.x      )] == "#":
-                #coordinate.y += tol
-                return 2
-            elif self.map_string[round(coordinate.y - tol)][round(coordinate.x - tol)] == "#":
-                return 0
+            A = self.map_string[round(coordinate.y - 0.8)][round(coordinate.x - 0.8)] == "#"
+            B = self.map_string[round(coordinate.y - 0.8)][round(coordinate.x - 0.3)] == "#"
+            C = self.map_string[round(coordinate.y - 0.3)][round(coordinate.x - 0.8)] == "#"
+            D = self.map_string[round(coordinate.y - 0.3)][round(coordinate.x - 0.3)] == "#"
+
+            A_l = self.map_string[round(coordinate.y - 0.57)][round(coordinate.x - 0.57)] == "#"
+            B_l = self.map_string[round(coordinate.y - 0.57)][round(coordinate.x - 0.43)] == "#"
+            C_l = self.map_string[round(coordinate.y - 0.43)][round(coordinate.x - 0.57)] == "#"
+            D_l = self.map_string[round(coordinate.y - 0.43)][round(coordinate.x - 0.43)] == "#"
+            Corner = self.map_string[round(coordinate.y - 0.5)][round(coordinate.x - 0.5)] == "#"
+
+            '''
+            print(F"A_l: {A_l}")
+            print(F"B_l: {B_l}")
+            print(F"C_l: {C_l}")
+            print(F"D_l: {D_l}")
+            print(F"A: {A}")
+            print(F"B: {B}")
+            print(F"C: {C}")
+            print(F"D: {D}")
+            print(F"cor: {Corner}\n\n")
+            '''
+
+            north = A and B
+            east = B and D
+            south = C and D
+            west = A and C
+
+            ne = A and B and D  or     A_l and not B_l and not C_l and not D_l
+            se = B and C and D  or not A_l and     B_l and not C_l and not D_l
+            sw = A and C and D  or not A_l and not B_l and     C_l and not D_l
+            nw = A and B and C  or not A_l and not B_l and not C_l and     D_l     
+
+            # If Player is in corner, dont change anything
+            if ne or se or sw or nw:
+                #print(F"Player is located at a corner: y: {coordinate.y} x: {coordinate.x}")
+                return True
+
+            # if Player is not located at east nor west wall
+            if not (west or east):
+                object.current_position.x = coordinate.x
             else:
-                return 3
+                collision = True
+            
+        
+            # if Player is not located at north nor south wall
+            if not (north or south):
+                object.current_position.y = coordinate.y
+            else:
+                collision = True
+            
+            return collision
 
         except IndexError:
-            return True  
+            print("Bewegung war ungültig und wurde zurückgesetzt!")
+            object.current_position = Coordinate(3.5,3.5)
+            return True
         
     def render(self) -> Mapping[str, Any]:
         return self.map_string
@@ -389,19 +424,23 @@ class Player:
                 print(F"Player {self.name} is too close to another player {player.name}")
                 too_close = True
 
+        # if player is not too close to an object
+        if(not too_close):
+            state.map.check_collision(tmp, player)
+
+        '''
         col = state.map.check_collision(tmp)
 
-        if(col == 0):
+        if(col == 3):
             print(F"Player {self.name} is too close to the wall of the map x: {tmp.x} y: {tmp.y}")
             too_close = True
         elif(col == 1):
             tmp.x = self.current_position.x
         elif(col == 2):
             tmp.y = self.current_position.y
+        '''
 
-        # if no player is too close to an object
-        if(not too_close):
-            self.current_position = tmp
+            #self.current_position = tmp
 
     '''
         Change the direction of the player by the given direction
@@ -467,9 +506,21 @@ class Bullet:
         self.speed = 1
 
     # Execute for every bullet this function
-    def update_pos(self):
+    # Returns True if bullet collide with Wall or Player
+    def update_pos(self, map : Map):
 
-        self.current_position.cod_move(self.speed, self.direction)
+        tmp = Coordinate(self.current_position.x,self.current_position.y)
+
+        tmp.cod_move(self.speed, self.direction)
+
+        # Check collision with Wall
+        if map.check_collision(tmp, self):
+            return True
+        else:
+            #if Bullet did not collide with wall
+            self.current_position = tmp
+            return False
+
 
     # If information is requested for rendering and update the game
     def render(self) -> Mapping[str, Any]:
@@ -666,12 +717,9 @@ class GameEngine(threading.Thread):
 
     def process_bullets(self, state: State) -> State:
 
-        #print(F"Proccessing bullets {state.bullets}")
-
-        for bullet in state.bullets:
-
-            # Make the next move for all bullets
-            bullet.update_pos()
+        # Make the next move for all bullets
+        # if True then it collide with Wall or Player, so remove it
+        state.bullets = [bullet for bullet in state.bullets if not bullet.update_pos(state.map)]
 
         return state
 

@@ -66,7 +66,7 @@ function socketHandler_init()
             shortClicked = false;
         }
 
-        //console.log('Data:', data)
+        console.log('Data:', data)
     };
 
     webSocket.onclose = function(e) {
