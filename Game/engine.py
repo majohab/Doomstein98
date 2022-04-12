@@ -217,7 +217,6 @@ class Map:
             B_l = self.map_string[round(coordinate.y - 0.57)][round(coordinate.x - 0.43)] == "#"
             C_l = self.map_string[round(coordinate.y - 0.43)][round(coordinate.x - 0.57)] == "#"
             D_l = self.map_string[round(coordinate.y - 0.43)][round(coordinate.x - 0.43)] == "#"
-            Corner = self.map_string[round(coordinate.y - 0.5)][round(coordinate.x - 0.5)] == "#"
 
             '''
             print(F"A_l: {A_l}")

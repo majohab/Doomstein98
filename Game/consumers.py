@@ -23,6 +23,8 @@ class PlayerConsumer(AsyncWebsocketConsumer):
  
     async def connect(self):
 
+        self.username = self.scope["user"]
+
         # Accept the connection with Browser
         await self.accept()
 
@@ -68,7 +70,6 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         self.channel_layer = get_channel_layer()
         self.group_name = msg['lobby']
-        self.username = msg['username']
 
         # Has map already been sent?
         self.map = False
@@ -81,14 +82,6 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
 
     async def join_game(self, msg: dict):
-
-        print("join_game wurde mit der msg " + msg["username"] + " aufgerufen\n\n",)
-
-        #if "username" not in self.scope["session"]:
-        #    self.scope["session"]["username"] = username
-        #    self.scope["session"].save()
-
-        #self.username = self.scope["session"]["username"]
 
         await self.channel_layer.group_send(
             self.group_name,
@@ -224,12 +217,8 @@ class GameConsumer(SyncConsumer):
             self.lobby[username] = lobbyname
 
     def player_validate(self, event):
-        
-        #print(F"Player changed: {event}")
 
         username = event["player"]
-
-        #print(event["msg"])
 
         '''
         Send the data to engine

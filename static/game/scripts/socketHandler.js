@@ -20,7 +20,6 @@ function socketHandler_init()
             JSON.stringify({
                 "type" : "joinLobby",
                 "msg"  : {
-                    "username" : username,
                     "lobby"    : lobbyName,
                 }
             })
@@ -29,7 +28,6 @@ function socketHandler_init()
             JSON.stringify({
                 "type" : "joinGame",
                 "msg"  : {
-                    "username" : username,
                     "lobby"    : lobbyName,
                 }
             })
