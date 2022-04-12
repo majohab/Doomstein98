@@ -21,7 +21,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         """
         Perform things on connection start
         """
-        print("Connect")
+        #print("Connect")
         self.channel_layer = get_channel_layer()
         self.group_name = "doom_game"
         self.game = None
@@ -38,14 +38,14 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             self.group_name, 
             self.channel_name
         )
-        print("User connected successfully")
+        #print("User connected successfully")
 
         # Accept the connection with Browser
         await self.accept()
 
     async def disconnect(self, close_code):
         # Leave game and
-        print(F"Disconnect: {close_code}")
+        #print(F"Disconnect: {close_code}")
         await self.channel_layer.group_discard(
             self.group_name,
             self.channel_name
@@ -55,7 +55,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         self.username = msg["username"]
 
-        print("join wurde mit der msg " + msg["username"] + " aufgerufen\n\n",)
+        #print("join wurde mit der msg " + msg["username"] + " aufgerufen\n\n",)
 
         #if "username" not in self.scope["session"]:
         #    self.scope["session"]["username"] = username
@@ -81,7 +81,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             },
         )
 
-        print("User: " + self.username + " joining game")
+        #print("User: " + self.username + " joining game")
 
     async def message(self, msg):
         print(msg)
@@ -92,10 +92,10 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         self.mouseClicked -= 1
 
         if not self.username:
-            print(F"User {self.username}: Attempting to join game")
+            #print(F"User {self.username}: Attempting to join game")
             return
         
-        print(F"User {self.username}: {msg}")
+        #print(F"User {self.username}: {msg}")
 
         await self.channel_layer.send(
             "game_engine",
@@ -129,7 +129,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     # Send game data to room group after a Tick is processed
     async def game_update(self, event):
 
-        print(F"Game Update: {event}")
+        #print(F"Game Update: {event}")
 
         # Send message to WebSocket
         state = event["state"]
@@ -152,48 +152,48 @@ class GameConsumer(SyncConsumer):
         """
         Created on demand when the first player joins.
         """
-        print(F"Game Consumer: {args} {kwargs}")
+        #print(F"Game Consumer: {args} {kwargs}")
         super().__init__(*args, **kwargs)
         self.group_name = "doom_game"
         self.engine = GameEngine(self.group_name)
         self.engine.start()
 
     def player_new(self, event):
-        print("Player Joined: " + event["player"] )
+        #print("Player Joined: " + event["player"] )
         self.engine.join_game(event["player"])
 
     def player_validate(self, event):
         
-        print(F"Player changed: {event}")
+        #print(F"Player changed: {event}")
         
         # If the mouse was recently pressed, ignore that click
         if(event["msg"]["LeftClick"] == True and self.mouseClicked > 0):
             event["msg"]["LeftClick"] = False
-            print("Too often clicked!")
+            #print("Too often clicked!")
 
         elif(event["msg"]["LeftClick"] == True and self.mouseClicked == 0):
             self.mouseClicked = 10
-            print("Click was successful!")
+            #print("Click was successful!")
 
         # If both directions are pressed then dont move in those directions
         if event["msg"]["Up"] == True and event["msg"]["Down"] == True:
             event["msg"]["Up"] = False
             event["msg"]["Down"] = False
-            print("Opposite key were pressed!")
+            #print("Opposite key were pressed!")
 
         # If both directions are pressed then dont move in those directions
         if event["msg"]["Left"] == True and event["msg"]["Right"] == True:
             event["msg"]["Left"] = False
             event["msg"]["Right"] = False
-            print("Opposite key were pressed!")
+            #print("Opposite key were pressed!")
 
         if event["msg"]["MouseX"] > MAX_DEGREE:
             event["msg"]["MouseX"] = MAX_DEGREE
-            print("Mouse change invalid!")
+            #print("Mouse change invalid!")
 
         if event["msg"]["MouseY"] > MAX_DEGREE:    
             event["msg"]["MouseY"] = MAX_DEGREE
-            print("Mouse cahnge invalid!")
+            #print("Mouse cahnge invalid!")
 
         # Send the data to 
         self.engine.apply_events(event["player"], event["msg"])
