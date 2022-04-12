@@ -7,6 +7,8 @@ from asgiref.sync import  async_to_sync
 from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncWebsocketConsumer, AsyncJsonWebsocketConsumer
 from channels.layers import get_channel_layer
+from channels.auth import UserLazyObject
+from django.utils.translation import gettext
 
 from .engine import GameEngine
 
@@ -23,7 +25,12 @@ class PlayerConsumer(AsyncWebsocketConsumer):
  
     async def connect(self):
 
-        self.username = self.scope["user"]
+        #If user is unknown
+        if self.scope["user"].is_anonymous:
+            print("User is unknown. So he has been disconnected")
+            await self.close()
+        
+        self.username = self.scope["user"].user_name
 
         # Accept the connection with Browser
         await self.accept()
@@ -57,7 +64,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         try:
             return await forwarding[content["type"]]
-        except:
+        except KeyError:
             #Der Typ der Message ist unbekannt
             print(F"Incoming msg {msg_type} is unknown")
 

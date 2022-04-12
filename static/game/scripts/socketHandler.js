@@ -1,9 +1,8 @@
 function socketHandler_init()
 {
     const lobbyName = JSON.parse(document.getElementById('json-lobbyname').textContent);
-    const username = "user1"; //temporary variable
+    const userName  = JSON.parse(document.getElementById('json-username').textContent);
     document.title = lobbyName;
-
     const protocol = window.location.protocol.match(/^https/) ? 'wss' : 'ws'
 
     const webSocket = new WebSocket(
@@ -16,6 +15,9 @@ function socketHandler_init()
     );
 
     webSocket.onopen = function(){ 
+
+        console.log('Username:', userName)
+
         webSocket.send(
             JSON.stringify({
                 "type" : "joinLobby",
@@ -37,9 +39,9 @@ function socketHandler_init()
     webSocket.onmessage = function(e) {
         let data = JSON.parse(e.data)
 
-        playerX     = data['players']['user1']['x'];
-        playerY     = data['players']['user1']['y'];
-        playerAngle = data['players']['user1']['dir'];
+        playerX     = data['players'][userName]['x'];
+        playerY     = data['players'][userName]['y'];
+        playerAngle = data['players'][userName]['dir'];
 
         let mouseDeltaX = lastRecordedMouseX - lastMouseX;
         lastMouseX = lastRecordedMouseX
@@ -63,7 +65,7 @@ function socketHandler_init()
         if(shortClicked) {
             shortClicked = false;
         }
-
+        
         console.log('Data:', data)
     };
 

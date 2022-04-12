@@ -25,7 +25,7 @@ MAPS = [
     "################",
     "#............W.#",
     "#........#######",
-    "#............N.#",
+    "#............S.#",
     "#..............#",
     "#.....##.......#",
     "#.....##.......#",
@@ -34,8 +34,8 @@ MAPS = [
     "#..............#",
     "######.........#",
     "#....#.........#",
-    "#.N..#.........#",
-    "#..........S.###",
+    "#.S..#.........#",
+    "#..........N.###",
     "#............###",
     "################"
     ]
@@ -63,6 +63,9 @@ class Coordinate:
         return math.sqrt((self.x - sec_cod.x) ** 2 + (self.y - sec_cod.y) ** 2)
 
 class Spawn:
+    '''
+    Spawn-Class which handles the occupation of a spawn field
+    '''
 
     def __init__(self, coordinate : Coordinate = Coordinate(3.5,3.5), direction : float = 0):
 
@@ -75,16 +78,27 @@ class Spawn:
         self.lock_time = 0
 
     def use(self, player):
+        '''
+        A spawn is occupied by the player
+        '''
+        print(F"Spawn at x: {self.coordinate.x} y: {self.coordinate.y} is occupied by player: {player.name}")
 
+        # Declare the spawned Player as the occupant
         self.player = player
 
         # The Spawn is occupied for 5 Seconds
         self.lock_time = 5/tick_rate
 
-    def update(self):
+    def update_occupation(self):
+        '''
+        Update the status of a spawn
+        > -1 means Player is using the Spawn
+        '''
 
-        if(self.lock_time == 0):
+        if(self.lock_time == 1):
             self.player = None
+            print(F"Spawn at x: {self.coordinate.x} y: {self.coordinate.y} is free again")
+            self.lock_time -= 1
         else:
             self.lock_time -= 1
 
@@ -101,13 +115,13 @@ class Weapon:
 AVAILABLE_WEAPONS = {
     "P99" : Weapon(
         "P99",
-        50,
-        0.2/tick_rate,
+        50,             #50 Kugeln in der Waffe
+        0.8/tick_rate,  #Jede 0.8 Sekunden kann geschossen werden
     ),
     "MP5" : Weapon(
         "MP5",
-        200,
-        1/tick_rate,        
+        200,            #200 Kugeln in der Waffe
+        0.1/tick_rate,  #Jede 0.1 Sekunden kann geschossen werden    
     ),
 }
 
@@ -143,6 +157,7 @@ class Map:
             for idx_c, char in enumerate(string):
 
                 #Check if the direction fits to the coordinate
+                # N and S are reversed, so N gets math.pi
                 if(char == 'N' and strings[idx_s-1][idx_c] == '.'):
                     spawns.append(
                         Spawn(
@@ -150,7 +165,7 @@ class Map:
                             idx_c + 0.5,
                             idx_s + 0.5,
                             ),
-                            0,
+                            math.pi,
                         )
                     )
 
@@ -167,6 +182,7 @@ class Map:
                     )
             
                 #Check if the direction fits to the coordinate
+                # N and S are reversed, so S gets 0
                 if(char == 'S' and strings[idx_s+1][idx_c] == '.'):
                     spawns.append(
                         Spawn(
@@ -174,7 +190,7 @@ class Map:
                             idx_c + 0.5,
                             idx_s + 0.5,
                             ),
-                            math.pi,
+                            0,
                         )
                     )
             
@@ -202,16 +218,19 @@ class Map:
 
     # Check if Object collides with Map
     # Returns True if Oject collide with wall in any way
-    def check_collision(self, coordinate : Coordinate, object) -> int:        
+    def check_collision(self, coordinate : Coordinate, object, tolerance : int = 0) -> int:        
+        '''
+        Checks collision for players and bullets. Tolerance is for bullet only
+        '''
 
         # check collision in for fields around the object
         collision = False
 
         try:
-            A = self.map_string[round(coordinate.y - 0.8)][round(coordinate.x - 0.8)] == "#"
-            B = self.map_string[round(coordinate.y - 0.8)][round(coordinate.x - 0.3)] == "#"
-            C = self.map_string[round(coordinate.y - 0.3)][round(coordinate.x - 0.8)] == "#"
-            D = self.map_string[round(coordinate.y - 0.3)][round(coordinate.x - 0.3)] == "#"
+            A = self.map_string[round(coordinate.y - (0.8 - tolerance))][round(coordinate.x - (0.8 - tolerance))] == "#"
+            B = self.map_string[round(coordinate.y - (0.8 - tolerance))][round(coordinate.x - (0.3 + tolerance))] == "#"
+            C = self.map_string[round(coordinate.y - (0.3 + tolerance))][round(coordinate.x - (0.8 - tolerance))] == "#"
+            D = self.map_string[round(coordinate.y - (0.3 + tolerance))][round(coordinate.x - (0.3 + tolerance))] == "#"
 
             A_l = self.map_string[round(coordinate.y - 0.57)][round(coordinate.x - 0.57)] == "#"
             B_l = self.map_string[round(coordinate.y - 0.57)][round(coordinate.x - 0.43)] == "#"
@@ -235,6 +254,11 @@ class Map:
             south = C and D
             west = A and C
 
+            #print(north)
+            #print(east)
+            #print(south)
+            #print(west)
+
             ne = A and B and D  or     A_l and not B_l and not C_l and not D_l
             se = B and C and D  or not A_l and     B_l and not C_l and not D_l
             sw = A and C and D  or not A_l and not B_l and     C_l and not D_l
@@ -242,13 +266,14 @@ class Map:
 
             # If Player is in corner, dont change anything
             if ne or se or sw or nw:
-                #print(F"Player is located at a corner: y: {coordinate.y} x: {coordinate.x}")
+                print(F"Player is located at a corner: y: {coordinate.y} x: {coordinate.x}")
                 return True
 
             # if Player is not located at east nor west wall
             if not (west or east):
                 object.current_position.x = coordinate.x
             else:
+                print()
                 collision = True
             
         
@@ -345,7 +370,7 @@ class Player:
 
             print(F"{self.name} just shot a bullet!")
 
-            speed = 0.5/tick_rate
+            speed = 0.5
 
             # The animation of shooting shall go on for 1 seconds
             self.justShot = 1/tick_rate
@@ -502,7 +527,7 @@ class Bullet:
         self.direction = direction
 
         # One Movement per frame
-        self.speed = 1
+        self.speed = 0.1 #TODO: Anpassen
 
     # Execute for every bullet this function
     # Returns True if bullet collide with Wall or Player
@@ -513,7 +538,7 @@ class Bullet:
         tmp.cod_move(self.speed, self.direction)
 
         # Check collision with Wall
-        if map.check_collision(tmp, self):
+        if map.check_collision(tmp, self, 0.25):
             return True
         else:
             #if Bullet did not collide with wall
@@ -604,6 +629,8 @@ class GameEngine(threading.Thread):
         # Get the current information about the game state
         state_json = state.render()
 
+        #print(state_json)
+
         # Synchronize the channel's information and send them to all participants
         async_to_sync(self.channel_layer.group_send)(
             self.group_name, 
@@ -639,6 +666,8 @@ class GameEngine(threading.Thread):
         
         state = self.process_new_players(state)
 
+        self.process_spawns(state)
+
         state.map.tick = self.tick_num
 
         return state
@@ -656,6 +685,7 @@ class GameEngine(threading.Thread):
 
                 print(F"Player {player.name} did not respond for one second or more! So he was removed!")
 
+                #Remove the Player from Game
                 self.state.players.remove(player)
 
                 continue
@@ -692,6 +722,10 @@ class GameEngine(threading.Thread):
         return state
             
     def process_hits(self, state: State) -> State:
+        '''
+        Checks if any bullet hits a player
+        '''
+
 
         #print(F"Proccessing collisions for game {self.name}")
 
@@ -715,12 +749,21 @@ class GameEngine(threading.Thread):
         return state
 
     def process_bullets(self, state: State) -> State:
-
+        '''
+        Checks if bullet hits the wall
+        '''
         # Make the next move for all bullets
         # if True then it collide with Wall or Player, so remove it
         state.bullets = [bullet for bullet in state.bullets if not bullet.update_pos(state.map)]
 
         return state
+
+    def process_spawns(self, state: State) -> None:
+        '''
+        Reduce the tick of every Spawn, so new Player can join
+        None will be returned
+        '''
+        [spawn.update_occupation() for spawn in state.map.spawns]
 
     def apply_events(self, player: str, events) -> None:
         '''
@@ -754,6 +797,8 @@ class GameEngine(threading.Thread):
 
             # add the players to the game
             state.players += self.player_queue
+
+            print(state.players[0].name)
 
             # Clear the queue
             self.player_queue = []
