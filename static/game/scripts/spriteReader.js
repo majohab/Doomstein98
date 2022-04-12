@@ -109,8 +109,8 @@ class Font
 
         let imgHeight = imgData.length;
 
-        console.log ('Loaded imgData for Font:');
-        console.log (imgData); 
+        //console.log ('Loaded imgData for Font:');
+        //console.log (imgData); 
 
         let dict = {};
 
@@ -130,13 +130,13 @@ class Font
 
             dict[letter.letter] = letterData;
 
-            console.log('New Letter: ');
-            console.log(letterData);
+            //console.log('New Letter: ');
+            //console.log(letterData);
         }
 
         this.dict = dict;
         
-        console.log ('New Font: ' + JSON.stringify(dict));
+        //console.log ('New Font: ' + JSON.stringify(dict));
     }
 
     getTextImg(text)
@@ -146,7 +146,7 @@ class Font
         let textWidth = 0;
         let textHeight = 0;
 
-        console.log ("Generating image from text");
+        //console.log ("Generating image from text");
 
         for (let i = 0; i < text.length; i++)
         {
@@ -156,8 +156,8 @@ class Font
             textHeight = Math.max(textHeight, dict[char].length);
         }
                 
-        console.log ("with width = " + textWidth);
-        console.log ("and height = " + textHeight);
+        //console.log ("with width = " + textWidth);
+        //console.log ("and height = " + textHeight);
 
         for (let y = 0; y < textHeight; y++)
         {
@@ -214,9 +214,9 @@ async function spriteReader_init()
     let inits = 0;
     const initCount = 7;
 
-    spriteReader_getSpriteString('Wall',    (img) => { wallSprite = new Sprite(img, 2, 2); inits++; });
-    spriteReader_getSpriteString('Floor',   (img) => { floorSprite = new Sprite(img, 1, 1); inits++; })
-    spriteReader_getSpriteString('Sky',     (img) => { ceilingSprite = new Sprite(img, 1, 1); inits++; })
+    spriteReader_getSpriteString('Wall',            (img) => { wallSprite = new Sprite(img, 2, 2); inits++; });
+    spriteReader_getSpriteString('Floor',           (img) => { floorSprite = new Sprite(img, 1, 1); inits++; })
+    spriteReader_getSpriteString('Sky',             (img) => { ceilingSprite = new Sprite(img, 1, 1); inits++; })
 
     spriteReader_getSpriteString('StatusBar_Doom',  (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
 
@@ -229,7 +229,26 @@ async function spriteReader_init()
         font = new Font(img,
             [
                 new Letter(' ', 1, 1, 8, 12),
-                new Letter('!', 10, 1, 6, 12)
+                new Letter('!', 10, 1, 6, 12),
+                new Letter('%', 57, 1, 13, 12),
+                new Letter('0', 1, 14, 11, 12),
+                new Letter('1', 13, 14, 7, 12),
+                new Letter('2', 21, 14, 11, 12),
+                new Letter('3', 33, 14, 11, 12),
+                new Letter('4', 45, 14, 11, 12),
+                new Letter('5', 57, 14, 11, 12),
+                new Letter('6', 69, 14, 11, 12),
+                new Letter('7', 81, 14, 11, 12),
+                new Letter('8', 93, 14, 11, 12),
+                new Letter('9', 105, 14, 11, 12),
+                new Letter('A', 1, 40, 14, 12),
+                new Letter('B', 16, 40, 14, 12),
+                new Letter('C', 31, 40, 14, 12),
+                new Letter('D', 46, 40, 14, 12),
+                new Letter('E', 61, 40, 14, 12),
+                new Letter('F', 76, 40, 14, 12),
+                new Letter('G', 91, 40, 14, 12)
+                //new Letter(''),
             ]
         );
         inits++;
@@ -240,8 +259,6 @@ async function spriteReader_init()
     const checkIntervall = 50;
     while(inits != initCount)
         await new Promise(resolve => setTimeout(resolve, checkIntervall));
-
-    console.log(font.getTextImg("! !"))
 }
 
 function spriteReader_getSpriteString(spriteName, callback)
