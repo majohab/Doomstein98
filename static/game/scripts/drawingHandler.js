@@ -46,7 +46,7 @@ function drawingHandler_init()
             screenHeight: screenHeight,
             screenWidth: screenWidth,
             cellSize: cellSize,
-            statusBar_Height: screenHeight / 8,
+            statusBar_Height: screenHeight / 7,
             gun_Height: screenHeight / 5,
 
             fov: fov,
@@ -89,12 +89,12 @@ function drawingHandler_init()
             map_numbers,
             wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite,
             movingObjects_Array, movingObjects_Array_length,
-            textsToRender, textsBounds, textsCount) {
+            healthText, healthTextBounds, bulletsText, bulletsTextBounds) {
             drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
                 map_numbers,
                 wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite,
                 movingObjects_Array, movingObjects_Array_length,
-                textsToRender, textsBounds, textsCount);
+                healthText, healthTextBounds, bulletsText, bulletsTextBounds);
         },
         gpu_kernel_settings
     );
@@ -124,23 +124,25 @@ function drawingHandler_draw_gpu()
             5
         ]
     ];
-    let textsToRender = [font.getTextImg("01234%9ABEG")];
-    let textsBounds =
-    [
-        [10, 0, textsToRender[0][0].length, textsToRender[0].length, 4]
-    ]; // startX, startY, sizeX (text coordinate-system), sizeY (text coordinate-system), scale
+
+    let healthText = font.getTextImg('100%');
+    let healthTextBounds = [300, screenHeight - 110, healthText[0].length, healthText.length, 5]; // startX, startY, sizeX (text coordinate-system), sizeY (text coordinate-system), scale
+
+    let bulletsText = font.getTextImg('128');
+    let bulletsTextBounds = [690, screenHeight - 110, bulletsText[0].length, bulletsText.length, 5]
+
     buffer = gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, gunSprite.data, bulletSprite.data,
         movingObjects_Array, movingObjects_Array.length,
-        textsToRender, textsBounds, textsToRender.length);
+        healthText, healthTextBounds, bulletsText, bulletsTextBounds);
 }
 
 function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
     map_numbers,
     wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite,
     movingObjects_Array, movingObjects_Array_length,
-    textsToRender, textsBounds, textsCount)
+    healthText, healthTextBounds, bulletsText, bulletsTextBounds)
 {
     let screenWidth = this.constants.screenWidth;
     let screenHeight = this.constants.screenHeight;
@@ -168,13 +170,14 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,
     let depth = this.constants.depth;
     let depthBuffer = depth;
 
-    for (let t = 0; t < textsCount; t++)
+
+    //#region Health-Text
     {
-        let startX = textsBounds[t][0];
-        let startY = textsBounds[t][1];
-        let textSizeX = textsBounds[t][2];
-        let textSizeY = textsBounds[t][3];
-        let scale = textsBounds[t][4];
+        let startX = healthTextBounds[0];
+        let startY = healthTextBounds[1];
+        let textSizeX = healthTextBounds[2];
+        let textSizeY = healthTextBounds[3];
+        let scale = healthTextBounds[4];
         let endX = startX + (textSizeX * scale);
         let endY = startY + (textSizeY * scale);
 
@@ -183,18 +186,47 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,
             let pix_x = Math.floor((x - startX) / scale);
             let pix_y = Math.floor((y - startY) / scale);
 
-            if (textsToRender[t][pix_y][pix_x][3] > 0)
+            if (healthText[pix_y][pix_x][3] > 0)
             {
-                r = textsToRender[t][pix_y][pix_x][0]
-                g = textsToRender[t][pix_y][pix_x][1]
-                b = textsToRender[t][pix_y][pix_x][2]
+                r = healthText[pix_y][pix_x][0]
+                g = healthText[pix_y][pix_x][1]
+                b = healthText[pix_y][pix_x][2]
 
+                depthBuffer = 0;
+            }
+        }        
+    }
+    //#endregion
+
+    //#region Bullets-Text
+    {
+        let startX = bulletsTextBounds[0];
+        let startY = bulletsTextBounds[1];
+        let textSizeX = bulletsTextBounds[2];
+        let textSizeY = bulletsTextBounds[3];
+        let scale = bulletsTextBounds[4];
+        let endX = startX + (textSizeX * scale);
+        let endY = startY + (textSizeY * scale);
+    
+        if (x >= startX && x < endX && y >= startY && y < endY)
+        {
+            let pix_x = Math.floor((x - startX) / scale);
+            let pix_y = Math.floor((y - startY) / scale);
+    
+            if (bulletsText[pix_y][pix_x][3] > 0)
+            {
+                r = bulletsText[pix_y][pix_x][0]
+                g = bulletsText[pix_y][pix_x][1]
+                b = bulletsText[pix_y][pix_x][2]
+    
                 depthBuffer = 0;
             }
         }
     }
+    //#endregion
 
-    if (depthBuffer > 0 && y > gameWindowHeight) // Status-Bar
+    //#region Status-Bar
+    if (depthBuffer > 0 && y > gameWindowHeight)
     {
         let localY = y - gameWindowHeight;
 
@@ -205,12 +237,16 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,
         let pix_y = Math.floor((localY / statusBarHeight) * spriteHeight);
         pix_y = spriteHeight - pix_y - 1;
 
-        r = statusBarSprite[pix_y][pix_x][0];
-        g = statusBarSprite[pix_y][pix_x][1];
-        b = statusBarSprite[pix_y][pix_x][2];
-        
-        depthBuffer = 0;
+        if (statusBarSprite[pix_y][pix_x][3] > 0)
+        {
+            r = statusBarSprite[pix_y][pix_x][0];
+            g = statusBarSprite[pix_y][pix_x][1];
+            b = statusBarSprite[pix_y][pix_x][2];
+
+            depthBuffer = 0;
+        }
     }
+    //#endregion
 
     //#region Gun-Img
     if (depthBuffer > 0)

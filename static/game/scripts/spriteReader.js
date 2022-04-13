@@ -218,7 +218,7 @@ async function spriteReader_init()
     spriteReader_getSpriteString('Floor',           (img) => { floorSprite = new Sprite(img, 1, 1); inits++; })
     spriteReader_getSpriteString('Sky',             (img) => { ceilingSprite = new Sprite(img, 1, 1); inits++; })
 
-    spriteReader_getSpriteString('StatusBar_Doom',  (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
+    spriteReader_getSpriteString('StatusBar_Doom_Own',  (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
 
     spriteReader_getSpriteString('Shotgun_1_32Bit', (img) => { gunSprite = new Sprite(img, 1, 1); inits++; });
     spriteReader_getSpriteString('Bullet_1',        (img) => { bulletSprite = new Sprite(img, 1, 1); inits++; });
