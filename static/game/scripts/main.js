@@ -79,7 +79,7 @@ function gameLoop()
     lastFrameTime = currFrameTime;
     //console.log('fps: ' + 1000 / deltaTime);
     
-    inputHandler_updateInput(deltaTime);
+    //inputHandler_updateInput(deltaTime);
 
     drawingHandler_drawCells();
 
