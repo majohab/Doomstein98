@@ -84,23 +84,7 @@ function gameLoop()
     drawingHandler_drawCells();
 
     //console.log("x: " + playerX + ", y: " + playerY);
-    //console.log("forwardX: " + Math.sin(playerAngle) + ", forwardY: " + Math.cos(playerAngle));
-
-    //let forwardX = Math.sin(playerAngle); let forwardY = Math.cos(playerAngle);
-    //let vecX = 5 - playerX;
-    //let vecY = 5 - playerY;
-
-    //let objAngle = Math.atan2(forwardY, forwardX) - Math.atan2(vecX, vecY);
-    //let middleOfObject = (0.5 * (objAngle / (fov * 0.5)) + 0.5) * screenWidth;
-
-    //console.log("objAngle: " + objAngle);
-    //console.log("middleOfObject: " + middleOfObject);
-    //console.log("In Front of Player: " + ((forwardX * vecX + forwardY * vecY) > 0));   
-    
-    //if (!!document.pointerLockElement) {
-    //} else {
-    //    pointerLocked = false;
-    //}
+    //console.log("forwardX: " + Math.sin(playerAngle) + ", forwardY: " + Math.cos(playerAngle)); 
 }
 
 class MovingObject

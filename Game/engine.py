@@ -409,6 +409,7 @@ class Player:
         self.justShot = 1/tick_rate
 
         print(F"Player {self.name} is hit by player {player.name}")
+  
         if(self.health > 20):
             self.health -= 20
         else:
@@ -446,14 +447,16 @@ class Player:
             if(player.name != self.name and tmp.get_distance(player.current_position) < 1):
                 
                 print(F"Player {self.name} is too close to another player {player.name}")
+
                 too_close = True
 
         # if player is not too close to an object
         if(not too_close):
             state.map.check_collision(tmp, player)
-
+            
         '''
         col = state.map.check_collision(tmp)
+
 
         if(col == 3):
             print(F"Player {self.name} is too close to the wall of the map x: {tmp.x} y: {tmp.y}")
@@ -489,7 +492,7 @@ class Player:
     '''
     def die(self):
         #What should happen?
-        print("Die!")
+        #print("Die!")
 
         # Change the status of the player's condition
         self.alive = False
@@ -578,7 +581,7 @@ class GameEngine(threading.Thread):
     # Constructor function for GameEngine
     def __init__(self, group_name, players_name : list[str] = [], map_string = MAPS[0], max_players : int = 6, **kwargs):
         
-        print(F"Initializing GameEngine: {group_name} with players: {players_name}")
+        #print(F"Initializing GameEngine: {group_name} with players: {players_name}")
 
         # Create a thread to run the game
         super(GameEngine, self).__init__(daemon = True, name = "GameEngine", **kwargs)
@@ -606,7 +609,7 @@ class GameEngine(threading.Thread):
     # The main loop for the game engine
     def run(self) -> None:
 
-        print("Starting engine loop")
+        #print("Starting engine loop")
         # infinite loop
         while True:
 
@@ -756,6 +759,7 @@ class GameEngine(threading.Thread):
         # if True then it collide with Wall or Player, so remove it
         state.bullets = [bullet for bullet in state.bullets if not bullet.update_pos(state.map)]
 
+
         return state
 
     def process_spawns(self, state: State) -> None:
@@ -764,6 +768,7 @@ class GameEngine(threading.Thread):
         None will be returned
         '''
         [spawn.update_occupation() for spawn in state.map.spawns]
+
 
     def apply_events(self, player: str, events) -> None:
         '''
