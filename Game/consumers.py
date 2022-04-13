@@ -79,7 +79,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         self.group_name = msg['lobby']
 
         # Has map already been sent?
-        self.map = False
+        self.map = 0
 
         # Join a common group with all other Players
         await self.channel_layer.group_add(
@@ -158,20 +158,37 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         #print(F"Game Update: {event}")
 
         # Send message to WebSocket
-        state = event["state"]
+        event = event["state"]
 
-        if(self.map):
+        event["type"] = "update"
+
+        if(self.map > 10):
             try:
-                state.pop("map")
+                event.pop("map")
             except KeyError as e:
-                pass
-                #print(e)       
+                pass       
         else:
-            self.map = True
+            self.map += 1
 
         #print(state)
 
-        await self.send(json.dumps(state))
+        await self.send(json.dumps(event))
+
+    async def win(self, event):
+        '''
+        Check if current player won the game and forward the message to player
+        '''
+        event["type"] = "loose"
+
+        for player in event["players"]:
+
+            if player["name"] == self.username:
+
+                event["type"] = "win"
+
+        await self.send(json.dumps(event))
+
+
 
 class GameConsumer(SyncConsumer): 
     '''
@@ -187,8 +204,8 @@ class GameConsumer(SyncConsumer):
         super().__init__(*args, **kwargs)
 
         self.channel_layer = get_channel_layer()
-        self.engine = {} #The games are saved in there
-        self.lobby = {} #What player is in what game
+        self.engines : dict[GameEngine] = {} #The games are saved in there
+        self.lobbies = {} #What player is in what game
 
     def player_new(self, event):
         '''
@@ -202,8 +219,8 @@ class GameConsumer(SyncConsumer):
 
 
         try:
-            if len(self.engine[lobbyname].state.players) < self.engine[lobbyname].max_players:
-                self.engine[lobbyname].join_game(username)
+            if len(self.engines[lobbyname].state.players) < self.engines[lobbyname].max_players:
+                self.engines[lobbyname].join_game(username)
             else:
                 async_to_sync(self.channel_layer.send)(
                 event['channel'],
@@ -217,11 +234,15 @@ class GameConsumer(SyncConsumer):
             )
         # if the game does not exist, create it
         except KeyError:
-            self.engine[lobbyname] = GameEngine(lobbyname)
-            self.engine[lobbyname].start()
-            self.engine[lobbyname].join_game(username)
+            self.engines[lobbyname] = GameEngine(lobbyname)
+            self.engines[lobbyname].start()
+            self.engines[lobbyname].join_game(username)
+
+            #TODO: Only for TESTING
+            self.engines[lobbyname].start_flag = True
+
             # for further information in what game the player is
-            self.lobby[username] = lobbyname
+            self.lobbies[username] = lobbyname
 
     def player_validate(self, event):
 
@@ -230,4 +251,29 @@ class GameConsumer(SyncConsumer):
         '''
         Send the data to engine
         '''
-        self.engine[self.lobby[username]].apply_events(username, event["msg"])
+        self.engines[self.lobbies[username]].apply_events(username, event["msg"])
+
+    def win(self, event):
+        '''
+        handling when game is finished
+        '''
+        group_name = event["group"]
+
+        # Stop the thread by ending its tasks
+        self.engines[group_name].running = False
+
+        # Synchronize the channel's information and send them to all participants
+        async_to_sync(self.channel_layer.group_send)(
+            group_name, 
+            {
+             "type"   : "win",
+             "time"   : event["time"],
+             "players": event["players"],  
+            }
+        )
+
+        
+
+
+
+
