@@ -37,7 +37,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         # Leave game and
-        print(F"Disconnect: {close_code}")
+        #print(F"Disconnect: {close_code}")
         await self.channel_layer.group_discard(
             self.group_name,
             self.channel_name
@@ -70,6 +70,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
 
     '''Functions which will be commanded to something'''
+
 
     async def join_lobby(self, msg):
         
@@ -113,6 +114,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         print(self.username + " joining game")
 
+
     async def message(self, msg):
 
         print(F"{msg['msg']['message']} was sent by {msg['msg']['channel']}")
@@ -124,7 +126,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         '''
         
         if not self.username:
-            print(F"User {self.username}: Attempting to join game")
+            #print(F"User {self.username}: Attempting to join game")
             return
 
         if abs(msg["mouseDeltaX"]) > MAX_DEGREE:
@@ -135,6 +137,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         msg["y"] = msg["up"] - msg["down"]
 
         msg["x"] = msg["right"] - msg["left"]
+
 
         await self.channel_layer.send(
             "game_engine",
@@ -200,7 +203,7 @@ class GameConsumer(SyncConsumer):
         """
         Created on demand when the first player joins.
         """
-        print(F"Game Consumer: {args} {kwargs}")
+        #print(F"Game Consumer: {args} {kwargs}")
         super().__init__(*args, **kwargs)
 
         self.channel_layer = get_channel_layer()

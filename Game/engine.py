@@ -506,6 +506,7 @@ class Player:
             if(player.name != self.name and tmp.get_distance(player.current_position) < 1):
                 
                 print(F"Player {self.name} is too close to another player {player.name}")
+
                 too_close = True
 
         # if player is not too close to an object
@@ -535,7 +536,7 @@ class Player:
     '''
     def die(self):
         #What should happen?
-        print("Die!")
+        #print("Die!")
 
         # increase the death variable
         self.deaths += 1
@@ -859,6 +860,7 @@ class GameEngine(threading.Thread):
         # if True then it collide with Wall or Player, so remove it
         state.bullets = [bullet for bullet in state.bullets if not bullet.update_pos(state.map)]
 
+
         return state
 
     def process_spawns(self, state: State) -> None:
@@ -867,6 +869,7 @@ class GameEngine(threading.Thread):
         None will be returned
         '''
         [spawn.update_occupation() for spawn in state.map.spawns]
+
 
     def apply_events(self, player: str, events) -> None:
         '''
