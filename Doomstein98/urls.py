@@ -21,6 +21,6 @@ urlpatterns = [
     path('game/', include('Game.urls')),
     path('', include('Login.urls')),
     path('menu/', include('Mainmenu.urls')),
-    path('api/lobbies/', include('API.Lobbies.urls')),
+    path('lobbies/', include('lobby.urls')),
     path('__debug__/', include('debug_toolbar.urls')),
 ]
