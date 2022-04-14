@@ -201,6 +201,7 @@ let floorSprite;
 let ceilingSprite;
 
 let statusBarSprite;
+let weaponFrameSprite;
 
 let gunSprite;
 let bulletSprite;
@@ -212,13 +213,14 @@ let font;
 async function spriteReader_init()
 {
     let inits = 0;
-    const initCount = 7;
+    const initCount = 8;
 
     spriteReader_getSpriteString('Wall',            (img) => { wallSprite = new Sprite(img, 2, 2); inits++; });
     spriteReader_getSpriteString('Floor',           (img) => { floorSprite = new Sprite(img, 1, 1); inits++; })
     spriteReader_getSpriteString('Sky',             (img) => { ceilingSprite = new Sprite(img, 1, 1); inits++; })
 
-    spriteReader_getSpriteString('StatusBar_Doom',  (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
+    spriteReader_getSpriteString('StatusBar_Doom_Own',  (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
+    spriteReader_getSpriteString('WeaponFrame',         (img) => { weaponFrameSprite = new Sprite(img, 1, 1); inits++ });
 
     spriteReader_getSpriteString('Shotgun_1_32Bit', (img) => { gunSprite = new Sprite(img, 1, 1); inits++; });
     spriteReader_getSpriteString('Bullet_1',        (img) => { bulletSprite = new Sprite(img, 1, 1); inits++; });
