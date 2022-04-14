@@ -19,17 +19,20 @@ const mapWidth = 16;
 // Runtime variables
 let lastFrameTime;
 let mapString;
-let map_numbers
+let map_numbers;
+let movingObjects;
 
-function init()
+async function init()
 {
     socketHandler_init();
 
+    await spriteReader_init();
+    
+    // Need to wait for spriteReader_init()
     initMap(); // To be moved to backend
-
     drawingHandler_init();
-    inputHander_init();
-    spriteReader_init();
+
+    inputHander_init(); // Needs to wait for drawingHandler_init()
 
     lastFrameTime = Date.now();
 
@@ -39,7 +42,6 @@ function init()
 
 function initMap()
 {
-
     mapString =
     "################" +
     "#..............#" +
@@ -61,20 +63,38 @@ function initMap()
     map_numbers = new Array(mapString.length);
     for(i = 0; i < map_numbers.length; i++)
         map_numbers[i] = mapString.charCodeAt(i);
+
+    movingObjects = [
+        new MovingObject(8.5, 8.5, bulletSprite),
+        new MovingObject(7.5, 7.5, bulletSprite)
+    ]
 }
 
 function gameLoop()
 {
     requestAnimationFrame(gameLoop, canvas);
-    
-    console.log();
 
     let currFrameTime = Date.now()
     let deltaTime = currFrameTime - lastFrameTime;
     lastFrameTime = currFrameTime;
     //console.log('fps: ' + 1000 / deltaTime);
     
-    inputHandler_updateInput(deltaTime);
+    //inputHandler_updateInput(deltaTime);
 
     drawingHandler_drawCells();
+
+    //console.log("x: " + playerX + ", y: " + playerY);
+    //console.log("forwardX: " + Math.sin(playerAngle) + ", forwardY: " + Math.cos(playerAngle)); 
+}
+
+class MovingObject
+{
+    constructor(x, y, sprite)
+    {
+        this.x = x;
+        this.y = y;
+        this.spriteIndex = 0;
+        this.spriteHeight = sprite.height;
+        this.spriteWidth = sprite.width;
+    }
 }

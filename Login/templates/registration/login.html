@@ -22,17 +22,27 @@
         <form method="post">
             {% csrf_token %}
 
-            <div class="field-row-stacked"  style="width: 200px">
-                <label for="text18">Username</label>
-                <input id="text18" name="username" type="text" />
-            </div>
+            {% for field in form %}
+                <div class="field-row-stacked register" style="width: 200px">
+                    <label><strong>{{ field.label_tag }}</strong></label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <span class="helptext">{{ field.help_text }}</span>
+                    {% endif %}
+                </div>
 
-            <div class="field-row-stacked" style="width: 200px">
-              <label for="text19">Password</label>
-              <input id="text19" type="password" name="password" />
-            </div>
-            Todo: Form Errors
+                {% for error in field.errors %}
+                    <span class="error">{{ field.help_text }}</span>
+                {% endfor %}
+            {% endfor %}
+            
+            {% if messages %}
+            {% for message in messages %}
+                    <span class="error">{{ message }}</span>
+            {% endfor %}
+            {% else %}
             <br>
+            {% endif %}
 
             <section class="field-row" style="justify-content: flex-end">
                 <a href="{% url 'register' %}">Not a user? Register here!</a>

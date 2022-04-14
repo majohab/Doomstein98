@@ -24,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-!3!4d$y*&npjmh8d6uf7vr_4ickgw!ti7+a8o-nvw(-7em8g)b'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = str(os.environ.get('DEBUG')) == '1' # 1 equals True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -57,6 +57,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
+    #"whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
 ROOT_URLCONF = 'Doomstein98.urls'
@@ -78,8 +80,37 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Doomstein98.wsgi.application'
-ASGI_APPLICATION = 'Doomstein98.asgi.application'
+#ASGI_APPLICATION = 'Doomstein98.asgi.application'
+ASGI_APPLICATION = 'Game.routing.application'
 
+#'''
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
+'''
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+#'''
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
@@ -158,8 +189,44 @@ AUTH_PASSWORD_VALIDATORS = [
     # },
 ]
 
+# USERMANAGEMENT CONFIG
+
 # Redirect after login
 LOGIN_REDIRECT_URL = "menu"
 
 # Redirect after logout
 LOGOUT_REDIRECT_URL = "login"
+
+# Specify user model
+AUTH_USER_MODEL = 'Login.User'
+
+# EMAIL CONFIG
+EMAIL_FROM_USER = os.environ.get('EMAIL_FROM_USER')
+EMAIL_HOST = os.environ.get('EMAIL_HOST')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS')
+EMAIL_PORT = os.environ.get('EMAIL_PORT')
+
+# LOGGING CONFIG
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}
