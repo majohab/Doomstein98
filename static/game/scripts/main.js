@@ -21,6 +21,7 @@ let lastFrameTime;
 let mapString;
 let map_numbers;
 let movingObjects;
+let currWeapon;
 
 async function init()
 {
