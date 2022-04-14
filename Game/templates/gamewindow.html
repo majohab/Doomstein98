@@ -19,6 +19,8 @@
         <script src="{% static 'base/scripts/win98.js' %}"></script>
         <!-- Lobby -->
         {{ lobby_name|json_script:"json-lobbyname" }}
+        <!-- Username -->
+        {{ request.user.user_name |json_script:"json-username"  }}
         <!-- Game scripts -->
 
     </head>

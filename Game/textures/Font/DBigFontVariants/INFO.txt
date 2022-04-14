@@ -1,0 +1,11 @@
+Information:
+Name: DBigFont Variants
+Variants: 15
+Type: BigFont
+Format: FON2
+Replaces: BigFont
+Size: 10px (small), 12px (regular), 17 (with uppercases)
+Paletted: Doom
+Lower-cases: Yes
+Individual glyphs/character maps included: Yes
+Standard GFX included: N/A

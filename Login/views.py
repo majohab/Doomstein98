@@ -160,3 +160,9 @@ def loginUser(request):
         context['user_login_form'] = form
     return render(request, "registration/login.html",
                   context)
+
+def impressum(request):
+    return render(request, 'impressum.html', {})
+
+def privacy(request):
+    return render(request, 'privacy.html', {})
