@@ -14,16 +14,6 @@ from .forms import RegistrationForm, UserLoginForm
 from .models import User
 
 # Create your views here.
-def play(request):
-    """Renders HTML document and sends the response.
-
-    Args:
-        request (GET): Get start page.
-
-    Returns:
-        HTTP Response: Start page
-    """
-    return render(request, 'play.html', {})
 
 class EmailThread(Thread):
     """Sends verification email to user.
@@ -160,3 +150,14 @@ def loginUser(request):
         context['user_login_form'] = form
     return render(request, "registration/login.html",
                   context)
+
+def privacy(request):
+    """Renders HTML document and sends the response.
+
+    Args:
+        request (GET): Get privacy page.
+
+    Returns:
+        HTTP Response: Privacy page
+    """
+    return render(request, 'privacy.html', {})
