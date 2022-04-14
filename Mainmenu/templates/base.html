@@ -12,10 +12,10 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         <!-- Stylesheets -->
         {% load static %}
-        <link rel="stylesheet" type="text/css" href="{% static 'login/css/win98.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'base/css/win98.css' %}">
         <!-- Scripts -->
         {% load static %}
-        <script src="{% static 'login/scripts/win98.js' %}"></script>
+        <script src="{% static 'base/scripts/win98.js' %}"></script>
     </head>
     <body>
         <div id="desktop">
@@ -46,7 +46,9 @@
                     <a href="{% url 'impressum' %}">
                       <button aria-label="Help"></button>
                     </a>
-                    <button aria-label="Close"></button>
+                    <a href="{% url 'play' %}">
+                      <button aria-label="Close"></button>
+                    </a>
                   </div>
                 </div>
                 <div id="window" class="window-body">
