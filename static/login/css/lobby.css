@@ -1,8 +1,7 @@
-.window.impressum {
-    max-width: 300px;
-    max-height: 400px;
+.window.lobby {
+    max-width: 1200px;
+    max-height: 700px;
     position: fixed;
-
     top: 50%;
     left: 50%;
     -ms-transform: translate(-50%, -50%);
@@ -19,8 +18,9 @@
     left: 50%;
     -ms-transform: translate(-50%, -50%);
     transform: translate(-50%, -50%);
-}
+  }
 
-.field-row-stacked.register {
+  .field-row-stacked.register {
     width: 250px
 }
+

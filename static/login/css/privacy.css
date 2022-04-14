@@ -1,6 +1,6 @@
 .window.privacy {
-    max-width: 600px;
-    max-height: 400px;
+    max-width: 800px;
+    max-height: 700px;
     position: fixed;
     top: 50%;
     left: 50%;
@@ -23,3 +23,15 @@
 .field-row-stacked.register {
     width: 250px
 }
+
+.scrollDiv{
+  background: #c0c0c0;
+  width: auto;
+  height: 650px;
+  overflow: auto;
+}
+
+.scrollDiv::-webkit-scrollbar{
+  width: 15px;
+}
+

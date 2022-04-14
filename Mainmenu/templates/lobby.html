@@ -1,0 +1,38 @@
+{% extends 'baseMain.html' %}
+
+{% block content %}
+<!-- Stylesheets -->
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'login/css/lobby.css' %}">
+
+    <div class="window-body">
+        <div class="lobbyName" style="margin-left: 15px; font-size: 30px;">
+            <b>Lobby</b>
+        </div>
+        <div class="lobbyBox" style=" width: 1445px;
+            height: 625px; 
+            background-color: #7c7c7c;;
+            margin-top: 15px;
+            margin-left: 15px; 
+            margin-right: 15px;">
+        </div>
+
+            <button style="display: inline-block;  
+                width: 150px;
+                height: 40px;
+                margin-top: 15px;
+                margin-left: 1140px; ">
+                Create New Lobby
+            </button>
+       
+            <button style="display: inline-block;
+                width: 150px;
+                height: 40px;
+                margin-top: 15px;
+                margin-left: 15px">
+                Join
+            </button>
+       
+        
+    </div>
+{% endblock %}

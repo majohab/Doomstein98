@@ -32,4 +32,4 @@ def impressum(request):
     return render(request, 'impressum.html', {})
 
 def privacy(request):
-    return render(request, 'privacy.html', {})
+    return render(request, 'privacy.html', {}) 
