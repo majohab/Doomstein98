@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Stylesheets -->
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'login/css/impressum.css' %}">
+
+    <h2 class="h1 start">
+        DOOMSTEIN98
+    </h2>
+
+    <div class="window impressum">
+        <div class="title-bar">
+            <div class="title-bar-text">Impressum</div>
+            <div class="title-bar-controls">
+            <a href="{% url 'play' %}">
+                <button aria-label="Close"></button>
+            </a>
+        </div>
+    </div>
+    <div class="window-body">
+        <form method="post">
+            {% csrf_token %}
+
+                <br>
+                <b>Doomstain98 GmbH </b> <br>
+                Hauptstr. 1<br>
+                70182 Stuttgart<br>
+                Deutschland <br>
+                <br>
+
+                <b>Kontakt </b><br>
+                Telefon: +49 151 63459809<br>
+                Support: kontakt@doomstain98.de<br>
+                Website: doomstain98.de<br>
+                <br>
+
+                <b>Registergericht</b><br>
+                Amtsgericht Stuttgart <br>
+                HRB 12345<br>
+                <br>
+
+                <b>Geschäftsführung</b><br>
+                Doom Stain <br>
+                <br>
+
+                <b>Datenschutz</b><br>
+                <a href="{% url 'privacy' %}">View Privacy</a> <br>
+            
+        </form>    
+    </div>
+  </div>
+{% endblock %}
