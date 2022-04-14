@@ -1,6 +1,6 @@
-from django.urls import path
-from . import views as defined_views
+from django.urls import path, include
+from . import  views
 
 urlpatterns = [
-    path('', defined_views.menu, name="menu"),
+    path('lobby/', views.lobby, name="lobby"),
 ]

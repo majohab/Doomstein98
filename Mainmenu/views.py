@@ -1,15 +1,10 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
+from Login.forms import CustomUserCreationForm
 
 # Create your views here.
-@login_required(login_url='/accounts/login/')
-def menu(request):
-    """Renders HTML document and sends the response.
 
-    Args:
-        request (GET): Get menu 
-
-    Returns:
-        HTTP Response: Menu page
-    """
-    return render(request, 'menu.html', {})
+def lobby(request):
+    return render(request, 'lobby.html', {})
