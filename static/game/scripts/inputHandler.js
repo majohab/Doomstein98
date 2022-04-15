@@ -7,9 +7,6 @@ const playerStartY = 5.0;
 const playerStartAngle = 0.0;
 
 // Runtime variables
-let playerX;
-let playerY;
-let playerAngle;
 let pointerLocked;
 let lastRecordedMouseX;
 let lastMouseX;

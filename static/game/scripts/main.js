@@ -20,13 +20,20 @@ const mapWidth = 16;
 let lastFrameTime;
 let mapString;
 let map_numbers;
+
+// Received from backend each frame
+let playerX;
+let playerY;
+let playerAngle;
 let currWeapon;
 let bullets;
+let ammo;
+let health;
 
 async function init()
 {
-    initBullets();
-
+    initBackendVariables();
+    
     socketHandler_init();
 
     await spriteReader_init();
@@ -40,6 +47,13 @@ async function init()
     lastFrameTime = Date.now();
 
     gameLoop();
+}
+
+function initBackendVariables()
+{
+    initBullets();
+    ammo = 0;
+    health = 0;
 }
 
 function initBullets()

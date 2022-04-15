@@ -1,5 +1,5 @@
 // Config
-const cellSize = 1; // Pixels per side of cell
+const cellSize = 2; // Pixels per side of cell
 const wallHeight = 1.5;
 const depth_cpu = 16.0;
 const depth_gpu = 32.0;
@@ -117,10 +117,10 @@ function drawingHandler_drawCells()
 
 function drawingHandler_draw_gpu()
 {
-    let healthText = font.getTextImg('100%');
+    let healthText = font.getTextImg(health.toString().padStart(3, '0') + '%');
     let healthTextBounds = [300, screenHeight - 115, healthText[0].length, healthText.length, 5]; // startX, startY, sizeX (text coordinate-system), sizeY (text coordinate-system), scale
 
-    let bulletsText = font.getTextImg('128');
+    let bulletsText = font.getTextImg(ammo.toString().padStart(3, '0'));
     let bulletsTextBounds = [690, screenHeight - 115, bulletsText[0].length, bulletsText.length, 5]
 
     currWeapon = 1;
