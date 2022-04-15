@@ -92,13 +92,13 @@ function drawingHandler_init()
         function(playerX, playerY, playerAngle, 
             map_numbers,
             wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite, weaponFrameSprite,
-            movingObjects_Array, movingObjects_Array_length,
+            bullets, bullets_length,
             healthText, healthTextBounds, bulletsText, bulletsTextBounds,
             weaponFrame_startY) {
             drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
                 map_numbers,
                 wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite, weaponFrameSprite,
-                movingObjects_Array, movingObjects_Array_length,
+                bullets, bullets_length,
                 healthText, healthTextBounds, bulletsText, bulletsTextBounds,
                 weaponFrame_startY);
         },
@@ -117,20 +117,6 @@ function drawingHandler_drawCells()
 
 function drawingHandler_draw_gpu()
 {
-    let movingObjects_Array = 
-    [
-        [
-            5,
-            5,
-            5
-        ],
-        [
-            4,
-            4,
-            5
-        ]
-    ];
-
     let healthText = font.getTextImg('100%');
     let healthTextBounds = [300, screenHeight - 115, healthText[0].length, healthText.length, 5]; // startX, startY, sizeX (text coordinate-system), sizeY (text coordinate-system), scale
 
@@ -140,10 +126,15 @@ function drawingHandler_draw_gpu()
     currWeapon = 1;
     let weaponFrame_startY = 2 + currWeapon * 12;
 
+    let b = [[0, 0],
+        [4, 4]
+    ]
+    let bullets_length = b.length;
+
     buffer = gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, gunSprite.data, bulletSprite.data, weaponFrameSprite.data,
-        movingObjects_Array, movingObjects_Array.length,
+        bullets, bullets_length,
         healthText, healthTextBounds, bulletsText, bulletsTextBounds,
         weaponFrame_startY);
 }
@@ -151,7 +142,7 @@ function drawingHandler_draw_gpu()
 function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
     map_numbers,
     wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite, weaponFrameSprite,
-    movingObjects_Array, movingObjects_Array_length,
+    bullets, bullets_length,
     healthText, healthTextBounds, bulletsText, bulletsTextBounds,
     weaponFrame_startY)
 {
@@ -287,6 +278,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,
                 }
             }
         }
+        //#endregion
         
     }
     //#endregion
@@ -473,11 +465,12 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,
 
         //#endregion
 
-        for (let obj = 0; obj < movingObjects_Array_length; obj++)
+        //#region Bullets
+
+        for (let obj = 1; obj < bullets_length; obj++) // First element is 0
         {
-            let objX = movingObjects_Array[obj][0];
-            let objY = movingObjects_Array[obj][1];
-            let spriteIndex = movingObjects_Array[obj][2];
+            let objX = bullets[obj][0];
+            let objY = bullets[obj][1];
             let spriteWidth = this.constants.bulletSprite_width;
             let spriteHeight = this.constants.bulletSprite_height;
 
@@ -529,6 +522,8 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,
                 }
             }
         }
+
+        //#endregion
     }
 
     //#endregion

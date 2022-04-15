@@ -20,11 +20,13 @@ const mapWidth = 16;
 let lastFrameTime;
 let mapString;
 let map_numbers;
-let movingObjects;
 let currWeapon;
+let bullets;
 
 async function init()
 {
+    initBullets();
+
     socketHandler_init();
 
     await spriteReader_init();
@@ -38,6 +40,11 @@ async function init()
     lastFrameTime = Date.now();
 
     gameLoop();
+}
+
+function initBullets()
+{
+    bullets = [[0, 0]]; // We need at least one element (and for the gpu all the element-types need to be the same, so we have another array here)
 }
 
 
@@ -65,10 +72,10 @@ function initMap()
     for(i = 0; i < map_numbers.length; i++)
         map_numbers[i] = mapString.charCodeAt(i);
 
-    movingObjects = [
-        new MovingObject(8.5, 8.5, bulletSprite),
-        new MovingObject(7.5, 7.5, bulletSprite)
-    ]
+    //movingObjects = [
+    //    new MovingObject(8.5, 8.5, bulletSprite),
+    //    new MovingObject(7.5, 7.5, bulletSprite)
+    //]
 }
 
 function gameLoop()
@@ -83,19 +90,18 @@ function gameLoop()
     //inputHandler_updateInput(deltaTime);
 
     drawingHandler_drawCells();
-
-    //console.log("x: " + playerX + ", y: " + playerY);
+    
     //console.log("forwardX: " + Math.sin(playerAngle) + ", forwardY: " + Math.cos(playerAngle)); 
 }
 
-class MovingObject
-{
-    constructor(x, y, sprite)
-    {
-        this.x = x;
-        this.y = y;
-        this.spriteIndex = 0;
-        this.spriteHeight = sprite.height;
-        this.spriteWidth = sprite.width;
-    }
-}
+//class MovingObject
+//{
+//    constructor(x, y, sprite)
+//    {
+//        this.x = x;
+//        this.y = y;
+//        this.spriteIndex = 0;
+//        this.spriteHeight = sprite.height;
+//        this.spriteWidth = sprite.width;
+//    }
+//}
