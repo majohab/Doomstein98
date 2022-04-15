@@ -36,12 +36,19 @@ function socketHandler_init()
         );
     }
 
-    webSocket.onmessage = function(e) {
+    webSocket.onmessage = (e) => {
+
         let data = JSON.parse(e.data)
 
         playerX     = data['players'][userName]['x'];
         playerY     = data['players'][userName]['y'];
         playerAngle = data['players'][userName]['dir'];
+
+        let rec_bullets = data['bullets'];
+        initBullets();
+        for (let i = 0; i < rec_bullets.length; i++)
+            bullets.push([rec_bullets[i]['x'], rec_bullets[i]['y']]);
+
 
         let mouseDeltaX = lastRecordedMouseX - lastMouseX;
         lastMouseX = lastRecordedMouseX
