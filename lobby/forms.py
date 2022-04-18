@@ -11,4 +11,24 @@ class LobbyForm(ModelForm):
     """
     class Meta():
         model = Lobby
-        fields = ('name', 'map', 'max_players', 'current_players', 'game_runtime', 'start_weapon')
+        fields = ('name', 'map', 'max_players', 'game_runtime', 'start_weapon')
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields['name'].widget.attrs.update({
+            'class': "formfield"
+        })
+        self.fields['map'].widget.attrs.update({
+            'class': "formfield"
+        }) 
+        self.fields['max_players'].widget.attrs.update({
+            'class': "formfield"
+        }) 
+        self.fields['game_runtime'].widget.attrs.update({
+            'class': "formfield"
+        }) 
+        self.fields['start_weapon'].widget.attrs.update({
+            'class': "formfield"
+        })
+
+

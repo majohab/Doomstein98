@@ -1,0 +1,77 @@
+button{
+    width: fit-content;
+}
+
+button.user{
+    width: fit-content;
+    float: right;
+    height: 40px;
+}
+
+button.lobby{
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 5px;
+    margin-right: 5px;
+    float: right;
+    width: fit-content;
+    height: fit-content;
+}
+
+h2.lobby{
+    float: left;
+}
+
+button.createlobby{
+    margin-top: 1%;
+    margin-bottom: 1%;
+    margin-left: 5px;
+    margin-right: 5px;
+    float: right;
+    width: fit-content;
+    height: 4%;
+}
+
+div.lobbybox{
+    display: block;
+    background: #ffffff;
+    box-shadow: inset -1px -1px #ffffff,
+                inset 1px 1px #808080, 
+                inset -2px -2px #dfdfdf,
+                inset 2px 2px #0a0a0a;
+    padding: 5px 5px;
+    overflow-y: scroll;
+    margin: 0;
+    width: 100%;
+    height: 83%;
+}
+
+div.lobbyline{
+    background: #c0c0c0;
+    box-shadow: inset -1px -1px #0a0a0a,
+                inset 1px 1px #ffffff, 
+                inset -2px -2px #808080,
+                inset 2px 2px #dfdfdf;
+    height: fit-content;
+}
+
+p.lobbytext{
+    display: inline-block;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: 5px;
+    font-size: medium;
+}
+
+.formfield{
+    width: 100px;
+    margin: 5px;
+}
+
+.label{
+    margin-top: 5px;
+}
+
+.field-row-stacked.register{
+    float: left;
+}
