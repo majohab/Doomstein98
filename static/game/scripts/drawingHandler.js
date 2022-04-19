@@ -1,5 +1,5 @@
 // Config
-const cellSize = 1; // Pixels per side of cell
+const cellSize = 2; // Pixels per side of cell
 const wallHeight = 1.5;
 const depth_cpu = 16.0;
 const depth_gpu = 32.0;
@@ -48,7 +48,7 @@ function drawingHandler_init()
             cellSize: cellSize,
             statusBar_Height: screenHeight * 0.15,
             weaponFrame_startX: (screenWidth / statusBarSprite.width) * 213,
-            gun_Height: screenHeight / 5,
+            gun_Height: screenHeight / 3,   // ToDo: Usually each weapon should store its own separate reference height additionally, but for now it works fine without.
 
             fov: fov,
             depth: depth_gpu,
@@ -78,9 +78,6 @@ function drawingHandler_init()
             statusBarSprite_width: statusBarSprite.width,
             statusBarSprite_height: statusBarSprite.height,
 
-            gunSprite_width: gunSprite.width,
-            gunSprite_height: gunSprite.height,
-
             bulletSprite_width: bulletSprite.width,
             bulletSprite_height: bulletSprite.height,
 
@@ -91,14 +88,16 @@ function drawingHandler_init()
     gpu_kernel = gpu.createKernel(
         function(playerX, playerY, playerAngle, 
             map_numbers,
-            wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite, weaponFrameSprite,
+            wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, weaponFrameSprite,
             bullets, bullets_length,
+            weaponImage, weaponImageBounds,
             healthText, healthTextBounds, bulletsText, bulletsTextBounds,
             weaponFrame_startY) {
             drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
                 map_numbers,
-                wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite, weaponFrameSprite,
+                wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, weaponFrameSprite,
                 bullets, bullets_length,
+                weaponImage, weaponImageBounds,
                 healthText, healthTextBounds, bulletsText, bulletsTextBounds,
                 weaponFrame_startY);
         },
@@ -117,14 +116,16 @@ function drawingHandler_drawCells()
 
 function drawingHandler_draw_gpu()
 {
-    let healthText = font.getTextImg('100%');
+    let healthText = font.getTextImg(health.toString().padStart(3, '0') + '%');
     let healthTextBounds = [300, screenHeight - 115, healthText[0].length, healthText.length, 5]; // startX, startY, sizeX (text coordinate-system), sizeY (text coordinate-system), scale
 
-    let bulletsText = font.getTextImg('128');
+    let bulletsText = font.getTextImg(ammo.toString().padStart(3, '0'));
     let bulletsTextBounds = [690, screenHeight - 115, bulletsText[0].length, bulletsText.length, 5]
 
-    currWeapon = 1;
     let weaponFrame_startY = 2 + currWeapon * 12;
+
+    let weaponImage = currWeapon == 0 ? handgun.getSprite(0) : currWeapon == 1 ? machinegun.getSprite(0) : shotgun.getSprite(0);
+    let weaponImageBounds = [weaponImage[0].length, weaponImage.length];
 
     let b = [[0, 0],
         [4, 4]
@@ -133,18 +134,20 @@ function drawingHandler_draw_gpu()
 
     buffer = gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
-        wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, gunSprite.data, bulletSprite.data, weaponFrameSprite.data,
+        wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, bulletSprite.data, weaponFrameSprite.data,
         bullets, bullets_length,
+        weaponImage, weaponImageBounds,
         healthText, healthTextBounds, bulletsText, bulletsTextBounds,
         weaponFrame_startY);
 }
 
-function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
-    map_numbers,
-    wallSprite, floorSprite, ceilingSprite, statusBarSprite, gunSprite, bulletSprite, weaponFrameSprite,
-    bullets, bullets_length,
-    healthText, healthTextBounds, bulletsText, bulletsTextBounds,
-    weaponFrame_startY)
+function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // Coordinates and Angle
+    map_numbers,                                                            // Map
+    wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, weaponFrameSprite,    // World Sprites
+    bullets, bullets_length,                                                // Bullets
+    weaponImage, weaponImageBounds,
+    healthText, healthTextBounds, bulletsText, bulletsTextBounds,           // Status-Bar-Texts
+    weaponFrame_startY)                                                     // Status-Bar-Weapon-Frame
 {
     //#region Init
 
@@ -286,8 +289,8 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,
     //#region Gun-Img
     if (depthBuffer > 0)
     {
-        
-        let gun_spriteRatio = this.constants.gunSprite_width / this.constants.gunSprite_height;
+        let spriteWidth = weaponImageBounds[0], spriteHeight = weaponImageBounds[1];
+        let gun_spriteRatio = spriteWidth / spriteHeight;
 
         let gun_ImgHeight = this.constants.gun_Height;
         let gun_ImgWidth = gun_ImgHeight * gun_spriteRatio;
@@ -296,14 +299,14 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,
         let gun_xMax = screenWidth - gun_xMin;
         if (y >= gun_yMin && x >= gun_xMin && x <= gun_xMax)
         {
-            let pix_x = Math.floor(((x - gun_xMin) / gun_ImgWidth) * this.constants.gunSprite_width);
-            let pix_y = Math.floor(((gameWindowHeight - y) / gun_ImgHeight) * this.constants.gunSprite_height);
+            let pix_x = Math.floor(((x - gun_xMin) / gun_ImgWidth) * spriteWidth);
+            let pix_y = Math.floor(((y - gun_yMin) / gun_ImgHeight) * spriteHeight);
             
-            if (gunSprite[pix_y][pix_x][3] > 0)
+            if (weaponImage[pix_y][pix_x][3] > 0)
             {
-                r = gunSprite[pix_y][pix_x][0]
-                g = gunSprite[pix_y][pix_x][1]
-                b = gunSprite[pix_y][pix_x][2]
+                r = weaponImage[pix_y][pix_x][0]
+                g = weaponImage[pix_y][pix_x][1]
+                b = weaponImage[pix_y][pix_x][2]
 
                 depthBuffer = 0;
             }
@@ -312,7 +315,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,
         
     //#endregion
 
-     //#region 3D Ray-Casting
+    //#region 3D Ray-Casting
 
     if (depthBuffer > 0)
     {

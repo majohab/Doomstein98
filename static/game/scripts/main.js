@@ -20,13 +20,20 @@ const mapWidth = 16;
 let lastFrameTime;
 let mapString;
 let map_numbers;
-let currWeapon;
+
+// Received from backend each frame
+let playerX;
+let playerY;
+let playerAngle;
 let bullets;
+let ammo;
+let health;
+let currWeapon;
 
 async function init()
 {
-    initBullets();
-
+    initBackendVariables();
+    
     socketHandler_init();
 
     await spriteReader_init();
@@ -40,6 +47,14 @@ async function init()
     lastFrameTime = Date.now();
 
     gameLoop();
+}
+
+function initBackendVariables()
+{
+    initBullets();
+    ammo = 0;
+    health = 100; // When health wasn't initialized with it's default value, there were some graphical bugs with the health-text sometimes.
+    currWeapon = 2;
 }
 
 function initBullets()
