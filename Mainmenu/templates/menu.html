@@ -22,12 +22,14 @@
     </button>
     
     <div class="div lobbybox">
-        <div class="div lobbyline">
-            <p class="p lobbytext">Lobbyname (amount/max)</p>
-            <button class="button lobby">
-                Join
-            </button>
-        </div>
+        {% for lobby in lobbies %}
+            <div class="div lobbyline">
+                <p class="p lobbytext"><b>{{ lobby.name }}</b> ({{ lobby.current_players }}/{{ lobby.max_players }})</p>
+                <button class="button lobby">
+                    Join
+                </button>
+            </div>
+        {% endfor %}
     </div>
 
     <form method="post">

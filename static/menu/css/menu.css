@@ -53,6 +53,7 @@ div.lobbyline{
                 inset -2px -2px #808080,
                 inset 2px 2px #dfdfdf;
     height: fit-content;
+    margin-bottom: 1px;
 }
 
 p.lobbytext{

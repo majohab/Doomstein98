@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from lobby.forms import LobbyForm
 from django.urls import reverse
 from django.contrib import messages
+from lobby.models import Lobby
 
 # Create your views here.
 
@@ -14,7 +15,8 @@ def menu(request):
     Returns:
         HTTP Response: Menu page
     """
-    context = {}
+    lobbies = Lobby.objects.all()
+    context = {'lobbies': lobbies}
     if request.method == "POST":
         form = LobbyForm(request.POST)
         if form.is_valid():
@@ -30,7 +32,7 @@ def menu(request):
         form = LobbyForm(request)
         context['lobby_form'] = form
     return render(request, "menu.html",
-                  {"form": LobbyForm})
+                  {'form': LobbyForm, 'lobbies': Lobby.objects.all()})
 
 def play(request):
     """Renders HTML document and sends the response.
