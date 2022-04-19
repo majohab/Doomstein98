@@ -51,6 +51,7 @@ function socketHandler_init()
 
         ammo = data['players'][userName]['ammo'];
         health = data['players'][userName]['h'];
+        //currWeapon = data['players'][userName]['weapon'] | 0;
 
 
         let mouseDeltaX = lastRecordedMouseX - lastMouseX;
@@ -76,7 +77,7 @@ function socketHandler_init()
             shortClicked = false;
         }
         
-        console.log('Data:', data)
+        //console.log('Data:', data)
     };
 
     webSocket.onclose = function(e) {

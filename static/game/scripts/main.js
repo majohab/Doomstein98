@@ -25,10 +25,10 @@ let map_numbers;
 let playerX;
 let playerY;
 let playerAngle;
-let currWeapon;
 let bullets;
 let ammo;
 let health;
+let currWeapon;
 
 async function init()
 {
@@ -53,7 +53,8 @@ function initBackendVariables()
 {
     initBullets();
     ammo = 0;
-    health = 0;
+    health = 100; // When health wasn't initialized with it's default value, there were some graphical bugs with the health-text sometimes.
+    currWeapon = 2;
 }
 
 function initBullets()

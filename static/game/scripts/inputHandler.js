@@ -57,11 +57,9 @@ function inputHandler_initKeyEvents()
     //    shortClicked = true;
     //})
     document.addEventListener('mousedown',function (){
-        console.log("down")
         longClicked = true;
     })
     document.addEventListener('mouseup', function(){
-        console.log("up")
         longClicked = false;
     })
 }
