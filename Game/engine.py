@@ -1,17 +1,14 @@
 import logging
 from operator import attrgetter
-from platform import win32_is_iot
 import random
 import threading
 import time
 import uuid
 import numpy as np
-from collections import OrderedDict, deque
-from enum import Enum, unique
-from typing import Any, Mapping, Optional, Set, Tuple
+from typing import Any, Mapping
 
 import math
-import copy
+import pandas as pd
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from pyparsing import col
@@ -133,10 +130,11 @@ class Map:
     It can read a map from strings array
     '''
 
-    def __init__(self, width : int, height : int, map_list : list, spawns : list[Spawn]):
+    def __init__(self, width : int, height : int, map : pd.DataFrame, strings : list[str], spawns : list[Spawn]):
         self.width = width
         self.height = height
-        self.map_string = map_list
+        self.map = map
+        self.map_string = strings
         self.spawns = spawns
         self.tick = 0
     
@@ -145,6 +143,8 @@ class Map:
     def from_list(strings: list):
 
         spawns = list()
+
+        map = pd.DataFrame([list(string) for string in strings])
         
         for idx_s, string in enumerate(strings):
             
@@ -214,6 +214,7 @@ class Map:
         return Map(
             len(string),
             len(strings),
+            map,
             strings,
             spawns,
         )
@@ -229,15 +230,15 @@ class Map:
         collision = False
 
         #try:
-        A = self.map_string[round(coordinate.y - (0.5 + tolerance))][round(coordinate.x - (0.5 + tolerance))] == "#"
-        B = self.map_string[round(coordinate.y - (0.5 + tolerance))][round(coordinate.x - (0.5 - tolerance))] == "#"
-        C = self.map_string[round(coordinate.y - (0.5 - tolerance))][round(coordinate.x - (0.5 + tolerance))] == "#"
-        D = self.map_string[round(coordinate.y - (0.5 - tolerance))][round(coordinate.x - (0.5 - tolerance))] == "#"
+        A = self.map.iloc[round(coordinate.y - (0.5 + tolerance)),round(coordinate.x - (0.5 + tolerance))] == "#"
+        B = self.map.iloc[round(coordinate.y - (0.5 + tolerance)),round(coordinate.x - (0.5 - tolerance))] == "#"
+        C = self.map.iloc[round(coordinate.y - (0.5 - tolerance)),round(coordinate.x - (0.5 + tolerance))] == "#"
+        D = self.map.iloc[round(coordinate.y - (0.5 - tolerance)),round(coordinate.x - (0.5 - tolerance))] == "#"
 
-        A_l = self.map_string[round(coordinate.y - 0.57)][round(coordinate.x - 0.57)] == "#"
-        B_l = self.map_string[round(coordinate.y - 0.57)][round(coordinate.x - 0.43)] == "#"
-        C_l = self.map_string[round(coordinate.y - 0.43)][round(coordinate.x - 0.57)] == "#"
-        D_l = self.map_string[round(coordinate.y - 0.43)][round(coordinate.x - 0.43)] == "#"
+        A_l = self.map.iloc[round(coordinate.y - 0.57),round(coordinate.x - 0.57)] == "#"
+        B_l = self.map.iloc[round(coordinate.y - 0.57),round(coordinate.x - 0.43)] == "#"
+        C_l = self.map.iloc[round(coordinate.y - 0.43),round(coordinate.x - 0.57)] == "#"
+        D_l = self.map.iloc[round(coordinate.y - 0.43),round(coordinate.x - 0.43)] == "#"
 
         '''
         print(F"A_l: {A_l}")
@@ -326,14 +327,16 @@ class Player:
         # Represents the current available weapons
         self.weapons = weapons
 
+        #Represents the current weapon
+        #Current Weapon
+        self.current_weapon = weapons["P99"] 
+
+        self.change_weapon_delay = 0
+
         # Represents score for kill and deaths
         self.kills  = 0
         self.deaths = 0
         self.kill_death = 0
-
-        #Represents the current weapon
-        #Current Weapon
-        self.current_weapon = weapons["P99"] 
 
         '''
         Float describes how fast the Player is moving
@@ -444,6 +447,8 @@ class Player:
         # Was gibt es für Übergabeparameter
         try:
             self.current_weapon = self.weapons[weapon]
+            # Wait 1 seconds to be able to shoot again
+            self.change_weapon_delay = 1/tick_rate
         except KeyError:
             print(F"Die Waffe {weapon} gibt es nicht im Repetoire")
 
@@ -516,7 +521,7 @@ class Player:
     '''
         Change the direction of the player by the given direction
     '''
-    def change_direction(self, mouseX):
+    def change_direction(self, mouseX : float):
 
         dir = self.direction + mouseX * self.rotation_speed
 
@@ -560,14 +565,15 @@ class Player:
     '''
     def render(self) -> Mapping[str, Any]:
         return{
-            "x"         : self.current_position.x,
-            "y"         : self.current_position.y,
-            "h"         : self.health,
-            "dir"       : self.direction,
-            "shot"      : self.justShot,
-            "hit"       : self.justHit,
-            "ammo"      : self.current_weapon.curr_ammunition,
-            "alive"     : self.alive,
+            "x"           : self.current_position.x,
+            "y"           : self.current_position.y,
+            "h"           : self.health,
+            "dir"         : self.direction,
+            "shot_an"     : self.justShot,
+            "hit_an"      : self.justHit,
+            "cha_weap_an" : self.change_weapon_delay,
+            "ammo"        : self.current_weapon.curr_ammunition,
+            "alive"       : self.alive,
         }
 
 
@@ -581,14 +587,14 @@ class Bullet:
 
         print("A bullet has been created")
 
-        self.player           = origin_player
-        self.origin_pos       = origin_pos
-        self.current_position = origin_pos
+        self.player           : Player     = origin_player
+        self.origin_pos       : Coordinate = origin_pos
+        self.current_position : Coordinate = origin_pos
 
-        self.direction = direction
+        self.direction : float = direction
 
         # One Movement per frame
-        self.speed = 0.1 #TODO: Anpassen
+        self.speed : float = 0.1 #TODO: Anpassen
 
     # Execute for every bullet this function
     # Returns True if bullet collide with Wall or Player
@@ -622,8 +628,8 @@ class State:
 
     def __init__(self, map : Map, players_name : list[str] = [], bullets : list[Bullet] = []):
         self.map     : Map          = map
-        self.players : list[Player] = []#[Player(name, ) for name in players_name]
-        self.bullets : list[Bullet] = bullets
+        self.players = []#[Player(name, ) for name in players_name]
+        self.bullets = bullets
 
 
     def render(self) -> Mapping[str, Any]:
@@ -637,7 +643,7 @@ class State:
 class GameEngine(threading.Thread):
 
     # Constructor function for GameEngine
-    def __init__(self, group_name, players_name : list[str] = [], map_string = MAPS[0], max_players : int = 6, game_mode : int = 0, win_score : int = 20, end_time : int = 30*60):
+    def __init__(self, group_name, players_name : list[str] = [], map_string = MAPS[0], max_players : int = 6, game_mode : int = 0, win_score : int = 20, end_time : int = (30*60)/tick_rate):
         
         # Did the game started?
         self.start_flag = False
@@ -697,23 +703,24 @@ class GameEngine(threading.Thread):
         while self.running:
 
             if self.start_flag:
-                
+
                 # After each tick update the current status of the game
-                self.state = self.tick()
+                self.tick()
 
                 # Broadcast the current Status to all players in game
-                self.broadcast_state(self.state)
+                self.broadcast_state()
 
                 # Sleep for a specific time, in which the game will calculate every new status
                 time.sleep(tick_rate)
 
-    def broadcast_state(self, state: State) -> None: 
+
+    def broadcast_state(self) -> None: 
         '''
         The broadcast method which broadcast the current game state to the channel
         '''
 
         # Get the current information about the game state
-        state_json = state.render()
+        state_json = self.state.render()
 
         #print(state_json)
 
@@ -726,13 +733,13 @@ class GameEngine(threading.Thread):
             }
         )
 
-    def tick(self):
+    def tick(self) -> None:
         ''' 
         Function in which every tick it describes
 
         '''
 
-        self.tick_num += 1
+        self.tick_num += 1         
 
         if(self.tick_num >= self.end_time):
             
@@ -740,40 +747,67 @@ class GameEngine(threading.Thread):
             self.time_limit_reached()
         
         #print(F"Tick {self.tick_num} for game {self.name}")
-        
-        state = self.state
+
+        #start = time.time()
 
         with self.event_lock:
             events = self.event_changes.copy()
             self.event_changes.clear()
 
-        if state.players:
-            state = self.process_players(state, events)
+        #end = time.time()
 
-        if state.bullets:
-            state = self.process_bullets(state)
+        #print(F"event: {end-start}s\n")
+
+        if self.state.players:
+            self.process_players(events)
+
+        #start = time.time()
+
+        #print(F"players: {start-end}s\n")
+
+        if self.state.bullets:
+            self.process_bullets()
         
-        state = self.process_hits(state)
+        #end = time.time()
+
+        #print(F"bullets: {end-start}s\n")
         
-        state = self.process_new_players(state)
+        self.process_hits()
 
-        self.process_spawns(state)
+        #start = time.time()
 
-        return state
+        #print(F"hits: {start-end}s\n")
+        
+        self.process_new_players()
 
-    def process_players(self, state: State, events) -> State:
+        #end = time.time()
+
+        #print(F"new players: {end-start}s\n")
+
+        self.process_spawns()
+
+        #start = time.time()
+
+        #print(F"spawns: {start-end}s\n\n")
+
+
+    def calculate_distances(self) -> None:
+        pass
+
+
+    def process_players(self, events) -> None:
         '''
         Handle the actions of a player and check the winning conditions
         '''
 
         # if game is about last man standing and only one Player remained
-        if self.game_mode == 1 and len(state.players) == 1:
+        if self.game_mode == 1 and len(self.state.players) == 1:
 
             print("Last Man Standing was won because only one player left")
             # Declare it as a win
-            self.win(state.players)
+            self.win(self.state.players)
 
-        for idx, player in enumerate(state.players):
+        for idx, player in enumerate(self.state.players):
 
             #if player did not respond for one second or more
             if player.delayed_tick >= 1/tick_rate:
@@ -787,7 +821,7 @@ class GameEngine(threading.Thread):
 
                 #Remove the Player from current Game
                 #Add him to the queue
-                self.player_queue.append(state.players.pop(idx))
+                self.player_queue.append(self.state.players.pop(idx))
 
                 continue
 
@@ -795,7 +829,7 @@ class GameEngine(threading.Thread):
             if player.alive > 0:
 
                 # remove him from current game and add him to queue
-                self.player_queue.append(state.players.pop(idx))
+                self.player_queue.append(self.state.players.pop(idx))
 
             if self.game_mode == 0 and player.kills >= self.win_score:
                 
@@ -823,52 +857,51 @@ class GameEngine(threading.Thread):
                 player.change_direction(event["mouseDeltaX"])
 
                 if(event["x"] != 0 or event["y"] != 0):
-                    player.move(state, event["x"], event["y"])
+                    player.move(self.state, event["x"], event["y"])
 
-                if(event["leftClick"]):
-                   player.shoot(state)
+                if(event["leftClick"] and player.change_weapon_delay == 0):
+                   player.shoot(self.state)
             else:
                 #Increase the delayed tick of the player
                 player.delayed_tick += 1
-
-        return state
             
-    def process_hits(self, state: State) -> State:
+            #if the player is currently changing its weapon
+            if player.change_weapon_delay > 0:
+
+                #reduce the delay
+                player.change_weapon_delay -= 1
+            
+    def process_hits(self) -> None:
         '''
         Checks if any bullet hits a player
         '''
 
-        for player in state.players:
+        [player.get_hit(bullet.player, self.game_mode)  for player in self.state.players for bullet in self.state.bullets if bullet.current_position.get_distance(player.current_position) < 0.1]
 
-            got_hit = False
+        #for player in self.state.players:
 
-            for bullet in state.bullets: 
+        #    for bullet in self.state.bullets: 
 
                 # If the bullet is too close to the player, then recognize it as a collision
-                if bullet.current_position.get_distance(player.current_position) < 0.1:
+       #         if bullet.current_position.get_distance(player.current_position) < 0.1:
 
-                    player.get_hit(bullet.player, self.game_mode)
-                    break
+                    
+#                    break
 
-        return state
-
-    def process_bullets(self, state: State) -> State:
+    def process_bullets(self) -> None:
         '''
         Checks if bullet hits the wall
         '''
         # Make the next move for all bullets
         # if True then it collide with Wall or Player, so remove it
-        state.bullets = [bullet for bullet in state.bullets if not bullet.update_pos(state.map)]
+        self.state.bullets = [bullet for bullet in self.state.bullets if not bullet.update_pos(self.state.map)]
 
-
-        return state
-
-    def process_spawns(self, state: State) -> None:
+    def process_spawns(self) -> None:
         '''
         Reduce the tick of every Spawn, so new Player can join
         None will be returned
         '''
-        [spawn.update_occupation() for spawn in state.map.spawns]
+        [spawn.update_occupation() for spawn in self.state.map.spawns]
 
 
     def apply_events(self, player: str, events) -> None:
@@ -895,7 +928,7 @@ class GameEngine(threading.Thread):
             # Append Player to the queue so it can be appended to the game
             self.player_queue.append(Player(player_name, alive = 0))
 
-    def process_new_players(self, state: State):
+    def process_new_players(self) -> None:
         '''
         Look if new Players should join the game
         '''
@@ -908,7 +941,7 @@ class GameEngine(threading.Thread):
             if(player.alive == 0):
 
                 #if spawn is found returns true
-                if not player.find_spawn(state.map):
+                if not player.find_spawn(self.state.map):
 
                     print("No spawn was found yet")
 
@@ -919,7 +952,7 @@ class GameEngine(threading.Thread):
                 player.health = 100
 
                 # add the players to the game
-                state.players.append(self.player_queue.pop(idx))
+                self.state.players.append(self.player_queue.pop(idx))
 
                 print(player.name)
             # if player is waiting for rejoining
@@ -933,13 +966,11 @@ class GameEngine(threading.Thread):
                 idx += 1
             else:
                 #skip Player for pop() method
-                idx += 1                
+                idx += 1   
 
-        return state
+    def win(self, winning_players : list[Player]) -> None:
 
-    def win(self, winning_players : list[Player]):
-
-        print(F"{winning_players[0].name} wins the game")
+        print(F"{winning_players} wins the game")
 
         # Send the essential information for validate the winner of the game
         async_to_sync(self.channel_layer.send)(
@@ -976,7 +1007,6 @@ class GameEngine(threading.Thread):
             self.win(self.look_for_best_players(self.state.players))
 
         
-
     def look_for_best_players(self, players):
 
         # Look for the highest kills in queue and in current game
@@ -988,7 +1018,7 @@ class GameEngine(threading.Thread):
         # if there is only one Player the best player
         if len(best_players) == 1:
 
-           return [best_players]
+           return best_players
 
         else:
 

@@ -105,7 +105,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.send(
             "game_engine",
             {
-                "type"    : "player.new", 
+                "type"    : "new.player", 
                 "player"  : self.username, 
                 "channel" : self.channel_name,
                 "lobby"   : msg['lobby'],
@@ -142,7 +142,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.send(
             "game_engine",
             { 
-              "type"    : "player.validate", 
+              "type"    : "validate.event", 
               "player"  : self.username, 
               "msg"     : {
                   "mouseDeltaX" : msg["mouseDeltaX"],
@@ -203,14 +203,13 @@ class GameConsumer(SyncConsumer):
         """
         Created on demand when the first player joins.
         """
-        #print(F"Game Consumer: {args} {kwargs}")
         super().__init__(*args, **kwargs)
 
         self.channel_layer = get_channel_layer()
         self.engines : dict[GameEngine] = {} #The games are saved in there
         self.lobbies = {} #What player is in what game
 
-    def player_new(self, event):
+    def new_player(self, event):
         '''
         Join an existing game or Create a new game
         '''
@@ -247,7 +246,7 @@ class GameConsumer(SyncConsumer):
             # for further information in what game the player is
             self.lobbies[username] = lobbyname
 
-    def player_validate(self, event):
+    def validate_event(self, event):
 
         username = event["player"]
 
