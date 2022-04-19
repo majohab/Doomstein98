@@ -7,9 +7,6 @@ const playerStartY = 5.0;
 const playerStartAngle = 0.0;
 
 // Runtime variables
-let playerX;
-let playerY;
-let playerAngle;
 let pointerLocked;
 let lastRecordedMouseX;
 let lastMouseX;
@@ -60,11 +57,9 @@ function inputHandler_initKeyEvents()
     //    shortClicked = true;
     //})
     document.addEventListener('mousedown',function (){
-        console.log("down")
         longClicked = true;
     })
     document.addEventListener('mouseup', function(){
-        console.log("up")
         longClicked = false;
     })
 }
