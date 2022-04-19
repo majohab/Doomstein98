@@ -41,10 +41,8 @@ INSTALLED_APPS = [
     'Game',
     'channels',
     'Login',
+    'lobby',
     'Mainmenu',
-    'API.Staticfiles',
-    'API.Users',
-    'API.Lobbies',
     'debug_toolbar',
 ]
 

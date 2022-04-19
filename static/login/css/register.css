@@ -1,6 +1,6 @@
 .window.register {
     max-width: 300px;
-    max-height: 380px;
+    height: fit-content;
     position: fixed;
     top: 50%;
     left: 50%;
