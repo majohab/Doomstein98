@@ -16,7 +16,24 @@ from pyparsing import col
 log = logging.getLogger(__name__)
 
 #TODO: fit that for customized fps
-tick_rate = 0.01
+TICK_RATE = 0.01
+
+PLAYER_SPEED            = TICK_RATE/0.1
+ROTATION_SPEED          = TICK_RATE/1
+BULLET_SPEED            = TICK_RATE/0.04
+
+# Every Unit is in Seconds
+JUST_SHOT_ANIMATION     = 1/TICK_RATE
+JUST_HIT_ANIMATION      = 1/TICK_RATE
+
+CHANGE_WEAPON_DELAY     = 1/TICK_RATE
+SPAWN_LOCK_TIME         = 5/TICK_RATE
+REVIVE_WAITING_TIME     = 10/TICK_RATE
+PLAYER_DELAY_TOLERANCE  = 1/TICK_RATE
+PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING = 10/TICK_RATE
+PLAYER_WAITING_TIME_OCCUPIED_SPAWN = 0.1/TICK_RATE
+
+MAX_END_TIME            = (30*60)/TICK_RATE # for 30 Min
 
 #Reversed direction
 MAPS = [
@@ -81,7 +98,7 @@ class Spawn:
         print(F"Spawn at x: {self.coordinate.x} y: {self.coordinate.y} is occupied")
 
         # The Spawn is occupied for 5 Seconds
-        self.lock_time = 5/tick_rate
+        self.lock_time = SPAWN_LOCK_TIME
 
     def update_occupation(self):
         '''
@@ -97,29 +114,33 @@ class Spawn:
 
 class Weapon:
 
-    def __init__(self, max_ammunition : int, latency : int, dmg : int):
+    def __init__(self, name : str, max_ammunition : int, latency : int, dmg : int):
 
-        self.max_ammunition = max_ammunition
+        self.name :str = name
+    
+        self.max_ammunition : int = max_ammunition
 
-        self.curr_ammunition = max_ammunition
+        self.curr_ammunition : int = max_ammunition
 
         #How much Frames does the Player have to wait for the next shot
-        self.latency = latency
-        self.curr_latency = 0
+        self.latency : int = latency
+        self.curr_latency : int = 0
 
         #How much damage does the Weapon cause
-        self.damage = dmg
+        self.damage : int = dmg
 
 # List for all available weapons
 AVAILABLE_WEAPONS = {
     "P99" : Weapon(
+        "P99",
         50,             #50 Kugeln in der Waffe
-        0.8/tick_rate,  #Jede 0.8 Sekunden kann geschossen werden
+        0.8/TICK_RATE,  #Jede 0.8 Sekunden kann geschossen werden
         20              # The weapon reduces 20 health per bullet
     ),
     "MP5" : Weapon(
+        "MP5",
         200,            #200 Kugeln in der Waffe
-        0.1/tick_rate,  #Jede 0.1 Sekunden kann geschossen werden   
+        0.1/TICK_RATE,  #Jede 0.1 Sekunden kann geschossen werden   
         10              # The Weapon reduces 10 Health per Bullet 
     ),
 }
@@ -302,7 +323,7 @@ class Player:
     '''
 
     # Initiate player
-    def __init__(self, username : str, position : Coordinate = Coordinate(3.5,3.5), weapons: list[Weapon] = {"P99" : AVAILABLE_WEAPONS["P99"], "MP5" : AVAILABLE_WEAPONS["MP5"]}, speed : float = tick_rate/0.1, rotation_speed : float = tick_rate/1, alive : int = 0):
+    def __init__(self, username : str, position : Coordinate = Coordinate(3.5,3.5), weapons: list[Weapon] = {"P99" : AVAILABLE_WEAPONS["P99"], "MP5" : AVAILABLE_WEAPONS["MP5"]}, speed : float = PLAYER_SPEED, rotation_speed : float = ROTATION_SPEED, alive : int = 0):
         
         # Initiate the Username
         self.name = username
@@ -325,13 +346,13 @@ class Player:
         self.justHit = 0
 
         # Represents the current available weapons
-        self.weapons = weapons
+        self.weapons : list[Weapon]= weapons
 
         #Represents the current weapon
         #Current Weapon
-        self.current_weapon = weapons["P99"] 
+        self.current_weapon : Weapon = weapons["P99"] 
 
-        self.change_weapon_delay = 0
+        self.change_weapon_delay : int = 0
 
         # Represents score for kill and deaths
         self.kills  = 0
@@ -408,10 +429,10 @@ class Player:
 
             print(F"{self.name} just shot a bullet!")
 
-            speed = 0.5
+            speed = BULLET_SPEED
 
             # The animation of shooting shall go on for 1 seconds
-            self.justShot = 1/tick_rate
+            self.justShot = JUST_SHOT_ANIMATION
 
             # Reduce the current ammo of current weapon by one
             weapon.curr_ammunition -= 1
@@ -448,15 +469,15 @@ class Player:
         try:
             self.current_weapon = self.weapons[weapon]
             # Wait 1 seconds to be able to shoot again
-            self.change_weapon_delay = 1/tick_rate
+            self.change_weapon_delay = CHANGE_WEAPON_DELAY
         except KeyError:
             print(F"Die Waffe {weapon} gibt es nicht im Repetoire")
 
     #Describes the function to be called when the player is hit
     def get_hit(self, shooting_player, mode):
 
-        # The animation of getting shot shall go on for 1 second
-        self.justShot = 1/tick_rate
+        # The animation of getting hit shall go on for 1 second
+        self.justHit = JUST_HIT_ANIMATION
 
         print(F"Player {self.name} is hit by player {shooting_player.name}")
 
@@ -553,9 +574,11 @@ class Player:
         except ZeroDivisionError:
             self.kill_death = self.kills/1
 
-        #TODO: Anpassen im Moment 10 Sekunden warten
-        self.alive = 10/tick_rate
+        self.alive = REVIVE_WAITING_TIME
 
+    '''
+    Remove the player from Game permanently
+    '''
     def remove_from_game(self):
 
         self.alive = -1
@@ -572,6 +595,8 @@ class Player:
             "shot_an"     : self.justShot,
             "hit_an"      : self.justHit,
             "cha_weap_an" : self.change_weapon_delay,
+            "weapon"      : self.current_weapon.name,
+            "weapons"     : [weapon.name for weapon in self.weapons.values()],
             "ammo"        : self.current_weapon.curr_ammunition,
             "alive"       : self.alive,
         }
@@ -628,7 +653,7 @@ class State:
 
     def __init__(self, map : Map, players_name : list[str] = [], bullets : list[Bullet] = []):
         self.map     : Map          = map
-        self.players = []#[Player(name, ) for name in players_name]
+        self.players : list[Player] = []#[Player(name, ) for name in players_name]
         self.bullets = bullets
 
 
@@ -643,7 +668,7 @@ class State:
 class GameEngine(threading.Thread):
 
     # Constructor function for GameEngine
-    def __init__(self, group_name, players_name : list[str] = [], map_string = MAPS[0], max_players : int = 6, game_mode : int = 0, win_score : int = 20, end_time : int = (30*60)/tick_rate):
+    def __init__(self, group_name, players_name : list[str] = [], map_string = MAPS[0], max_players : int = 6, game_mode : int = 0, win_score : int = 20, end_time : int = MAX_END_TIME):
         
         # Did the game started?
         self.start_flag = False
@@ -711,7 +736,7 @@ class GameEngine(threading.Thread):
                 self.broadcast_state()
 
                 # Sleep for a specific time, in which the game will calculate every new status
-                time.sleep(tick_rate)
+                time.sleep(TICK_RATE)
 
 
     def broadcast_state(self) -> None: 
@@ -810,12 +835,12 @@ class GameEngine(threading.Thread):
         for idx, player in enumerate(self.state.players):
 
             #if player did not respond for one second or more
-            if player.delayed_tick >= 1/tick_rate:
+            if player.delayed_tick >= PLAYER_DELAY_TOLERANCE:
 
                 #TODO: What happens if the User does not respond
                         #He has to wait for 10 seconds
 
-                player.alive = 10/tick_rate
+                player.alive = PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
 
                 print(F"Player {player.name} did not respond for one second or more! So he was removed from GameEngine!")
 
@@ -846,13 +871,19 @@ class GameEngine(threading.Thread):
                 #reset the delayed_tick
                 player.delayed_tick = 0
 
+                event = events[player.name]
+
+                # If the player wants to change the weapon                
+                if(event["change"] and len(player.weapons) > 1):
+
+                    player.change_weapon(event["change"])
+
                 weapon = player.current_weapon
 
                 if(weapon.curr_latency > 0):
                     # reduce the latency of the current weapon
                     weapon.curr_latency -= 1
                 
-                event = events[player.name]
 
                 player.change_direction(event["mouseDeltaX"])
 
@@ -903,7 +934,6 @@ class GameEngine(threading.Thread):
         '''
         [spawn.update_occupation() for spawn in self.state.map.spawns]
 
-
     def apply_events(self, player: str, events) -> None:
         '''
         Transfer the changes from the GameConsumer to the GameEngine
@@ -945,8 +975,8 @@ class GameEngine(threading.Thread):
 
                     print("No spawn was found yet")
 
-                    #Wait for another 0.1 second
-                    player.alive = 0.1/tick_rate
+                    #Wait for specific time if player could not spawn
+                    player.alive =PLAYER_WAITING_TIME_OCCUPIED_SPAWN 
 
                 #set his health back to 100
                 player.health = 100
@@ -977,7 +1007,7 @@ class GameEngine(threading.Thread):
             "game_engine", 
             {
              "type"    : "win",
-             "time"    : self.tick_num * tick_rate,
+             "time"    : self.tick_num * TICK_RATE,
              "group"   : self.group_name, 
              "players" : 
              [

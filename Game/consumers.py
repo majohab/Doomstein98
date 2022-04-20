@@ -16,7 +16,7 @@ from .engine import GameEngine
 MAX_DEGREE = 1000
 
 #TODO: fit that for customized fps
-tick_rate = 0.01
+TICK_RATE = 0.01
 
 log = logging.getLogger(__name__)
 
@@ -148,7 +148,8 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                   "mouseDeltaX" : msg["mouseDeltaX"],
                   "leftClick"   : msg["leftClick"],
                   "y"           : msg["y"],
-                  "x"           : msg["x"]
+                  "x"           : msg["x"],
+                  "change"      : msg["change"]
               },
             }
         )

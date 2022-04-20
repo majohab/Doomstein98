@@ -51,8 +51,8 @@ function socketHandler_init()
 
         ammo = data['players'][userName]['ammo'];
         health = data['players'][userName]['h'];
-        //currWeapon = data['players'][userName]['weapon'] | 0;
-
+        currWeapon = data['players'][userName]['weapon'] | 0;
+        weapons = data['palyers'][userName]['weapons'] | 0;
 
         let mouseDeltaX = lastRecordedMouseX - lastMouseX;
         lastMouseX = lastRecordedMouseX
@@ -61,15 +61,32 @@ function socketHandler_init()
         //console.log("pointerLockedClick: " + pointerLockedClick)
         //console.log("mouseDeltaX: " + mouseDeltaX)
 
+        let new_idx = false
+
+        // E key
+        if(keyStates[69]){
+            new_idx = weapons[(weapons.indexOf(currWeapon) + 1)%weapons.length]
+        }
+
+        // Q Key
+        if(keyStates[81]){
+            new_idx = weapons.indexOf(currWeapon) - 1;
+
+            if(new_idx < 0){
+                new_idx += weapons.length;
+            }
+        }
+
         webSocket.send(JSON.stringify({
             "type" : "loop",
             "msg"  : {
-                "up" : keyStates[87] | false,
-                "down" : keyStates[83] | false,
-                "left" : keyStates[65] | false,
-                "right" : keyStates[68] | false,
-                "mouseDeltaX" : ((mouseDeltaX) ? mouseDeltaX : 0),
-                "leftClick" :  longClicked || shortClicked,
+                "up"            : keyStates[87] | false,
+                "down"          : keyStates[83] | false,
+                "left"          : keyStates[65] | false,
+                "right"         : keyStates[68] | false,
+                "change"        : new_idx,
+                "mouseDeltaX"   : ((mouseDeltaX) ? mouseDeltaX : 0),
+                "leftClick"     :  longClicked || shortClicked,
             }
         }));
 
@@ -77,7 +94,7 @@ function socketHandler_init()
             shortClicked = false;
         }
         
-        //console.log('Data:', data)
+        console.log('Data:', data)
     };
 
     webSocket.onclose = function(e) {
