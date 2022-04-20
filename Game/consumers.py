@@ -85,14 +85,15 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         # Has map already been sent?
         self.map = 0
 
+
+    async def join_game(self, msg: dict):
+
+        # Add the player to the channel from which the information will be recieved about the status
         # Join a common group with all other Players
         await self.channel_layer.group_add(
             self.group_name, 
             self.channel_name
         )
-
-
-    async def join_game(self, msg: dict):
 
         await self.channel_layer.group_send(
             self.group_name,
@@ -115,7 +116,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             },
         )
 
-        print(self.username + " joining game")
+        #print(self.username + " joining game")
 
 
     async def message(self, msg):
@@ -177,7 +178,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         else:
             self.map += 1
 
-        #print(state)
+        #print(event)
 
         await self.send(json.dumps(event))
 
@@ -223,42 +224,9 @@ class GameConsumer(SyncConsumer):
 
         print(F"Player {username} joined lobby: {lobbyname}")
 
-        try:
-            self.engines[lobbyname]
-            create = False
-        except:
-            create = True
+        # for further information in what game the player is
+        self.lobbies[username] = lobbyname 
 
-        if(create):
-            print("\nHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH\n")
-            self.engines[lobbyname] = GameEngine(lobbyname)
-            self.engines[lobbyname].start()
-            self.engines[lobbyname].join_game(username)
-
-            #TODO: Only for TESTING
-            self.engines[lobbyname].start_flag = True
-
-            # for further information in what game the player is
-            self.lobbies[username] = lobbyname 
-        else:
-            if len(self.engines[lobbyname].state.players) < self.engines[lobbyname].max_players:
-                self.engines[lobbyname].join_game(username)
-            else:
-                async_to_sync(self.channel_layer.send)(
-                event['channel'],
-                {
-                    "type": "message", 
-                    "msg": {
-                        "message": F"Es gibt schon zu viele Spieler in der Lobby: {event['lobby']}",
-                        "channel": self.channel_name,
-                    }, 
-                },
-            )
-            print(self.engines[lobbyname].state.players)
-            print("\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa\n")
-            self.engines[lobbyname].start_flag = False
-        print(F"\nLobby: {self.engines[lobbyname]}\n")
-    '''
         try:
             if len(self.engines[lobbyname].state.players) < self.engines[lobbyname].max_players:
                 self.engines[lobbyname].join_game(username)
@@ -273,11 +241,10 @@ class GameConsumer(SyncConsumer):
                     }, 
                 },
             )
-            print("\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa\n")
-            self.engines[lobbyname].start_flag = False
+
         # if the game does not exist, create it
         except KeyError:
-            print("\nHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH\n")
+
             self.engines[lobbyname] = GameEngine(lobbyname)
             self.engines[lobbyname].start()
             self.engines[lobbyname].join_game(username)
@@ -285,11 +252,7 @@ class GameConsumer(SyncConsumer):
             #TODO: Only for TESTING
             self.engines[lobbyname].start_flag = True
 
-            # for further information in what game the player is
-            self.lobbies[username] = lobbyname
 
-        self.engines["Sack"]
-    '''
     def validate_event(self, event):
 
         username = event["player"]

@@ -11,7 +11,6 @@ import math
 import pandas as pd
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from pyparsing import col
 
 log = logging.getLogger(__name__)
 
@@ -511,6 +510,8 @@ class Player:
     #Describes the function to be called when the player moves
     def move(self, state, x : int = 0, y: int = 0):
 
+        #print(F"{self.name} is moving")
+
         too_close = False
 
         # Copy the direction of the players, so that it can be manipulated
@@ -544,7 +545,7 @@ class Player:
 
         # if player is not too close to an object
         if(not too_close):
-            state.map.check_collision(tmp, player)
+            state.map.check_collision(tmp, self)
 
     '''
         Change the direction of the player by the given direction
@@ -586,9 +587,9 @@ class Player:
     '''
     Remove the player from Game permanently
     '''
-    def remove_from_game(self):
+    def remove_from_game(self, value : int = -1):
 
-        self.alive = -1
+        self.alive = value
 
     '''
     Returns all relevant information about the Player for the Client
@@ -713,7 +714,7 @@ class GameEngine(threading.Thread):
         self.event_lock = threading.Lock()
         self.player_lock = threading.Lock()
 
-        self.player_queue = []
+        self.player_queue : list[Player] = []
 
         #How man players are allowed in the game
         self.max_players = max_players
@@ -843,14 +844,9 @@ class GameEngine(threading.Thread):
             #if player did not respond for one second or more
             if player.delayed_tick >= PLAYER_DELAY_TOLERANCE:
 
-                #TODO: What happens if the User does not respond
-                        #He has to wait for 10 seconds
+                player.remove_from_game(-2)
 
-                #player.alive = PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
-
-                player.remove_from_game()
-
-                print(F"Player {player.name} did not respond for one second or more! So he was removed from GameEngine!")
+                print(F"Player {player.name} did not respond for one second or more! So he was removed temporarily from GameEngine!")
 
                 #Remove the Player from current Game
                 #Add him to the queue
@@ -892,7 +888,6 @@ class GameEngine(threading.Thread):
                     # reduce the latency of the current weapon
                     weapon.curr_latency -= 1
                 
-
                 player.change_direction(event["mouseDeltaX"])
 
                 if(event["x"] != 0 or event["y"] != 0):
@@ -900,7 +895,8 @@ class GameEngine(threading.Thread):
 
                 if(event["leftClick"] and player.change_weapon_delay == 0):
                    player.shoot(self.state)
-            else:
+
+            elif(player.alive != 0):
                 #Increase the delayed tick of the player
                 player.delayed_tick += 1
             
@@ -916,16 +912,6 @@ class GameEngine(threading.Thread):
         '''
 
         [player.get_hit(bullet.player, self.game_mode)  for player in self.state.players for bullet in self.state.bullets if bullet.current_position.get_distance(player.current_position) < 0.1]
-
-        #for player in self.state.players:
-
-        #    for bullet in self.state.bullets: 
-
-                # If the bullet is too close to the player, then recognize it as a collision
-       #         if bullet.current_position.get_distance(player.current_position) < 0.1:
-
-                    
-#                    break
 
     def process_bullets(self) -> None:
         '''
@@ -956,15 +942,28 @@ class GameEngine(threading.Thread):
 
         print(F"\n\nPlayer {player_name} joined game!\n\n", )
 
-        # Look if player is already in the game
-        if not next((obj for obj in self.state.players if obj.name == player_name), None) is None:
+        state_p = next((obj for obj in self.state.players if obj.name == player_name), False)
+        state_q = next((obj for obj in self.player_queue if obj.name == player_name), False)
 
+        # Look if player is already in the game
+        if(state_p):                    
             print(F"\n\nPlayer {player_name} is already in game!\n")
             return
-        
-        with self.player_lock:
-            # Append Player to the queue so it can be appended to the game
-            self.player_queue.append(Player(player_name, alive = 0))
+        try:
+            # Look if the Player did not disconnect and is still in game
+            if(state_q.alive != -2):
+                print(F"\n\nPlayer {player_name} is already in game!\n")
+                return  
+            # if the Player is disconnected and rejoined the game
+            else:
+                print(F"\n\nPlayer {player_name} is rejoining the game!\n")
+                state_q.alive = PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
+        except:
+            print(F"\n\nPlayer {player_name} is joining the game!\n")
+            # if the Player joins the game for the first time
+            with self.player_lock:
+                # Append Player to the queue so it can be appended to the game
+                self.player_queue.append(Player(player_name, alive = 0))
 
     def process_new_players(self) -> None:
         '''
