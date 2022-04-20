@@ -16,7 +16,7 @@ from .engine import GameEngine
 MAX_DEGREE = 1000
 
 #TODO: fit that for customized fps
-TICK_RATE = 0.01
+TICK_RATE = 0.1
 
 log = logging.getLogger(__name__)
 
@@ -38,10 +38,13 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         # Leave game and
         #print(F"Disconnect: {close_code}")
-        await self.channel_layer.group_discard(
-            self.group_name,
-            self.channel_name
-        )
+        try:
+            await self.channel_layer.group_discard(
+                self.group_name,
+                self.channel_name
+            )
+        except:
+            pass
     
     async def receive(self, text_data=None, byte_data=None):
         '''
@@ -149,7 +152,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                   "leftClick"   : msg["leftClick"],
                   "y"           : msg["y"],
                   "x"           : msg["x"],
-                  "change"      : msg["change"]
+                  "weapon"      : msg["weapon"]
               },
             }
         )
@@ -220,7 +223,42 @@ class GameConsumer(SyncConsumer):
 
         print(F"Player {username} joined lobby: {lobbyname}")
 
+        try:
+            self.engines[lobbyname]
+            create = False
+        except:
+            create = True
 
+        if(create):
+            print("\nHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH\n")
+            self.engines[lobbyname] = GameEngine(lobbyname)
+            self.engines[lobbyname].start()
+            self.engines[lobbyname].join_game(username)
+
+            #TODO: Only for TESTING
+            self.engines[lobbyname].start_flag = True
+
+            # for further information in what game the player is
+            self.lobbies[username] = lobbyname 
+        else:
+            if len(self.engines[lobbyname].state.players) < self.engines[lobbyname].max_players:
+                self.engines[lobbyname].join_game(username)
+            else:
+                async_to_sync(self.channel_layer.send)(
+                event['channel'],
+                {
+                    "type": "message", 
+                    "msg": {
+                        "message": F"Es gibt schon zu viele Spieler in der Lobby: {event['lobby']}",
+                        "channel": self.channel_name,
+                    }, 
+                },
+            )
+            print(self.engines[lobbyname].state.players)
+            print("\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa\n")
+            self.engines[lobbyname].start_flag = False
+        print(F"\nLobby: {self.engines[lobbyname]}\n")
+    '''
         try:
             if len(self.engines[lobbyname].state.players) < self.engines[lobbyname].max_players:
                 self.engines[lobbyname].join_game(username)
@@ -235,8 +273,11 @@ class GameConsumer(SyncConsumer):
                     }, 
                 },
             )
+            print("\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa\n")
+            self.engines[lobbyname].start_flag = False
         # if the game does not exist, create it
         except KeyError:
+            print("\nHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH\n")
             self.engines[lobbyname] = GameEngine(lobbyname)
             self.engines[lobbyname].start()
             self.engines[lobbyname].join_game(username)
@@ -247,6 +288,8 @@ class GameConsumer(SyncConsumer):
             # for further information in what game the player is
             self.lobbies[username] = lobbyname
 
+        self.engines["Sack"]
+    '''
     def validate_event(self, event):
 
         username = event["player"]

@@ -16,7 +16,7 @@ from pyparsing import col
 log = logging.getLogger(__name__)
 
 #TODO: fit that for customized fps
-TICK_RATE = 0.01
+TICK_RATE = 0.1
 
 PLAYER_SPEED            = TICK_RATE/0.1
 ROTATION_SPEED          = TICK_RATE/1
@@ -142,6 +142,12 @@ AVAILABLE_WEAPONS = {
         200,            #200 Kugeln in der Waffe
         0.1/TICK_RATE,  #Jede 0.1 Sekunden kann geschossen werden   
         10              # The Weapon reduces 10 Health per Bullet 
+    ),
+    "Shotgun" : Weapon(
+        "Shotgun",
+        10,            #200 Kugeln in der Waffe
+        1.4/TICK_RATE, #Jede 1.4 Sekunden kann geschossen werden   
+        50             # The Weapon reduces 50 Health per Bullet 
     ),
 }
 
@@ -352,6 +358,8 @@ class Player:
         #Current Weapon
         self.current_weapon : Weapon = weapons["P99"] 
 
+        self.current_weapon_idx = 0
+
         self.change_weapon_delay : int = 0
 
         # Represents score for kill and deaths
@@ -460,19 +468,18 @@ class Player:
 
             print(F"{self.name} has no bullets: {weapon.curr_ammunition} or latency is still active : {weapon.curr_latency} ")
 
-    def change_weapon(self, weapon : str):
+    def change_weapon(self, idx):
         '''
         Change the weapon by an indicator
         '''
-        #TODO: Ausführen: Was soll genau passieren
-        # Was gibt es für Übergabeparameter
-        try:
-            self.current_weapon = self.weapons[weapon]
-            # Wait 1 seconds to be able to shoot again
-            self.change_weapon_delay = CHANGE_WEAPON_DELAY
-        except KeyError:
-            print(F"Die Waffe {weapon} gibt es nicht im Repetoire")
+        # if the idx is too high then modulo the length of the weapons
+        self.current_weapon_idx = idx % len(self.weapons)
 
+        self.current_weapon = self.weapons[self.current_weapon_idx]
+
+        # Wait 1 seconds to be able to shoot again
+        self.change_weapon_delay = CHANGE_WEAPON_DELAY
+        
     #Describes the function to be called when the player is hit
     def get_hit(self, shooting_player, mode):
 
@@ -595,8 +602,7 @@ class Player:
             "shot_an"     : self.justShot,
             "hit_an"      : self.justHit,
             "cha_weap_an" : self.change_weapon_delay,
-            "weapon"      : self.current_weapon.name,
-            "weapons"     : [weapon.name for weapon in self.weapons.values()],
+            "weapon"  : self.current_weapon_idx,
             "ammo"        : self.current_weapon.curr_ammunition,
             "alive"       : self.alive,
         }
@@ -840,7 +846,9 @@ class GameEngine(threading.Thread):
                 #TODO: What happens if the User does not respond
                         #He has to wait for 10 seconds
 
-                player.alive = -1 #PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
+                #player.alive = PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
+
+                player.remove_from_game()
 
                 print(F"Player {player.name} did not respond for one second or more! So he was removed from GameEngine!")
 
@@ -874,9 +882,9 @@ class GameEngine(threading.Thread):
                 event = events[player.name]
 
                 # If the player wants to change the weapon                
-                if(event["change"] and len(player.weapons) > 1):
+                if(event["weapon"] != player.current_weapon_idx and len(player.weapons) > 1):
 
-                    player.change_weapon(event["change"])
+                    player.change_weapon(event["weapon"])
 
                 weapon = player.current_weapon
 
