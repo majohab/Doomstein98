@@ -840,7 +840,7 @@ class GameEngine(threading.Thread):
                 #TODO: What happens if the User does not respond
                         #He has to wait for 10 seconds
 
-                player.alive = PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
+                player.alive = -1 #PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
 
                 print(F"Player {player.name} did not respond for one second or more! So he was removed from GameEngine!")
 

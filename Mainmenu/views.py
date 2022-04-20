@@ -3,9 +3,10 @@ from lobby.forms import LobbyForm
 from django.urls import reverse
 from django.contrib import messages
 from lobby.models import Lobby
+from django.contrib.auth.decorators import login_required
 
 # Create your views here.
-
+@login_required(login_url='/accounts/login/')
 def menu(request):
     """Renders HTML document and sends the response.
 
@@ -34,6 +35,7 @@ def menu(request):
     return render(request, "menu.html",
                   {'form': LobbyForm, 'lobbies': Lobby.objects.all()})
 
+@login_required(login_url='/accounts/login/')
 def play(request):
     """Renders HTML document and sends the response.
 
@@ -44,8 +46,7 @@ def play(request):
         HTTP Response: Start page
     """
     return render(request, 'play.html', {})
-
-    
+ 
 def impressum(request):
     """Renders HTML document and sends the response.
 

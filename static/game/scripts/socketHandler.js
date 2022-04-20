@@ -43,16 +43,17 @@ function socketHandler_init()
         playerX     = data['players'][userName]['x'];
         playerY     = data['players'][userName]['y'];
         playerAngle = data['players'][userName]['dir'];
+        
 
         let rec_bullets = data['bullets'];
         initBullets();
         for (let i = 0; i < rec_bullets.length; i++)
             bullets.push([rec_bullets[i]['x'], rec_bullets[i]['y']]);
 
-        ammo = data['players'][userName]['ammo'];
-        health = data['players'][userName]['h'];
-        currWeapon = data['players'][userName]['weapon'] | 0;
-        weapons = data['palyers'][userName]['weapons'] | 0;
+        ammo        = data['players'][userName]['ammo'];
+        health      = data['players'][userName]['h'];
+        currWeapon  = data['players'][userName]['weapon'] | 0;
+        weapons     = data['players'][userName]['weapons'] | 0;
 
         let mouseDeltaX = lastRecordedMouseX - lastMouseX;
         lastMouseX = lastRecordedMouseX
@@ -77,18 +78,22 @@ function socketHandler_init()
             }
         }
 
-        webSocket.send(JSON.stringify({
-            "type" : "loop",
-            "msg"  : {
-                "up"            : keyStates[87] | false,
-                "down"          : keyStates[83] | false,
-                "left"          : keyStates[65] | false,
-                "right"         : keyStates[68] | false,
-                "change"        : new_idx,
-                "mouseDeltaX"   : ((mouseDeltaX) ? mouseDeltaX : 0),
-                "leftClick"     :  longClicked || shortClicked,
-            }
-        }));
+        webSocket.send(
+            JSON.stringify(
+                {
+                    "type" : "loop",
+                    "msg"  : {
+                        "up"            : keyStates[87] | false,
+                        "down"          : keyStates[83] | false,
+                        "left"          : keyStates[65] | false,
+                        "right"         : keyStates[68] | false,
+                        "change"        : new_idx,
+                        "mouseDeltaX"   : ((mouseDeltaX) ? mouseDeltaX : 0),
+                        "leftClick"     :  longClicked || shortClicked,
+                    }
+                }
+            )
+        );
 
         if(shortClicked) {
             shortClicked = false;
