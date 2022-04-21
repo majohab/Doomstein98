@@ -15,6 +15,7 @@ All this will then be processed by the server and send back to the client for th
 const fov = Math.PI / 3;
 const mapHeight = 16;
 const mapWidth = 16;
+const max_bullets = 20;
 
 // Runtime variables
 let lastFrameTime;
@@ -26,14 +27,16 @@ let playerX;
 let playerY;
 let playerAngle;
 let bullets;
-let ammo;
-let health;
+let bulletCount;
 let currWeapon;
+let health;
+let healthTextBounds;
+let ammo;   // ToRefactor: Merge a padded sprite and its bounds into a new class
+let ammoTextBounds;
+let weaponImageBounds;
 
 async function init()
-{
-    initBackendVariables();
-    
+{    
     socketHandler_init();
 
     await spriteReader_init();
@@ -44,22 +47,48 @@ async function init()
 
     inputHander_init(); // Needs to wait for drawingHandler_init()
 
-    lastFrameTime = Date.now();
+    initRuntimeVariables();
 
     gameLoop();
 }
 
-function initBackendVariables()
+function initRuntimeVariables()
 {
     initBullets();
-    ammo = 0;
-    health = 100; // When health wasn't initialized with it's default value, there were some graphical bugs with the health-text sometimes.
+    ammo = 200;
+    health = 200;
     currWeapon = 2;
+    bulletCount = 0;
+
+    //#region Init Textures with their biggest size
+    let healthText = getHealthText();
+    healthTextBounds = [280, screenHeight - 115, healthText[0].length, healthText.length, 5]; // startX, startY, sizeX (text coordinate-system), sizeY (text coordinate-system), scale
+
+    let ammoText = getAmmoText();
+    ammoTextBounds = [680, screenHeight - 115, ammoText[0].length, ammoText.length, 5];
+
+    weaponImageBounds = [218, 151];
+
+    //#endregion
+
+    lastFrameTime = Date.now();
 }
 
 function initBullets()
 {
-    bullets = [[0, 0]]; // We need at least one element (and for the gpu all the element-types need to be the same, so we have another array here)
+    bullets = [];
+    for (let i = 0; i < max_bullets; i++)
+        bullets.push([-10, -10]);
+}
+
+function getHealthText()
+{
+    return font.getTextImg(health.toString()/*.padStart(3, '0')*/ + '%');
+}
+
+function getAmmoText()
+{
+    return font.getTextImg(ammo.toString()/*.padStart(3, '0')*/);
 }
 
 
