@@ -11,12 +11,11 @@ import math
 import pandas as pd
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from pyparsing import col
 
 log = logging.getLogger(__name__)
 
 #TODO: fit that for customized fps
-TICK_RATE = 0.01
+TICK_RATE = 0.1
 
 PLAYER_SPEED            = TICK_RATE/0.1
 ROTATION_SPEED          = TICK_RATE/1
@@ -142,6 +141,12 @@ AVAILABLE_WEAPONS = {
         200,            #200 Kugeln in der Waffe
         0.1/TICK_RATE,  #Jede 0.1 Sekunden kann geschossen werden   
         10              # The Weapon reduces 10 Health per Bullet 
+    ),
+    "Shotgun" : Weapon(
+        "Shotgun",
+        10,            #200 Kugeln in der Waffe
+        1.4/TICK_RATE, #Jede 1.4 Sekunden kann geschossen werden   
+        50             # The Weapon reduces 50 Health per Bullet 
     ),
 }
 
@@ -354,6 +359,8 @@ class Player:
         #Current Weapon
         self.current_weapon : Weapon = weapons["P99"] 
 
+        self.current_weapon_idx = 0
+
         self.change_weapon_delay : int = 0
 
         # Represents score for kill and deaths
@@ -462,19 +469,18 @@ class Player:
 
             print(F"{self.name} has no bullets: {weapon.curr_ammunition} or latency is still active : {weapon.curr_latency} ")
 
-    def change_weapon(self, weapon : str):
+    def change_weapon(self, idx):
         '''
         Change the weapon by an indicator
         '''
-        #TODO: Ausführen: Was soll genau passieren
-        # Was gibt es für Übergabeparameter
-        try:
-            self.current_weapon = self.weapons[weapon]
-            # Wait 1 seconds to be able to shoot again
-            self.change_weapon_delay = CHANGE_WEAPON_DELAY
-        except KeyError:
-            print(F"Die Waffe {weapon} gibt es nicht im Repetoire")
+        # if the idx is too high then modulo the length of the weapons
+        self.current_weapon_idx = idx % len(self.weapons)
 
+        self.current_weapon = self.weapons[self.current_weapon_idx]
+
+        # Wait 1 seconds to be able to shoot again
+        self.change_weapon_delay = CHANGE_WEAPON_DELAY
+        
     #Describes the function to be called when the player is hit
     def get_hit(self, shooting_player, mode):
 
@@ -505,6 +511,8 @@ class Player:
 
     #Describes the function to be called when the player moves
     def move(self, state, x : int = 0, y: int = 0):
+
+        #print(F"{self.name} is moving")
 
         too_close = False
 
@@ -539,7 +547,7 @@ class Player:
 
         # if player is not too close to an object
         if(not too_close):
-            state.map.check_collision(tmp, player)
+            state.map.check_collision(tmp, self)
 
     '''
         Change the direction of the player by the given direction
@@ -581,9 +589,9 @@ class Player:
     '''
     Remove the player from Game permanently
     '''
-    def remove_from_game(self):
+    def remove_from_game(self, value : int = -1):
 
-        self.alive = -1
+        self.alive = value
 
     '''
     Returns all relevant information about the Player for the Client
@@ -597,8 +605,7 @@ class Player:
             "shot_an"     : self.justShot,
             "hit_an"      : self.justHit,
             "cha_weap_an" : self.change_weapon_delay,
-            "weapon"      : self.current_weapon.name,
-            "weapons"     : [weapon.name for weapon in self.weapons.values()],
+            "weapon"  : self.current_weapon_idx,
             "ammo"        : self.current_weapon.curr_ammunition,
             "alive"       : self.alive,
         }
@@ -709,7 +716,7 @@ class GameEngine(threading.Thread):
         self.event_lock = threading.Lock()
         self.player_lock = threading.Lock()
 
-        self.player_queue = []
+        self.player_queue : list[Player] = []
 
         #How man players are allowed in the game
         self.max_players = max_players
@@ -839,12 +846,9 @@ class GameEngine(threading.Thread):
             #if player did not respond for one second or more
             if player.delayed_tick >= PLAYER_DELAY_TOLERANCE:
 
-                #TODO: What happens if the User does not respond
-                        #He has to wait for 10 seconds
+                player.remove_from_game(-2)
 
-                player.alive = -1 #PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
-
-                print(F"Player {player.name} did not respond for one second or more! So he was removed from GameEngine!")
+                print(F"Player {player.name} did not respond for one second or more! So he was removed temporarily from GameEngine!")
 
                 #Remove the Player from current Game
                 #Add him to the queue
@@ -876,9 +880,9 @@ class GameEngine(threading.Thread):
                 event = events[player.name]
 
                 # If the player wants to change the weapon                
-                if(event["change"] and len(player.weapons) > 1):
+                if(event["weapon"] != player.current_weapon_idx and len(player.weapons) > 1):
 
-                    player.change_weapon(event["change"])
+                    player.change_weapon(event["weapon"])
 
                 weapon = player.current_weapon
 
@@ -886,7 +890,6 @@ class GameEngine(threading.Thread):
                     # reduce the latency of the current weapon
                     weapon.curr_latency -= 1
                 
-
                 player.change_direction(event["mouseDeltaX"])
 
                 if(event["x"] != 0 or event["y"] != 0):
@@ -894,7 +897,8 @@ class GameEngine(threading.Thread):
 
                 if(event["leftClick"] and player.change_weapon_delay == 0):
                    player.shoot(self.state)
-            else:
+
+            elif(player.alive != 0):
                 #Increase the delayed tick of the player
                 player.delayed_tick += 1
             
@@ -910,16 +914,6 @@ class GameEngine(threading.Thread):
         '''
 
         [player.get_hit(bullet.player, self.game_mode)  for player in self.state.players for bullet in self.state.bullets if bullet.current_position.get_distance(player.current_position) < 0.1]
-
-        #for player in self.state.players:
-
-        #    for bullet in self.state.bullets: 
-
-                # If the bullet is too close to the player, then recognize it as a collision
-       #         if bullet.current_position.get_distance(player.current_position) < 0.1:
-
-                    
-#                    break
 
     def process_bullets(self) -> None:
         '''
@@ -950,15 +944,28 @@ class GameEngine(threading.Thread):
 
         print(F"\n\nPlayer {player_name} joined game!\n\n", )
 
-        # Look if player is already in the game
-        if not next((obj for obj in self.state.players if obj.name == player_name), None) is None:
+        state_p = next((obj for obj in self.state.players if obj.name == player_name), False)
+        state_q = next((obj for obj in self.player_queue if obj.name == player_name), False)
 
+        # Look if player is already in the game
+        if(state_p):                    
             print(F"\n\nPlayer {player_name} is already in game!\n")
             return
-        
-        with self.player_lock:
-            # Append Player to the queue so it can be appended to the game
-            self.player_queue.append(Player(player_name, alive = 0))
+        try:
+            # Look if the Player did not disconnect and is still in game
+            if(state_q.alive != -2):
+                print(F"\n\nPlayer {player_name} is already in game!\n")
+                return  
+            # if the Player is disconnected and rejoined the game
+            else:
+                print(F"\n\nPlayer {player_name} is rejoining the game!\n")
+                state_q.alive = PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
+        except:
+            print(F"\n\nPlayer {player_name} is joining the game!\n")
+            # if the Player joins the game for the first time
+            with self.player_lock:
+                # Append Player to the queue so it can be appended to the game
+                self.player_queue.append(Player(player_name, alive = 0))
 
     def process_new_players(self) -> None:
         '''

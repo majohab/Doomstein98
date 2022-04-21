@@ -16,7 +16,7 @@ from .engine import GameEngine
 MAX_DEGREE = 1000
 
 #TODO: fit that for customized fps
-TICK_RATE = 0.01
+TICK_RATE = 0.1
 
 log = logging.getLogger(__name__)
 
@@ -38,10 +38,13 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         # Leave game and
         #print(F"Disconnect: {close_code}")
-        await self.channel_layer.group_discard(
-            self.group_name,
-            self.channel_name
-        )
+        try:
+            await self.channel_layer.group_discard(
+                self.group_name,
+                self.channel_name
+            )
+        except:
+            pass
     
     async def receive(self, text_data=None, byte_data=None):
         '''
@@ -82,14 +85,15 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         # Has map already been sent?
         self.map = 0
 
+
+    async def join_game(self, msg: dict):
+
+        # Add the player to the channel from which the information will be recieved about the status
         # Join a common group with all other Players
         await self.channel_layer.group_add(
             self.group_name, 
             self.channel_name
         )
-
-
-    async def join_game(self, msg: dict):
 
         await self.channel_layer.group_send(
             self.group_name,
@@ -112,7 +116,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             },
         )
 
-        print(self.username + " joining game")
+        #print(self.username + " joining game")
 
 
     async def message(self, msg):
@@ -149,7 +153,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                   "leftClick"   : msg["leftClick"],
                   "y"           : msg["y"],
                   "x"           : msg["x"],
-                  "change"      : msg["change"]
+                  "weapon"      : msg["weapon"]
               },
             }
         )
@@ -174,7 +178,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         else:
             self.map += 1
 
-        #print(state)
+        #print(event)
 
         await self.send(json.dumps(event))
 
@@ -221,7 +225,7 @@ class GameConsumer(SyncConsumer):
         print(F"Player {username} joined lobby: {lobbyname}")
 
         # for further information in what game the player is
-        self.lobbies[username] = lobbyname
+        self.lobbies[username] = lobbyname 
 
         try:
             if len(self.engines[lobbyname].state.players) < self.engines[lobbyname].max_players:
@@ -237,15 +241,17 @@ class GameConsumer(SyncConsumer):
                     }, 
                 },
             )
+
         # if the game does not exist, create it
         except KeyError:
+
             self.engines[lobbyname] = GameEngine(lobbyname)
             self.engines[lobbyname].start()
             self.engines[lobbyname].join_game(username)
 
-
             #TODO: Only for TESTING
             self.engines[lobbyname].start_flag = True
+
 
     def validate_event(self, event):
 

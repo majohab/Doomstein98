@@ -75,29 +75,38 @@ function socketHandler_init()
 
             currWeapon = weapons.indexOf(currWeapon_str);
 
-            let mouseDeltaX = lastRecordedMouseX - lastMouseX;
-            lastMouseX = lastRecordedMouseX
-
-            //console.log("pointerLocked     : " + pointerLocked)
-            //console.log("pointerLockedClick: " + pointerLockedClick)
-            //console.log("mouseDeltaX: " + mouseDeltaX)
-
-            let new_idx = false
-
+            let new_idx = currWeapon
+            
             // E key
+            // Relative Index
             if(keyStates[69]){
-                new_idx = weapons[(weapons.indexOf(currWeapon_str) + 1)%weapons.length]
+                new_idx += 1
             }
-
+        
+            // 1 key
+            // Relative Index
+            if(keyStates[49]){
+                new_idx = 1
+            }
+        
+            // 2 key
+            // Relative Index
+            if(keyStates[49]){
+                new_idx = 2
+            }
+        
+            // 3 key
+            // Relative Index
+            if(keyStates[49]){
+                new_idx = 3
+            }
+        
             // Q Key
+            // Relative Index
             if(keyStates[81]){
-                new_idx = weapons.indexOf(currWeapon_str) - 1;
-
-                if(new_idx < 0){
-                    new_idx += weapons.length;
-                }
+                new_idx -= 1
             }
-
+        
             webSocket.send(
                 JSON.stringify(
                     {
@@ -107,17 +116,19 @@ function socketHandler_init()
                             "down"          : keyStates[83] | false,
                             "left"          : keyStates[65] | false,
                             "right"         : keyStates[68] | false,
-                            "change"        : new_idx,
+                            "weapon"        : new_idx,
                             "mouseDeltaX"   : ((mouseDeltaX) ? mouseDeltaX : 0),
                             "leftClick"     :  longClicked || shortClicked,
                         }
                     }
                 )
             );
-
+                
             if(shortClicked) {
                 shortClicked = false;
             }
+        
+        //console.log('Data:', data)
         }
     };
 
