@@ -47,12 +47,17 @@ function socketHandler_init()
 
         let rec_bullets = data['bullets'];
         initBullets();
-        for (let i = 0; i < rec_bullets.length; i++)
-            bullets.push([rec_bullets[i]['x'], rec_bullets[i]['y']]);
+        for (let i = 0; i < rec_bullets.length && i < max_bullets; i++)
+            bullets[i] = [rec_bullets[i]['x'], rec_bullets[i]['y']];
+        
+        bulletCount = rec_bullets.length;
 
         ammo        = data['players'][userName]['ammo'];
         health      = data['players'][userName]['h'];
-        currWeapon  = data['players'][userName]['weapon'] | 0;
+        currWeapon_str  = data['players'][userName]['weapon'];
+        weapons     = data['players'][userName]['weapons'];
+
+        currWeapon = weapons.indexOf(currWeapon_str);
 
         let mouseDeltaX = lastRecordedMouseX - lastMouseX;
         lastMouseX = lastRecordedMouseX
@@ -114,7 +119,7 @@ function socketHandler_init()
             shortClicked = false;
         }
         
-        console.log('Data:', data)
+        //console.log('Data:', data)
     };
 
     webSocket.onclose = function(e) {
