@@ -15,7 +15,8 @@ All this will then be processed by the server and send back to the client for th
 const fov = Math.PI / 3;
 const mapHeight = 16;
 const mapWidth = 16;
-const max_bullets = 20;
+const max_bullets = 100;
+const max_opponents = 20;
 
 // Runtime variables
 let lastFrameTime;
@@ -28,6 +29,8 @@ let playerY;
 let playerAngle;
 let bullets;
 let bulletCount;
+let opponents;
+let opponentsCount;
 let currWeapon;
 let health;
 let healthTextBounds;
@@ -55,10 +58,12 @@ async function init()
 function initRuntimeVariables()
 {
     initBullets();
+    initopponents();
     ammo = 200;
     health = 200;
     currWeapon = 2;
     bulletCount = 0;
+    opponentsCount = 0
 
     //#region Init Textures with their biggest size
     let healthText = getHealthText();
@@ -68,7 +73,6 @@ function initRuntimeVariables()
     ammoTextBounds = [680, screenHeight - 115, ammoText[0].length, ammoText.length, 5];
 
     weaponImageBounds = [218, 151];
-
     //#endregion
 
     lastFrameTime = Date.now();
@@ -79,6 +83,13 @@ function initBullets()
     bullets = [];
     for (let i = 0; i < max_bullets; i++)
         bullets.push([-10, -10]);
+}
+
+function initopponents()
+{
+    opponents = [];
+    for (let i = 0; i < max_opponents; i++)
+        opponents.push([-10, -10]);
 }
 
 function getHealthText()
@@ -129,7 +140,7 @@ function gameLoop()
     let currFrameTime = Date.now()
     let deltaTime = currFrameTime - lastFrameTime;
     lastFrameTime = currFrameTime;
-    //console.log('fps: ' + 1000 / deltaTime);
+    //console.log('fps Frontend: ' + 1000 / deltaTime);
     
     //inputHandler_updateInput(deltaTime);
 

@@ -90,6 +90,7 @@ function drawingHandler_init()
             map_numbers,
             wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, weaponFrameSprite,
             bullets, bullets_length,
+            opponents, opponentsCount,
             weaponImage, weaponImageBounds,
             healthText, healthTextBounds, bulletsText, bulletsTextBounds,
             weaponFrame_startY) {
@@ -97,6 +98,7 @@ function drawingHandler_init()
                 map_numbers,
                 wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, weaponFrameSprite,
                 bullets, bullets_length,
+                opponents, opponentsCount,
                 weaponImage, weaponImageBounds,
                 healthText, healthTextBounds, bulletsText, bulletsTextBounds,
                 weaponFrame_startY);
@@ -128,10 +130,14 @@ function drawingHandler_draw_gpu()
     weaponImage = padSprite(weaponImage, weaponImageBounds[0], weaponImageBounds[1], 0, 1);
     //console.log(weaponImage);
 
+    //console.log(opponents);
+    //console.log(opponentsCount);
+
     buffer = gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, bulletSprite.data, weaponFrameSprite.data,
         bullets, bulletCount,
+        opponents, opponentsCount,
         weaponImage, weaponImageBounds,
         healthText, healthTextBounds, ammoText, ammoTextBounds,
         weaponFrame_startY);
@@ -141,6 +147,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
     map_numbers,                                                            // Map
     wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, weaponFrameSprite,    // World Sprites
     bullets, bullets_length,                                                // Bullets
+    opponents, opponentsCount,                                                
     weaponImage, weaponImageBounds,
     healthText, healthTextBounds, bulletsText, bulletsTextBounds,           // Status-Bar-Texts
     weaponFrame_startY)                                                     // Status-Bar-Weapon-Frame
@@ -466,10 +473,68 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
         //#region Bullets
 
-        for (let obj = 0; obj < bullets_length; obj++) // First element is 0
         {
-            let objX = bullets[obj][0];
-            let objY = bullets[obj][1];
+            for (let obj = 0; obj < bullets_length; obj++) // First element is 0
+            {
+                let objX = bullets[obj][0];
+                let objY = bullets[obj][1];
+                let spriteWidth = this.constants.bulletSprite_width;
+                let spriteHeight = this.constants.bulletSprite_height;
+
+                let vecX = objX - playerX;
+                let vecY = objY - playerY;
+                let dstFromPlayer = Math.sqrt(vecX*vecX + vecY*vecY);
+
+                let forwardX = Math.sin(playerAngle); let forwardY = Math.cos(playerAngle);
+
+                let objAngle = Math.atan2(forwardY, forwardX) - Math.atan2(vecY, vecX);
+
+                let inFrontOfPlayer = (forwardX * vecX + forwardY * vecY) > 0;
+
+                if (inFrontOfPlayer &&
+                    dstFromPlayer >= this.constants.nearClippingPane &&
+                    dstFromPlayer < depth &&
+                    dstFromPlayer < depthBuffer)
+                {
+                    let objCeiling = (screenHeight * 0.5) - (screenHeight / dstFromPlayer);
+                    let objFloor = screenHeight - objCeiling;
+                    let objHeight = objFloor - objCeiling;
+                    let objRatio = spriteWidth / spriteHeight;
+                    let objWidth = objHeight * objRatio;
+                    let middleOfObject = (0.5 * (objAngle / (fov * 0.5)) + 0.5) * screenWidth;
+
+                    // Absolutely zero idea what the following does and why the f*ck it works... It just works okay?! It just works... for now...
+                    // Also, note that this only seems to work for fov = PI / 3, we probably need to adapt that sh*t calculation for other fovs.
+                    if (middleOfObject < 0 + objWidth * 0.5) middleOfObject += screenWidth * 3;
+                    if (middleOfObject > screenWidth * 3 - objWidth * 0.5) middleOfObject -= screenWidth * 3;
+
+                    let objMinX = middleOfObject - objWidth * 0.5;
+                    let objMaxX = middleOfObject + objWidth * 0.5;
+                    let objMinY = screenHeight * 0.5 - objHeight * 0.5;
+                    let objMaxY = screenHeight * 0.5 + objHeight * 0.5;
+
+                    if (x >= objMinX && x <= objMaxX && y >= objMinY && y <= objMaxY)
+                    {
+                        let pix_x = Math.floor(((x - objMinX) / objWidth) * spriteWidth);
+                        let pix_y = Math.floor(((objMaxY - y) / objHeight) * spriteHeight);
+
+                        if (bulletSprite[pix_y][pix_x][3] > 0)  // If not transparent
+                        {
+                            r = bulletSprite[pix_y][pix_x][0];
+                            g = bulletSprite[pix_y][pix_x][1];
+                            b = bulletSprite[pix_y][pix_x][2];
+
+                            depthBuffer = dstFromPlayer;
+                        }
+                    }
+                }
+            }
+        }
+
+        for (let obj = 0; obj < opponentsCount; obj++) // First element is 0
+        {
+            let objX = opponents[obj][0];
+            let objY = opponents[obj][1];
             let spriteWidth = this.constants.bulletSprite_width;
             let spriteHeight = this.constants.bulletSprite_height;
 

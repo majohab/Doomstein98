@@ -220,6 +220,8 @@ class GameConsumer(SyncConsumer):
 
         print(F"Player {username} joined lobby: {lobbyname}")
 
+        # for further information in what game the player is
+        self.lobbies[username] = lobbyname
 
         try:
             if len(self.engines[lobbyname].state.players) < self.engines[lobbyname].max_players:
@@ -241,11 +243,9 @@ class GameConsumer(SyncConsumer):
             self.engines[lobbyname].start()
             self.engines[lobbyname].join_game(username)
 
+
             #TODO: Only for TESTING
             self.engines[lobbyname].start_flag = True
-
-            # for further information in what game the player is
-            self.lobbies[username] = lobbyname
 
     def validate_event(self, event):
 

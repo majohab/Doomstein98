@@ -258,6 +258,8 @@ let handgun;
 let shotgun;
 let machinegun;
 
+let opponentSprite;
+
 let font;
 
 

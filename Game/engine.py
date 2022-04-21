@@ -256,10 +256,12 @@ class Map:
         C = self.map.iloc[round(coordinate.y - (0.5 - tolerance)),round(coordinate.x - (0.5 + tolerance))] == "#"
         D = self.map.iloc[round(coordinate.y - (0.5 - tolerance)),round(coordinate.x - (0.5 - tolerance))] == "#"
 
-        A_l = self.map.iloc[round(coordinate.y - 0.57),round(coordinate.x - 0.57)] == "#"
-        B_l = self.map.iloc[round(coordinate.y - 0.57),round(coordinate.x - 0.43)] == "#"
-        C_l = self.map.iloc[round(coordinate.y - 0.43),round(coordinate.x - 0.57)] == "#"
-        D_l = self.map.iloc[round(coordinate.y - 0.43),round(coordinate.x - 0.43)] == "#"
+        a = 0.1
+
+        A_l = self.map.iloc[round(coordinate.y - (0.5 + a)),round(coordinate.x - (0.5 + a))] == "#"
+        B_l = self.map.iloc[round(coordinate.y - (0.5 + a)),round(coordinate.x - (0.5 - a))] == "#"
+        C_l = self.map.iloc[round(coordinate.y - (0.5 - a)),round(coordinate.x - (0.5 + a))] == "#"
+        D_l = self.map.iloc[round(coordinate.y - (0.5 - a)),round(coordinate.x - (0.5 - a))] == "#"
 
         '''
         print(F"A_l: {A_l}")

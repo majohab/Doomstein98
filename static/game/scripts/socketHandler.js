@@ -40,70 +40,85 @@ function socketHandler_init()
 
         let data = JSON.parse(e.data)
 
-        playerX     = data['players'][userName]['x'];
-        playerY     = data['players'][userName]['y'];
-        playerAngle = data['players'][userName]['dir'];
-        
+        if (data['type'] == 'update')
+        {
 
-        let rec_bullets = data['bullets'];
-        initBullets();
-        for (let i = 0; i < rec_bullets.length && i < max_bullets; i++)
-            bullets[i] = [rec_bullets[i]['x'], rec_bullets[i]['y']];
-        
-        bulletCount = rec_bullets.length;
+            playerX     = data['players'][userName]['x'];
+            playerY     = data['players'][userName]['y'];
+            playerAngle = data['players'][userName]['dir'];
+            
 
-        ammo        = data['players'][userName]['ammo'];
-        health      = data['players'][userName]['h'];
-        currWeapon_str  = data['players'][userName]['weapon'];
-        weapons     = data['players'][userName]['weapons'];
+            initBullets();
+            let rec_bullets = data['bullets'];
+            for (let i = 0; i < rec_bullets.length && i < max_bullets; i++)
+                bullets[i] = [rec_bullets[i]['x'], rec_bullets[i]['y']];
+            
+            bulletCount = rec_bullets.length;
 
-        currWeapon = weapons.indexOf(currWeapon_str);
+            initopponents();
+            let rec_users = data['players'];
+            let i = 0;
+            for (users_name in rec_users)
+            {
+                if (users_name != userName && i < max_opponents)
+                {
+                    opponents[i] = [rec_users[users_name]['x'], rec_users[users_name]['y']]
+                    i++;
+                }
+            }
+            opponentsCount = opponents.length;
 
-        let mouseDeltaX = lastRecordedMouseX - lastMouseX;
-        lastMouseX = lastRecordedMouseX
+            ammo        = data['players'][userName]['ammo'];
+            health      = data['players'][userName]['h'];
+            currWeapon_str  = data['players'][userName]['weapon'];
+            weapons     = data['players'][userName]['weapons'];
 
-        //console.log("pointerLocked     : " + pointerLocked)
-        //console.log("pointerLockedClick: " + pointerLockedClick)
-        //console.log("mouseDeltaX: " + mouseDeltaX)
+            currWeapon = weapons.indexOf(currWeapon_str);
 
-        let new_idx = false
+            let mouseDeltaX = lastRecordedMouseX - lastMouseX;
+            lastMouseX = lastRecordedMouseX
 
-        // E key
-        if(keyStates[69]){
-            new_idx = weapons[(weapons.indexOf(currWeapon_str) + 1)%weapons.length]
-        }
+            //console.log("pointerLocked     : " + pointerLocked)
+            //console.log("pointerLockedClick: " + pointerLockedClick)
+            //console.log("mouseDeltaX: " + mouseDeltaX)
 
-        // Q Key
-        if(keyStates[81]){
-            new_idx = weapons.indexOf(currWeapon_str) - 1;
+            let new_idx = false
 
-            if(new_idx < 0){
-                new_idx += weapons.length;
+            // E key
+            if(keyStates[69]){
+                new_idx = weapons[(weapons.indexOf(currWeapon_str) + 1)%weapons.length]
+            }
+
+            // Q Key
+            if(keyStates[81]){
+                new_idx = weapons.indexOf(currWeapon_str) - 1;
+
+                if(new_idx < 0){
+                    new_idx += weapons.length;
+                }
+            }
+
+            webSocket.send(
+                JSON.stringify(
+                    {
+                        "type" : "loop",
+                        "msg"  : {
+                            "up"            : keyStates[87] | false,
+                            "down"          : keyStates[83] | false,
+                            "left"          : keyStates[65] | false,
+                            "right"         : keyStates[68] | false,
+                            "change"        : new_idx,
+                            "mouseDeltaX"   : ((mouseDeltaX) ? mouseDeltaX : 0),
+                            "leftClick"     :  longClicked || shortClicked,
+                        }
+                    }
+                )
+            );
+
+            if(shortClicked) {
+                shortClicked = false;
             }
         }
-
-        webSocket.send(
-            JSON.stringify(
-                {
-                    "type" : "loop",
-                    "msg"  : {
-                        "up"            : keyStates[87] | false,
-                        "down"          : keyStates[83] | false,
-                        "left"          : keyStates[65] | false,
-                        "right"         : keyStates[68] | false,
-                        "change"        : new_idx,
-                        "mouseDeltaX"   : ((mouseDeltaX) ? mouseDeltaX : 0),
-                        "leftClick"     :  longClicked || shortClicked,
-                    }
-                }
-            )
-        );
-
-        if(shortClicked) {
-            shortClicked = false;
-        }
-        
-        //console.log('Data:', data)
     };
 
     webSocket.onclose = function(e) {
