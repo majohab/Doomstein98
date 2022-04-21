@@ -116,28 +116,24 @@ function drawingHandler_drawCells()
 
 function drawingHandler_draw_gpu()
 {
-    let healthText = font.getTextImg(health.toString().padStart(3, '0') + '%');
-    let healthTextBounds = [300, screenHeight - 115, healthText[0].length, healthText.length, 5]; // startX, startY, sizeX (text coordinate-system), sizeY (text coordinate-system), scale
+    let healthText = getHealthText();
+    healthText = padSprite(healthText, healthTextBounds[2], healthTextBounds[3], -1, 0);
 
-    let bulletsText = font.getTextImg(ammo.toString().padStart(3, '0'));
-    let bulletsTextBounds = [690, screenHeight - 115, bulletsText[0].length, bulletsText.length, 5]
+    let ammoText = getAmmoText();
+    ammoText = padSprite(ammoText, ammoTextBounds[2], ammoTextBounds[3], -1, 0);
 
     let weaponFrame_startY = 2 + currWeapon * 12;
-
+    
     let weaponImage = currWeapon == 0 ? handgun.getSprite(0) : currWeapon == 1 ? machinegun.getSprite(0) : shotgun.getSprite(0);
-    let weaponImageBounds = [weaponImage[0].length, weaponImage.length];
-
-    let b = [[0, 0],
-        [4, 4]
-    ]
-    let bullets_length = b.length;
+    weaponImage = padSprite(weaponImage, weaponImageBounds[0], weaponImageBounds[1], 0, 1);
+    //console.log(weaponImage);
 
     buffer = gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, bulletSprite.data, weaponFrameSprite.data,
-        bullets, bullets_length,
+        bullets, bulletCount,
         weaponImage, weaponImageBounds,
-        healthText, healthTextBounds, bulletsText, bulletsTextBounds,
+        healthText, healthTextBounds, ammoText, ammoTextBounds,
         weaponFrame_startY);
 }
 
@@ -195,11 +191,11 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
             let pix_x = Math.floor((x - startX) / scale);
             let pix_y = Math.floor((y - startY) / scale);
 
-            if (healthText[pix_y][pix_x][3] > 0)
+            if (healthText[4 * (pix_y * 46 + pix_x) + 3] > 0)
             {
-                r = healthText[pix_y][pix_x][0]
-                g = healthText[pix_y][pix_x][1]
-                b = healthText[pix_y][pix_x][2]
+                r = healthText[4 * (pix_y * 46 + pix_x) + 0]
+                g = healthText[4 * (pix_y * 46 + pix_x) + 1]
+                b = healthText[4 * (pix_y * 46 + pix_x) + 2]
 
                 depthBuffer = 0;
             }
@@ -470,7 +466,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
         //#region Bullets
 
-        for (let obj = 1; obj < bullets_length; obj++) // First element is 0
+        for (let obj = 0; obj < bullets_length; obj++) // First element is 0
         {
             let objX = bullets[obj][0];
             let objY = bullets[obj][1];

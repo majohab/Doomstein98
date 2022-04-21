@@ -204,6 +204,47 @@ class Font extends SpriteSet
     }
 }
 
+function padSprite(sprite, destWidth, destHeight, 
+    pad_x, // -1: left, 0: mid, 1: right
+    pad_y) // -1: bottom, 0: mid, 1: top
+{
+    let spriteWidth = sprite[0].length;
+    let spriteHeight = sprite.length;
+
+    if (spriteWidth > destWidth || spriteHeight > destHeight)
+    {
+        console.log("ERROR: destSize is smaller than current size");
+        return sprite;
+    }
+
+    let data = [];
+
+    let totalXpadding = destWidth - spriteWidth;
+    let totalYpadding = destHeight - spriteHeight;
+
+    let paddingRight_01 = pad_x + 0.5 - pad_x * 0.5; // 0, 0.5, 1
+    let paddingTop_01 = pad_y + 0.5 - pad_y * 0.5; // 0, 0.5, 1
+
+    let paddingRight = Math.round(paddingRight_01 * totalXpadding);
+    let paddingTop = Math.round(paddingTop_01 * totalYpadding);
+    let paddingLeft = totalXpadding - paddingRight;
+    let paddingBottom = totalYpadding - paddingTop;
+
+    for (let y = 0; y < destHeight; y++)
+    {
+        data.push([]);
+        for (let x = 0; x < destWidth; x++)
+        {
+            if (x < paddingLeft || x >= destWidth - paddingRight || y < paddingTop || y > destHeight - paddingBottom)
+                data[y].push([0, 0, 0, 0]);
+            else
+                data[y].push(sprite[y - paddingTop][x - paddingLeft]);
+        }
+    }
+    
+    return data;
+}
+
 let wallSprite;
 let floorSprite;
 let ceilingSprite;
