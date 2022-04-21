@@ -70,43 +70,43 @@ function socketHandler_init()
 
             ammo        = data['players'][userName]['ammo'];
             health      = data['players'][userName]['h'];
-            currWeapon_str  = data['players'][userName]['weapon'];
-            weapons     = data['players'][userName]['weapons'];
+            currWeapon  = data['players'][userName]['weapon'];
 
-            currWeapon = weapons.indexOf(currWeapon_str);
+            let mouseDeltaX = lastRecordedMouseX - lastMouseX;
+            lastMouseX = lastRecordedMouseX;
 
             let new_idx = currWeapon
-            
+
             // E key
             // Relative Index
             if(keyStates[69]){
                 new_idx += 1
             }
-        
+
             // 1 key
             // Relative Index
             if(keyStates[49]){
                 new_idx = 1
             }
-        
+
             // 2 key
             // Relative Index
             if(keyStates[49]){
                 new_idx = 2
             }
-        
+
             // 3 key
             // Relative Index
             if(keyStates[49]){
                 new_idx = 3
             }
-        
+
             // Q Key
             // Relative Index
             if(keyStates[81]){
                 new_idx -= 1
             }
-        
+
             webSocket.send(
                 JSON.stringify(
                     {
@@ -123,7 +123,7 @@ function socketHandler_init()
                     }
                 )
             );
-                
+
             if(shortClicked) {
                 shortClicked = false;
             }

@@ -15,11 +15,11 @@ from channels.layers import get_channel_layer
 log = logging.getLogger(__name__)
 
 #TODO: fit that for customized fps
-TICK_RATE = 0.1
+TICK_RATE = 0.01
 
 PLAYER_SPEED            = TICK_RATE/0.1
 ROTATION_SPEED          = TICK_RATE/1
-BULLET_SPEED            = TICK_RATE/0.04
+BULLET_SPEED            = TICK_RATE/0.01
 
 # Every Unit is in Seconds
 JUST_SHOT_ANIMATION     = 1/TICK_RATE
@@ -330,7 +330,7 @@ class Player:
     '''
 
     # Initiate player
-    def __init__(self, username : str, position : Coordinate = Coordinate(3.5,3.5), weapons: list[Weapon] = {"P99" : AVAILABLE_WEAPONS["P99"], "MP5" : AVAILABLE_WEAPONS["MP5"]}, speed : float = PLAYER_SPEED, rotation_speed : float = ROTATION_SPEED, alive : int = 0):
+    def __init__(self, username : str, position : Coordinate = Coordinate(3.5,3.5), weapons: list[Weapon] = [AVAILABLE_WEAPONS["P99"], AVAILABLE_WEAPONS["MP5"], AVAILABLE_WEAPONS["Shotgun"]], speed : float = PLAYER_SPEED, rotation_speed : float = ROTATION_SPEED, alive : int = 0):
         
         # Initiate the Username
         self.name = username
@@ -357,7 +357,7 @@ class Player:
 
         #Represents the current weapon
         #Current Weapon
-        self.current_weapon : Weapon = weapons["P99"] 
+        self.current_weapon : Weapon = weapons[0] 
 
         self.current_weapon_idx = 0
 
@@ -438,8 +438,6 @@ class Player:
 
             print(F"{self.name} just shot a bullet!")
 
-            speed = BULLET_SPEED
-
             # The animation of shooting shall go on for 1 seconds
             self.justShot = JUST_SHOT_ANIMATION
 
@@ -458,8 +456,8 @@ class Player:
                 self,
                 Coordinate(
                     #0.5 Blöcke vom Spieler entfernt entstehen die Bullets
-                    self.current_position.x + speed * np.sin(dir),
-                    self.current_position.y + speed * np.cos(dir)
+                    self.current_position.x + 1 * np.sin(dir),
+                    self.current_position.y + 1 * np.cos(dir)
                 ),
                 #Shot in direction of player itself
                 self.direction
@@ -628,7 +626,7 @@ class Bullet:
         self.direction : float = direction
 
         # One Movement per frame
-        self.speed : float = 0.1 #TODO: Anpassen
+        self.speed : float = BULLET_SPEED
 
     # Execute for every bullet this function
     # Returns True if bullet collide with Wall or Player
