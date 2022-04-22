@@ -1,0 +1,32 @@
+version: '3.9'
+
+services:
+  app:
+    build: 
+      context: .
+    volumes:
+      - static_data:/vol/web/
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    ports:
+      - "8001:8001"
+
+  proxy:
+    build:
+      context: ./proxy
+    volumes:
+      - static_data:/vol/static
+    ports:
+      - "8080:8080"
+    depends_on:
+      - app
+
+  redis:
+    image: redis:latest
+    command: ["redis-server", "--bind", "redis", "--port", "6379"]
+
+
+volumes:
+  static_data:

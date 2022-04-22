@@ -4,16 +4,16 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-channels = "*"
 django = "*"
+channels = "*"
 six = "*"
-django-dotenv = "*"
-django-debug-toolbar = "*"
+Cython = "*"
 numpy = "*"
+uvicorn = "*"
 daphne = "*"
 django-redis = "*"
 channels-redis = "*"
-pipfile = "*"
+uWSGI = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"
