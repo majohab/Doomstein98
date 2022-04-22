@@ -15,8 +15,7 @@ All this will then be processed by the server and send back to the client for th
 const fov = Math.PI / 3;
 const mapHeight = 16;
 const mapWidth = 16;
-const max_bullets = 100;
-const max_opponents = 20;
+const max_objects = 100;
 
 // Runtime variables
 let lastFrameTime;
@@ -27,14 +26,13 @@ let map_numbers;
 let playerX;
 let playerY;
 let playerAngle;
-let bullets;
-let bulletCount;
+let objects;
+let objectCount;
 let opponents;
-let opponentsCount;
 let currWeapon;
 let health;
 let healthTextBounds;
-let ammo;   // ToRefactor: Merge a padded sprite and its bounds into a new class
+let ammo;               // ToRefactor: Merge a padded sprite and its bounds into a new class
 let ammoTextBounds;
 let weaponImageBounds;
 
@@ -44,33 +42,34 @@ async function init()
 
     await spriteReader_init();
     
+    initRuntimeVariables();
     // Need to wait for spriteReader_init()
     initMap(); // To be moved to backend
-    drawingHandler_init();
+
+    drawingHandler_init(); // Needs to wait for initRuntimeVariables();
 
     inputHander_init(); // Needs to wait for drawingHandler_init()
-
-    initRuntimeVariables();
 
     gameLoop();
 }
 
 function initRuntimeVariables()
 {
-    initBullets();
-    initopponents();
+    initObjects();
+
     ammo = 200;
     health = 200;
     currWeapon = 2;
-    bulletCount = 0;
-    opponentsCount = 0
+    objectCount = 0;
 
     //#region Init Textures with their biggest size
     let healthText = getHealthText();
-    healthTextBounds = [280, screenHeight - 115, healthText[0].length, healthText.length, 5]; // startX, startY, sizeX (text coordinate-system), sizeY (text coordinate-system), scale
+    healthTextBounds_sizeX = healthText[0].length;
+    healthTextBounds_sizeY = healthText.length;
 
     let ammoText = getAmmoText();
-    ammoTextBounds = [680, screenHeight - 115, ammoText[0].length, ammoText.length, 5];
+    ammoTextBounds_sizeX = ammoText[0].length;
+    ammoTextBounds_sizeY = ammoText.length;
 
     weaponImageBounds = [218, 151];
     //#endregion
@@ -78,18 +77,11 @@ function initRuntimeVariables()
     lastFrameTime = Date.now();
 }
 
-function initBullets()
+function initObjects()
 {
-    bullets = [];
-    for (let i = 0; i < max_bullets; i++)
-        bullets.push([-10, -10]);
-}
-
-function initopponents()
-{
-    opponents = [];
-    for (let i = 0; i < max_opponents; i++)
-        opponents.push([-10, -10]);
+    objects = [];
+    for (let i = 0; i < max_objects; i++)
+        objects.push([-10, -10, -1]);
 }
 
 function getHealthText()

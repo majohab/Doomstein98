@@ -16,22 +16,22 @@ from channels.layers import get_channel_layer
 log = logging.getLogger(__name__)
 
 #TODO: fit that for customized fps
-TICK_RATE = 0.01
+TICK_RATE = 0.016
 
-PLAYER_SPEED            = TICK_RATE/0.1
-ROTATION_SPEED          = TICK_RATE/1
-BULLET_SPEED            = TICK_RATE/0.02
+PLAYER_SPEED            = round(TICK_RATE/0.1)
+ROTATION_SPEED          = round(TICK_RATE/1)
+BULLET_SPEED            = round(TICK_RATE/0.02)
 
 # Every Unit is in Seconds
-JUST_SHOT_ANIMATION     = 1/TICK_RATE   # 1 Second
-JUST_HIT_ANIMATION      = 1/TICK_RATE   # 1 Second
+JUST_SHOT_ANIMATION     = round(1/TICK_RATE)   # 1 Second
+JUST_HIT_ANIMATION      = round(1/TICK_RATE)   # 1 Second
 
-CHANGE_WEAPON_DELAY     = 1/TICK_RATE   # 1 Second
-SPAWN_LOCK_TIME         = 10/TICK_RATE  # 10 Seconds
-REVIVE_WAITING_TIME     = 10/TICK_RATE  # 10 Seconds
-PLAYER_DELAY_TOLERANCE  = 1/TICK_RATE
-PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING = 10/TICK_RATE
-PLAYER_WAITING_TIME_OCCUPIED_SPAWN = 0.1/TICK_RATE
+CHANGE_WEAPON_DELAY     = round(1/TICK_RATE)   # 1 Second
+SPAWN_LOCK_TIME         = round(10/TICK_RATE)  # 10 Seconds
+REVIVE_WAITING_TIME     = round(10/TICK_RATE)  # 10 Seconds
+PLAYER_DELAY_TOLERANCE  = round(1/TICK_RATE)
+PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING = round(10/TICK_RATE)
+PLAYER_WAITING_TIME_OCCUPIED_SPAWN = round(0.1/TICK_RATE)
 
 MAX_END_TIME            = (30*60)/TICK_RATE # for 30 Min
 
@@ -497,7 +497,7 @@ class Player:
         )
         else:
             pass
-            #print(F"{self.name} has no bullets: {weapon.curr_ammunition} or latency is still active : {weapon.curr_latency} ")
+            print(F"{self.name} has no bullets: {weapon.curr_ammunition} or latency is still active : {weapon.curr_latency} ")
 
     def change_weapon(self, idx):
         '''
@@ -785,6 +785,8 @@ class GameEngine(threading.Thread):
 
             if self.start_flag:
 
+                start = time.time()
+
                 # After each tick update the current status of the game
                 self.tick()
 
@@ -792,7 +794,11 @@ class GameEngine(threading.Thread):
                 self.broadcast_state()
 
                 # Sleep for a specific time, in which the game will calculate every new status
-                time.sleep(TICK_RATE)
+                try:
+                    time.sleep(TICK_RATE - (time.time() - start))
+                except ValueError:
+                    print("1", end="")
+                    pass
 
 
     def broadcast_state(self) -> None: 
@@ -951,6 +957,8 @@ class GameEngine(threading.Thread):
             
             #if the player is currently changing its weapon
             if player.change_weapon_delay > 0:
+
+                #print(player.change_weapon_delay)
 
                 #reduce the delay
                 player.change_weapon_delay -= 1
