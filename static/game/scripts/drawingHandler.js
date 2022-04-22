@@ -18,11 +18,30 @@ let gpu;
 let gpu_kernel;
 let gpu_kernel_settings;
 
+let healthTextBounds_startX;
+let healthTextBounds_startY;
+let healthTextBounds_sizeX;
+let healthTextBounds_sizeY;
+let healthTextBounds_scale;
+
+let ammoTextBounds_startX;
+let ammoTextBounds_startY;
+let ammoTextBounds_sizeX;
+let ammoTextBounds_sizeY;
+let ammoTextBounds_scale;
 
 function drawingHandler_init()
 {
     screenWidth = 1200;
-    screenHeight = 900;
+    screenHeight = 900; // ToDo: Calculate dynamically
+
+    healthTextBounds_startX = 280;
+    healthTextBounds_startY = screenHeight - 115;
+    healthTextBounds_scale = 5;
+
+    ammoTextBounds_startX = 680;
+    ammoTextBounds_startY = screenHeight - 115;
+    ammoTextBounds_scale = 5;
 
     canvas = document.createElement('canvas');
     canvas.setAttribute('width', screenWidth);
@@ -60,6 +79,7 @@ function drawingHandler_init()
 
             wallHeight: wallHeight,
 
+
             wallSprite_width: wallSprite.width,
             wallSprite_height: wallSprite.height,
             wallSprite_iterations_x: wallSprite.iterations_x,
@@ -81,26 +101,40 @@ function drawingHandler_init()
             bulletSprite_width: bulletSprite.width,
             bulletSprite_height: bulletSprite.height,
 
+            playerSprite_width: playerSprite.width,
+            playerSprite_height: playerSprite.height,
+
             weaponFrameSprite_width: weaponFrameSprite.width,
-            weaponFrameSprite_height: weaponFrameSprite.height
+            weaponFrameSprite_height: weaponFrameSprite.height,
+
+
+            healthTextBounds_startX: healthTextBounds_startX,
+            healthTextBounds_startY: healthTextBounds_startY,
+            healthTextBounds_sizeX: healthTextBounds_sizeX,
+            healthTextBounds_sizeY: healthTextBounds_sizeY,
+            healthTextBounds_scale: healthTextBounds_scale,
+
+            ammoTextBounds_startX: ammoTextBounds_startX,
+            ammoTextBounds_startY: ammoTextBounds_startY,
+            ammoTextBounds_sizeX: ammoTextBounds_sizeX,
+            ammoTextBounds_sizeY: ammoTextBounds_sizeY,
+            ammoTextBounds_scale: ammoTextBounds_scale
         }
     };
     gpu_kernel = gpu.createKernel(
         function(playerX, playerY, playerAngle, 
             map_numbers,
-            wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, weaponFrameSprite,
-            bullets, bullets_length,
-            opponents, opponentsCount,
+            wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, playerSprite, weaponFrameSprite,
+            objects, objectCount,
             weaponImage, weaponImageBounds,
-            healthText, healthTextBounds, bulletsText, bulletsTextBounds,
+            healthText, bulletsText,
             weaponFrame_startY) {
             drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
                 map_numbers,
-                wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, weaponFrameSprite,
-                bullets, bullets_length,
-                opponents, opponentsCount,
+                wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, playerSprite, weaponFrameSprite,
+                objects, objectCount,
                 weaponImage, weaponImageBounds,
-                healthText, healthTextBounds, bulletsText, bulletsTextBounds,
+                healthText, bulletsText,
                 weaponFrame_startY);
         },
         gpu_kernel_settings
@@ -119,37 +153,31 @@ function drawingHandler_drawCells()
 function drawingHandler_draw_gpu()
 {
     let healthText = getHealthText();
-    healthText = padSprite(healthText, healthTextBounds[2], healthTextBounds[3], -1, 0);
+    healthText = padSprite(healthText, healthTextBounds_sizeX, healthTextBounds_sizeY, -1, 0);
 
     let ammoText = getAmmoText();
-    ammoText = padSprite(ammoText, ammoTextBounds[2], ammoTextBounds[3], -1, 0);
+    ammoText = padSprite(ammoText, ammoTextBounds_sizeX, ammoTextBounds_sizeY, -1, 0);
 
     let weaponFrame_startY = 2 + currWeapon * 12;
     
     let weaponImage = currWeapon == 0 ? handgun.getSprite(0) : currWeapon == 1 ? machinegun.getSprite(0) : shotgun.getSprite(0);
     weaponImage = padSprite(weaponImage, weaponImageBounds[0], weaponImageBounds[1], 0, 1);
-    //console.log(weaponImage);
-
-    //console.log(opponents);
-    //console.log(opponentsCount);
 
     buffer = gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
-        wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, bulletSprite.data, weaponFrameSprite.data,
-        bullets, bulletCount,
-        opponents, opponentsCount,
+        wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, bulletSprite.data, playerSprite.data, weaponFrameSprite.data,
+        objects, objectCount,
         weaponImage, weaponImageBounds,
-        healthText, healthTextBounds, ammoText, ammoTextBounds,
+        healthText, ammoText,
         weaponFrame_startY);
 }
 
 function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // Coordinates and Angle
     map_numbers,                                                            // Map
-    wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, weaponFrameSprite,    // World Sprites
-    bullets, bullets_length,                                                // Bullets
-    opponents, opponentsCount,                                                
+    wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, playerSprite, weaponFrameSprite,    // World Sprites
+    objects, objectCount,                                                   // Bullets and Opponents                                                
     weaponImage, weaponImageBounds,
-    healthText, healthTextBounds, bulletsText, bulletsTextBounds,           // Status-Bar-Texts
+    healthText, bulletsText,           // Status-Bar-Texts
     weaponFrame_startY)                                                     // Status-Bar-Weapon-Frame
 {
     //#region Init
@@ -185,11 +213,11 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
     //#region Health-Text
     {
-        let startX = healthTextBounds[0];
-        let startY = healthTextBounds[1];
-        let textSizeX = healthTextBounds[2];
-        let textSizeY = healthTextBounds[3];
-        let scale = healthTextBounds[4];
+        let startX = this.constants.healthTextBounds_startX;
+        let startY = this.constants.healthTextBounds_startY;
+        let textSizeX = this.constants.healthTextBounds_sizeX;
+        let textSizeY = this.constants.healthTextBounds_sizeY;
+        let scale = this.constants.healthTextBounds_scale;
         let endX = startX + (textSizeX * scale);
         let endY = startY + (textSizeY * scale);
 
@@ -212,11 +240,11 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
     //#region Bullets-Text
     {
-        let startX = bulletsTextBounds[0];
-        let startY = bulletsTextBounds[1];
-        let textSizeX = bulletsTextBounds[2];
-        let textSizeY = bulletsTextBounds[3];
-        let scale = bulletsTextBounds[4];
+        let startX = this.constants.ammoTextBounds_startX;
+        let startY = this.constants.ammoTextBounds_startY;
+        let textSizeX = this.constants.ammoTextBounds_sizeX;
+        let textSizeY = this.constants.ammoTextBounds_sizeY;
+        let scale = this.constants.ammoTextBounds_scale;
         let endX = startX + (textSizeX * scale);
         let endY = startY + (textSizeY * scale);
     
@@ -471,15 +499,17 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
         //#endregion
 
-        //#region Bullets
+        //#region Objects
 
         {
-            for (let obj = 0; obj < bullets_length; obj++) // First element is 0
+            for (let obj = 0; obj < objectCount; obj++) // First element is 0
             {
-                let objX = bullets[obj][0];
-                let objY = bullets[obj][1];
-                let spriteWidth = this.constants.bulletSprite_width;
-                let spriteHeight = this.constants.bulletSprite_height;
+                let objX = objects[obj][0];
+                let objY = objects[obj][1];
+                let spriteId = objects[obj][2];
+
+                let spriteWidth = spriteId == 0 ? this.constants.bulletSprite_width : this.constants.playerSprite_width;
+                let spriteHeight = spriteId == 0 ? this.constants.bulletSprite_height : this.constants.playerSprite_height;
 
                 let vecX = objX - playerX;
                 let vecY = objY - playerY;
@@ -518,70 +548,28 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                         let pix_x = Math.floor(((x - objMinX) / objWidth) * spriteWidth);
                         let pix_y = Math.floor(((objMaxY - y) / objHeight) * spriteHeight);
 
-                        if (bulletSprite[pix_y][pix_x][3] > 0)  // If not transparent
+                        if (spriteId == 0)
                         {
-                            r = bulletSprite[pix_y][pix_x][0];
-                            g = bulletSprite[pix_y][pix_x][1];
-                            b = bulletSprite[pix_y][pix_x][2];
-
-                            depthBuffer = dstFromPlayer;
+                            if (bulletSprite[pix_y][pix_x][3] > 0)  // If not transparent
+                            {
+                                r = bulletSprite[pix_y][pix_x][0];
+                                g = bulletSprite[pix_y][pix_x][1];
+                                b = bulletSprite[pix_y][pix_x][2];
+                            
+                                depthBuffer = dstFromPlayer;
+                            }
                         }
-                    }
-                }
-            }
-        }
-
-        for (let obj = 0; obj < opponentsCount; obj++) // First element is 0
-        {
-            let objX = opponents[obj][0];
-            let objY = opponents[obj][1];
-            let spriteWidth = this.constants.bulletSprite_width;
-            let spriteHeight = this.constants.bulletSprite_height;
-
-            let vecX = objX - playerX;
-            let vecY = objY - playerY;
-            let dstFromPlayer = Math.sqrt(vecX*vecX + vecY*vecY);
-
-            let forwardX = Math.sin(playerAngle); let forwardY = Math.cos(playerAngle);
-
-            let objAngle = Math.atan2(forwardY, forwardX) - Math.atan2(vecY, vecX);
-
-            let inFrontOfPlayer = (forwardX * vecX + forwardY * vecY) > 0;
-
-            if (inFrontOfPlayer &&
-                dstFromPlayer >= this.constants.nearClippingPane &&
-                dstFromPlayer < depth &&
-                dstFromPlayer < depthBuffer)
-            {
-                let objCeiling = (screenHeight * 0.5) - (screenHeight / dstFromPlayer);
-                let objFloor = screenHeight - objCeiling;
-                let objHeight = objFloor - objCeiling;
-                let objRatio = spriteWidth / spriteHeight;
-                let objWidth = objHeight * objRatio;
-                let middleOfObject = (0.5 * (objAngle / (fov * 0.5)) + 0.5) * screenWidth;
-
-                // Absolutely zero idea what the following does and why the f*ck it works... It just works okay?! It just works... for now...
-                // Also, note that this only seems to work for fov = PI / 3, we probably need to adapt that sh*t calculation for other fovs.
-                if (middleOfObject < 0 + objWidth * 0.5) middleOfObject += screenWidth * 3;
-                if (middleOfObject > screenWidth * 3 - objWidth * 0.5) middleOfObject -= screenWidth * 3;
-
-                let objMinX = middleOfObject - objWidth * 0.5;
-                let objMaxX = middleOfObject + objWidth * 0.5;
-                let objMinY = screenHeight * 0.5 - objHeight * 0.5;
-                let objMaxY = screenHeight * 0.5 + objHeight * 0.5;
-
-                if (x >= objMinX && x <= objMaxX && y >= objMinY && y <= objMaxY)
-                {
-                    let pix_x = Math.floor(((x - objMinX) / objWidth) * spriteWidth);
-                    let pix_y = Math.floor(((objMaxY - y) / objHeight) * spriteHeight);
-
-                    if (bulletSprite[pix_y][pix_x][3] > 0)  // If not transparent
-                    {
-                        r = bulletSprite[pix_y][pix_x][0];
-                        g = bulletSprite[pix_y][pix_x][1];
-                        b = bulletSprite[pix_y][pix_x][2];
-
-                        depthBuffer = dstFromPlayer;
+                        else
+                        {
+                            if (playerSprite[pix_y][pix_x][3] > 0)  // If not transparent
+                            {
+                                r = playerSprite[pix_y][pix_x][0];
+                                g = playerSprite[pix_y][pix_x][1];
+                                b = playerSprite[pix_y][pix_x][2];
+                            
+                                depthBuffer = dstFromPlayer;
+                            }
+                        }
                     }
                 }
             }
