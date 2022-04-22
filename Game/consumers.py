@@ -16,7 +16,7 @@ from .engine import GameEngine
 MAX_DEGREE = 1000
 
 #TODO: fit that for customized fps
-TICK_RATE = 0.01
+TICK_RATE = 0.016
 
 log = logging.getLogger(__name__)
 

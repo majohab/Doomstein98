@@ -18,9 +18,9 @@ log = logging.getLogger(__name__)
 #TODO: fit that for customized fps
 TICK_RATE = 0.016
 
-PLAYER_SPEED            = round(TICK_RATE/0.1)
-ROTATION_SPEED          = round(TICK_RATE/1)
-BULLET_SPEED            = round(TICK_RATE/0.02)
+PLAYER_SPEED            = TICK_RATE/0.1
+ROTATION_SPEED          = TICK_RATE/1
+BULLET_SPEED            = TICK_RATE/0.02
 
 # Every Unit is in Seconds
 JUST_SHOT_ANIMATION     = round(1/TICK_RATE)   # 1 Second
@@ -326,14 +326,14 @@ class Map:
 
             # If Player is in corner, dont change anything
             if ne or se or sw or nw:
-                print(F"Player is located at a corner: y: {coordinate.y} x: {coordinate.x}")
+                #print(F"Player is located at a corner: y: {coordinate.y} x: {coordinate.x}")
                 return True
 
             # if Player is not located at east nor west wall
             if not (west or east):
                 object.current_position.x = coordinate.x
             else:
-                print()
+                #print("x")
                 collision = True
             
         
@@ -341,8 +341,11 @@ class Map:
             if not (north or south):
                 object.current_position.y = coordinate.y
             else:
+                #print("y")
                 collision = True
-            
+        
+            #print(F"x: {object.current_position.x} y: {object.current_position.y}")
+
             return collision
 
         except IndexError:
@@ -497,7 +500,7 @@ class Player:
         )
         else:
             pass
-            print(F"{self.name} has no bullets: {weapon.curr_ammunition} or latency is still active : {weapon.curr_latency} ")
+            #print(F"{self.name} has no bullets: {weapon.curr_ammunition} or latency is still active : {weapon.curr_latency} ")
 
     def change_weapon(self, idx):
         '''
@@ -530,7 +533,7 @@ class Player:
 
                 # Update the kill/death rate
                 try:
-                    shooting_player.kill_death = shooting_player.kills/shooting_player.deaths
+                    bullet.player.kill_death = bullet.player.kills/bullet.player.deaths
                 except ZeroDivisionError:
                     bullet.player.kill_death = bullet._player.kills/1
 
@@ -547,8 +550,6 @@ class Player:
 
         del(bullet)
             
-        
-
     #Describes the function to be called when the player moves
     def move(self, state, x : int = 0, y: int = 0):
 
@@ -572,8 +573,13 @@ class Player:
             if dir > math.pi:
                 dir = dir % -(math.pi + 0.00001)
 
+        #print(F"1 tmp x: {tmp.x} y: {tmp.y}")
+
         #Move only in direction of max math.pi
         tmp.cod_move(self.speed, dir)
+
+        #print(F"2 tmp x: {tmp.x} y: {tmp.y}")
+        #print(F"obj x: {object.current_position.x} y: {object.current_position.y}")
 
         # Look for collision with other Players
         for player in state.players:
@@ -588,6 +594,8 @@ class Player:
         # if player is not too close to an object
         if(not too_close):
             state.map.check_collision(tmp, self)
+
+        #print(F"x: {self.current_position.x} y: {self.current_position.y}")
 
     '''
         Change the direction of the player by the given direction
@@ -797,7 +805,8 @@ class GameEngine(threading.Thread):
                 try:
                     time.sleep(TICK_RATE - (time.time() - start))
                 except ValueError:
-                    print("1", end="")
+                    #print("1", end="")
+                    #self.start_flag = False
                     pass
 
 
@@ -923,7 +932,8 @@ class GameEngine(threading.Thread):
                 
             if player.name in events.keys():
 
-                
+                #print(F"Process players {self.state.players} with {events}")
+
                 if(player.delayed_tick > 1):
                     print(F"Player {player.name} did not respond for {player.delayed_tick} ticks")
 
@@ -931,6 +941,8 @@ class GameEngine(threading.Thread):
                 player.delayed_tick = 0
 
                 event = events[player.name]
+
+                player.change_direction(event["mouseDeltaX"])
 
                 # If the player wants to change the weapon                
                 if(event["weapon"] != player.current_weapon_idx and len(player.weapons) > 1):
@@ -943,8 +955,6 @@ class GameEngine(threading.Thread):
                     # reduce the latency of the current weapon
                     weapon.curr_latency -= 1
                 
-                player.change_direction(event["mouseDeltaX"])
-
                 if(event["x"] != 0 or event["y"] != 0):
                     player.move(self.state, event["x"], event["y"])
 
