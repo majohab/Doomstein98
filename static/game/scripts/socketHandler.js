@@ -154,8 +154,7 @@ function socketHandler_init()
                 shortClicked = false;
             }
         
-            console.log('Data:', data);
-            console.log(data['players'][userName]['cha_weap_an']);
+            //console.log('Data:', data);
         }
     };
 

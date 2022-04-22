@@ -430,12 +430,16 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
             // 0.5 is the z position exactly in the middle between floor and ceiling.
             let rowDistance = posZ / p;
 
-            if (y < ceiling) // Ceiling
+            if (y < ceiling) // Ceiling / Sky
             {
             
-                sampleX = rowDistance * eyeX; // Zero idea why (0.66 / wallHeight)... It was a late sunday evening and this number just did the trick ^^'
+                let constant = 0.66;
+
+                sampleX = rowDistance * eyeX
+                    + playerX * (constant / wallHeight); // Comment this out to render as sky
                 sampleX -= Math.floor(sampleX);
-                sampleY = rowDistance * eyeY;
+                sampleY = rowDistance * eyeY
+                    + playerY * (constant / wallHeight); // Comment this out to render as sky
                 sampleY -= Math.floor(sampleY);
             
                 //sprite = ceilingSprite;

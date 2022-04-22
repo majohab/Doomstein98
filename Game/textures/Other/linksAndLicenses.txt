@@ -10,3 +10,8 @@ Weapons
 Weapons 2
     ?
     https://traveliyu.com/gallery/view?=detailV2&ccid=GEujGLC%2f&id=960A3F0A2486CD0101077F2370CC369AF5A75CA3&thid=OIP.GEujGLC_t9qM3Sk4elQ7IAHaEG&mediaurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.184ba318b0bfb7da8cdd29387a543b20%3frik%3do1yn9Zo2zHAjfw%26riu%3dhttp%253a%252f%252fwww.mediafire.com%252fconvkey%252ff006%252f5bw6aeg77qjcj8vzg.jpg%26ehk%3d%252bkHjDnTfeFmGYe7lvs6AHSmmUgo2drvtAm%252b7KpMTRK8%253d%26risl%3d%26pid%3dImgRaw%26r%3d0&exph=559&expw=1010&q=Doom-Gun-Sprites&simid=608004895099272399&FORM=IRPRST&ck=BA13753B973D7FA7F42E907D8CFFD8BD&selectedIndex=2
+
+Textures:
+    ?
+    https://bghq.com/textures.php?game=doom
+    Link zu einzelner Texture: https://bghq.com/textures/doom/NUMBER.bmp

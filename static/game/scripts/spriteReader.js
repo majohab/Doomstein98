@@ -269,15 +269,15 @@ async function spriteReader_init()
     let inits = 0;
     const initCount = 11;
 
-    spriteReader_getSpriteString('Wall',                (img) => { wallSprite = new Sprite(img, 2, 2); inits++; });
-    spriteReader_getSpriteString('Floor',               (img) => { floorSprite = new Sprite(img, 1, 1); inits++; })
-    spriteReader_getSpriteString('Sky',                 (img) => { ceilingSprite = new Sprite(img, 1, 1); inits++; })
+    spriteReader_getSpriteString('521',                 (img) => { wallSprite = new Sprite(img, 1, 1.32); inits++; });
+    spriteReader_getSpriteString('116',                 (img) => { floorSprite = new Sprite(img, 1, 1); inits++; })
+    spriteReader_getSpriteString('264',                 (img) => { ceilingSprite = new Sprite(img, 1, 1); inits++; })
 
     spriteReader_getSpriteString('StatusBar_Doom_Own',  (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
     spriteReader_getSpriteString('WeaponFrame',         (img) => { weaponFrameSprite = new Sprite(img, 1, 1); inits++ });
 
     spriteReader_getSpriteString('Bullet_1',            (img) => { bulletSprite = new Sprite(img, 1, 1); inits++; });
-    spriteReader_getSpriteString('DoomGuy_Front',              (img) => { playerSprite = new Sprite(img, 1, 1); inits++; });
+    spriteReader_getSpriteString('DoomGuy_Front',       (img) => { playerSprite = new Sprite(img, 1, 1); inits++; });
 
     
     spriteReader_getSpriteString('Shotgun', (img) =>
