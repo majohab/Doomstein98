@@ -54,25 +54,26 @@ function socketHandler_init()
             playerAngle = data['players'][userName]['dir'];
             
 
-            initBullets();
-            let rec_bullets = data['bullets'];
-            for (let i = 0; i < rec_bullets.length && i < max_bullets; i++)
-                bullets[i] = [rec_bullets[i]['x'], rec_bullets[i]['y']];
-            
-            bulletCount = rec_bullets.length;
+            initObjects();
 
-            initopponents();
-            let rec_users = data['players'];
             let i = 0;
+            let rec_bullets = data['bullets'];
+            for (i = 0; i < rec_bullets.length && i < max_objects; i++)
+                objects[i] = [rec_bullets[i]['x'], rec_bullets[i]['y'], 0];
+            o = rec_bullets.length;
+
+            let rec_users = data['players'];
             for (users_name in rec_users)
             {
-                if (users_name != userName && i < max_opponents)
+                if (users_name != userName && i < max_objects)
                 {
-                    opponents[i] = [rec_users[users_name]['x'], rec_users[users_name]['y']]
+                    objects[i] = [rec_users[users_name]['x'], rec_users[users_name]['y'], 1]
                     i++;
                 }
             }
-            opponentsCount = opponents.length;
+
+            objectCount = i;
+
 
             ammo        = data['players'][userName]['ammo'];
             health      = data['players'][userName]['h'];
@@ -153,7 +154,8 @@ function socketHandler_init()
                 shortClicked = false;
             }
         
-        //console.log('Data:', data)
+            console.log('Data:', data);
+            console.log(data['players'][userName]['cha_weap_an']);
         }
     };
 
