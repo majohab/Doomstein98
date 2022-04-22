@@ -107,7 +107,7 @@ class Spawn:
         '''
 
         if self.lock_time == 1:
-            print(F"Spawn at x: {self.coordinate.x} y: {self.coordinate.y} is free again")
+            print(F"Spawn {self} at x: {self.coordinate.x} y: {self.coordinate.y} is free again")
 
         if(self.lock_time > 0):
             self.lock_time -= 1
@@ -417,7 +417,7 @@ class Player:
         '''
         self.delayed_tick = 0
 
-    def find_spawn(self, map):
+    def find_spawn(self, map : Map):
         '''
         Find an available Spawn for the Player
         Returns True if found
@@ -434,6 +434,8 @@ class Player:
 
             # Start from the rnd Spawn
             spawn = map.spawns[(idx+rnd_idx)%map_len]
+
+            #print(F"x: {spawn.coordinate.x} y: {spawn.coordinate.y}")
 
             # if the spawn is not yet occupied
             if(spawn.lock_time == 0):
@@ -996,6 +998,8 @@ class GameEngine(threading.Thread):
         Reduce the tick of every Spawn, so new Player can join
         None will be returned
         '''
+        #print(F"len spawns: {len(self.state.map.spawns)}")
+
         [spawn.update_occupation() for spawn in self.state.map.spawns]
 
     def apply_events(self, player: str, events) -> None:
