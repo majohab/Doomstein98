@@ -78,7 +78,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Doomstein98.wsgi.application'
-#ASGI_APPLICATION = 'Doomstein98.asgi.application'
 ASGI_APPLICATION = 'Game.routing.application'
 
 #'''

@@ -204,11 +204,11 @@ class GameConsumer(SyncConsumer):
     They communicate through channels.
     '''
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         """
         Created on demand when the first player joins.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
         self.channel_layer = get_channel_layer()
         self.engines : dict[GameEngine] = {} #The games are saved in there

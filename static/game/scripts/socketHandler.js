@@ -5,6 +5,12 @@ function socketHandler_init()
     document.title = lobbyName;
     const protocol = window.location.protocol.match(/^https/) ? 'wss' : 'ws'
 
+    let keyState69 = false
+    let keyState81 = false
+    let keyState49 = false
+    let keyState50 = false
+    let keyState51 = false
+
     const webSocket = new WebSocket(
         protocol
         + '://'
@@ -79,34 +85,53 @@ function socketHandler_init()
             let new_idx = currWeapon
 
             // E key
-            // Relative Index
-            if(keyStates[69]){
+            // Relativer Index
+            if(keyStates[69] && !(keyState69)){
                 new_idx += 1
+                keyState69 = true
+            }else if(!keyStates[69]){
+                keyState69 = false
             }
 
             // 1 key
-            // Relative Index
-            if(keyStates[49]){
-                new_idx = 1
+            // Absoluter Index
+            if(keyStates[49] && !(keyState49)){
+                new_idx = 0
+                keyState49 = true
+            }else if(!keyStates[49]){
+                keyState49 = false
             }
+
 
             // 2 key
-            // Relative Index
-            if(keyStates[49]){
-                new_idx = 2
+            // Absoluter Index
+            if(keyStates[50] && !(keyState50)){
+                new_idx = 1
+                keyState50 = true
+            }else if(!keyStates[50]){
+                keyState50 = false
             }
+
 
             // 3 key
-            // Relative Index
-            if(keyStates[49]){
-                new_idx = 3
+            // Absoluter Index
+            if(keyStates[51] && !(keyState51)){
+                new_idx = 2
+                keyState51 = true
+            }else if(!keyStates[51]){
+                keyState51 = false
             }
 
+
             // Q Key
-            // Relative Index
-            if(keyStates[81]){
+            // Relativer Index
+            if(keyStates[81] && !(keyState81)){
                 new_idx -= 1
+                keyState81 = true
+            }else if(!keyStates[81]){
+                keyState81 = false
             }
+
 
             webSocket.send(
                 JSON.stringify(
@@ -117,7 +142,7 @@ function socketHandler_init()
                             "down"          : keyStates[83] | false,
                             "left"          : keyStates[65] | false,
                             "right"         : keyStates[68] | false,
-                            "weapon"        : new_idx,
+                            "weapon"        : new_idx % 3,
                             "mouseDeltaX"   : ((mouseDeltaX) ? mouseDeltaX : 0),
                             "leftClick"     :  longClicked || shortClicked,
                         }
