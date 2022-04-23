@@ -93,6 +93,14 @@ function socketHandler_init()
                 keyState69 = false
             }
 
+            if(mouseWheelDelta > 0){
+                new_idx += 1
+                mouseWheelDelta = 0
+            }else if(mouseWheelDelta < 0){
+                new_idx -= 1
+                mouseWheelDelta = 0
+            }
+
             // 1 key
             // Absoluter Index
             if(keyStates[49] && !(keyState49)){
