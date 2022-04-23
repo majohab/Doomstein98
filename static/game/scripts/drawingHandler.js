@@ -32,16 +32,16 @@ let ammoTextBounds_scale;
 
 function drawingHandler_init()
 {
-    screenWidth = 1200;
-    screenHeight = 900; // ToDo: Calculate dynamically
+    screenWidth = 1000;
+    screenHeight = 750; // ToDo: Calculate dynamically
 
-    healthTextBounds_startX = 280;
-    healthTextBounds_startY = screenHeight - 115;
-    healthTextBounds_scale = 5;
+    healthTextBounds_startX = screenWidth * (285 / 1200);
+    healthTextBounds_startY = screenHeight - screenHeight * (115 / 900);
+    healthTextBounds_scale = screenWidth / 280;
 
-    ammoTextBounds_startX = 680;
-    ammoTextBounds_startY = screenHeight - 115;
-    ammoTextBounds_scale = 5;
+    ammoTextBounds_startX = screenWidth * (645 / 1200);
+    ammoTextBounds_startY = screenHeight - screenHeight * (120 / 900);
+    ammoTextBounds_scale = screenWidth / 240;
 
     canvas = document.createElement('canvas');
     canvas.setAttribute('width', screenWidth);
@@ -226,11 +226,11 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
             let pix_x = Math.floor((x - startX) / scale);
             let pix_y = Math.floor((y - startY) / scale);
 
-            if (healthText[4 * (pix_y * 46 + pix_x) + 3] > 0)
+            if (healthText[pix_y][pix_x][3] > 0)
             {
-                r = healthText[4 * (pix_y * 46 + pix_x) + 0]
-                g = healthText[4 * (pix_y * 46 + pix_x) + 1]
-                b = healthText[4 * (pix_y * 46 + pix_x) + 2]
+                r = healthText[pix_y][pix_x][0]
+                g = healthText[pix_y][pix_x][1]
+                b = healthText[pix_y][pix_x][2]
 
                 depthBuffer = 0;
             }
@@ -436,10 +436,10 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                 let constant = 0.66;
 
                 sampleX = rowDistance * eyeX
-                    + playerX * (constant / wallHeight); // Comment this out to render as sky
+                    - playerX * (constant / wallHeight); // Comment this out to render as sky
                 sampleX -= Math.floor(sampleX);
                 sampleY = rowDistance * eyeY
-                    + playerY * (constant / wallHeight); // Comment this out to render as sky
+                    - playerY * (constant / wallHeight); // Comment this out to render as sky
                 sampleY -= Math.floor(sampleY);
             
                 //sprite = ceilingSprite;

@@ -284,14 +284,15 @@ async function spriteReader_init()
     {
         shotgun = new SpriteSet(img,
             [
-                new Subsprite(0, 0, 6, 91, 96),
-                new Subsprite(1, 91, 0, 92, 102),
-                new Subsprite(2, 183, 24, 93, 78),
-                new Subsprite(3, 276, 74, 200, 28),
-                new Subsprite(4, 476, 32, 164, 70),
-                new Subsprite(5, 640, 45, 125, 57),
-                new Subsprite(6, 765, 68, 87, 34),
-                new Subsprite(7, 854, 24, 93, 78)
+                new Subsprite(0, 0, 39, 91, 63),
+                new Subsprite(1, 0 + 91, 6, 91, 96),
+                new Subsprite(2, 91 + 91, 0, 92, 102),
+                new Subsprite(3, 183 + 91, 24, 93, 78),
+                new Subsprite(4, 276 + 91, 74, 200, 28),
+                new Subsprite(5, 476 + 91, 32, 164, 70),
+                new Subsprite(6, 640 + 91, 45, 125, 57),
+                new Subsprite(7, 765 + 91, 68, 87, 34),
+                new Subsprite(8, 854 + 91, 24, 93, 78)
             ]
         );
         inits++;
