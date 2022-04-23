@@ -269,9 +269,9 @@ async function spriteReader_init()
     let inits = 0;
     const initCount = 11;
 
-    spriteReader_getSpriteString('521',                 (img) => { wallSprite = new Sprite(img, 1, 1.32); inits++; });
-    spriteReader_getSpriteString('116',                 (img) => { floorSprite = new Sprite(img, 1, 1); inits++; })
-    spriteReader_getSpriteString('264',                 (img) => { ceilingSprite = new Sprite(img, 1, 1); inits++; })
+    spriteReader_getSpriteString('rrock10',                 (img) => { wallSprite = new Sprite(img, 0.5, 0.66); inits++; });
+    spriteReader_getSpriteString('floor5_1',                 (img) => { floorSprite = new Sprite(img, 1, 1); inits++; })
+    spriteReader_getSpriteString('ceil3_5',                 (img) => { ceilingSprite = new Sprite(img, 2, 2); inits++; })
 
     spriteReader_getSpriteString('StatusBar_Doom_Own',  (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
     spriteReader_getSpriteString('WeaponFrame',         (img) => { weaponFrameSprite = new Sprite(img, 1, 1); inits++ });
@@ -284,35 +284,25 @@ async function spriteReader_init()
     {
         shotgun = new SpriteSet(img,
             [
-                new Subsprite(0, 218 * 0, 0, 218, 151),
-                new Subsprite(1, 218 * 1, 0, 218, 151),
-                new Subsprite(2, 218 * 2, 0, 218, 151),
-                new Subsprite(3, 218 * 3, 0, 218, 151),
-                new Subsprite(4, 218 * 4, 0, 218, 151),
-                new Subsprite(5, 218 * 5, 0, 218, 151),
-                new Subsprite(6, 218 * 6, 0, 218, 151),
-                new Subsprite(7, 218 * 7, 0, 218, 151),
-                new Subsprite(8, 218 * 8, 0, 218, 151),
-                new Subsprite(9, 218 * 9, 0, 218, 151),
-                new Subsprite(10, 218 * 10, 0, 218, 151),
-                new Subsprite(11, 218 * 11, 0, 218, 151),
-                new Subsprite(12, 218 * 12, 0, 218, 151),
-                new Subsprite(13, 218 * 13, 0, 218, 151),
-                new Subsprite(14, 218 * 14, 0, 218, 151)
+                new Subsprite(0, 0, 6, 91, 96),
+                new Subsprite(1, 91, 0, 92, 102),
+                new Subsprite(2, 183, 24, 93, 78),
+                new Subsprite(3, 276, 74, 200, 28),
+                new Subsprite(4, 476, 32, 164, 70),
+                new Subsprite(5, 640, 45, 125, 57),
+                new Subsprite(6, 765, 68, 87, 34),
+                new Subsprite(7, 854, 24, 93, 78)
             ]
         );
         inits++;
     });
 
-    spriteReader_getSpriteString('MG', (img) =>
+    spriteReader_getSpriteString('Chaingun', (img) =>
     {
         machinegun = new SpriteSet(img,
             [
-                new Subsprite(0, 164 * 0, 0, 164, 115),
-                new Subsprite(1, 164 * 1, 0, 164, 115),
-                new Subsprite(2, 164 * 2, 0, 164, 115),
-                new Subsprite(3, 164 * 3, 0, 164, 115),
-                new Subsprite(4, 164 * 4, 0, 164, 115),
+                new Subsprite(0, 0, 0, 110, 54),
+                new Subsprite(1, 110, 7, 110, 47)
             ]
         );
         inits++;
@@ -322,39 +312,33 @@ async function spriteReader_init()
     {
         handgun = new SpriteSet(img,
             [
-                new Subsprite(0, 79 * 0, 0, 79, 103),
-                new Subsprite(1, 79 * 1, 0, 79, 103),
-                new Subsprite(2, 79 * 2, 0, 79, 103),
-                new Subsprite(3, 79 * 3, 0, 79, 103)
+                new Subsprite(0, 0, 23, 50, 64),
+                new Subsprite(1, 50, 2, 52, 85),
+                new Subsprite(2, 102, 7, 50, 80),
+                new Subsprite(3, 152, 3, 51, 84),
+                new Subsprite(4, 203, 0, 51, 87)
             ]
         );
         inits++;
     });
 
-    spriteReader_getSpriteString('DoomBigFontSquare_NO', (img) =>
+    spriteReader_getSpriteString('Font_Denex', (img) =>
     {
         font = new Font(img,
             [
-                new Subsprite(' ', 1, 1, 8, 12),
-                new Subsprite('!', 10, 1, 6, 12),
-                new Subsprite('%', 57, 1, 13, 12),
-                new Subsprite('0', 1, 14, 11, 12),
-                new Subsprite('1', 13, 14, 7, 12),
-                new Subsprite('2', 21, 14, 11, 12),
-                new Subsprite('3', 33, 14, 11, 12),
-                new Subsprite('4', 45, 14, 11, 12),
-                new Subsprite('5', 57, 14, 11, 12),
-                new Subsprite('6', 69, 14, 11, 12),
-                new Subsprite('7', 81, 14, 11, 12),
-                new Subsprite('8', 93, 14, 11, 12),
-                new Subsprite('9', 105, 14, 11, 12),
-                new Subsprite('A', 1, 40, 14, 12),
-                new Subsprite('B', 16, 40, 14, 12),
-                new Subsprite('C', 31, 40, 14, 12),
-                new Subsprite('D', 46, 40, 14, 12),
-                new Subsprite('E', 61, 40, 14, 12),
-                new Subsprite('F', 76, 40, 14, 12),
-                new Subsprite('G', 91, 40, 14, 12)
+                new Subsprite(' ', 1, 1, 9, 15),
+                new Subsprite('!', 11, 1, 5, 15),
+                new Subsprite('%', 53, 1, 13, 15),
+                new Subsprite('0', 1, 17, 15, 15),
+                new Subsprite('1', 17, 17, 8, 15),
+                new Subsprite('2', 26, 17, 11, 15),
+                new Subsprite('3', 39, 17, 11, 15),
+                new Subsprite('4', 51, 17, 13, 15),
+                new Subsprite('5', 65, 17, 12, 15),
+                new Subsprite('6', 78, 17, 13, 15),
+                new Subsprite('7', 92, 17, 14, 15),
+                new Subsprite('8', 107, 17, 12, 15),
+                new Subsprite('9', 120, 17, 13, 15)
                 //new Letter(''),
             ]
         );
