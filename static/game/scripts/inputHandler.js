@@ -14,6 +14,7 @@ let shortClicked;
 let longClicked;
 let pointerLockedClick; //The click for initialization of pointerLocked should not shoot
 let keyStates; // Maybe not how we want to solve this in the final game
+let mouseWheelDelta;
 
 function inputHander_init()
 {   
@@ -52,16 +53,13 @@ function inputHandler_initKeyEvents()
     document.addEventListener('keyup',function(e){
         keyStates[e.keyCode || e.which] = false;
     },true);
-    //document.addEventListener('click',function (){
-    //    console.log("click")
-    //    shortClicked = true;
-    //})
     document.addEventListener('mousedown',function (){
         longClicked = true;
-    })
+    });
     document.addEventListener('mouseup', function(){
         longClicked = false;
-    })
+    });
+    window.addEventListener("wheel", event => mouseWheelDelta = event.deltaY);
 }
 
 function inputHandler_initPointerLock()

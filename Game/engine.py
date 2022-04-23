@@ -22,18 +22,22 @@ PLAYER_SPEED            = TICK_RATE/0.1
 ROTATION_SPEED          = TICK_RATE/1
 BULLET_SPEED            = TICK_RATE/0.02
 
+
 # Every Unit is in Seconds
 JUST_SHOT_ANIMATION     = round(1/TICK_RATE)   # 1 Second
 JUST_HIT_ANIMATION      = round(1/TICK_RATE)   # 1 Second
+JUST_DIED_ANIMATION     = round(10/TICK_RATE)
 
 CHANGE_WEAPON_DELAY     = round(1/TICK_RATE)   # 1 Second
 SPAWN_LOCK_TIME         = round(10/TICK_RATE)  # 10 Seconds
 REVIVE_WAITING_TIME     = round(10/TICK_RATE)  # 10 Seconds
-PLAYER_DELAY_TOLERANCE  = round(1/TICK_RATE)
+PLAYER_DELAY_TOLERANCE  = round(3/TICK_RATE)
 PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING = round(10/TICK_RATE)
 PLAYER_WAITING_TIME_OCCUPIED_SPAWN = round(0.1/TICK_RATE)
 
 MAX_END_TIME            = (30*60)/TICK_RATE # for 30 Min
+
+ACCURACY_REDUCTION      = 0.08
 
 #Reversed direction
 MAPS = [
@@ -116,6 +120,8 @@ class Weapon:
 
     def __init__(self, name : str, max_ammunition : int, latency : int, dmg : int):
 
+        #print(F"Weapon: {self}")
+
         self.name :str = name
     
         self.max_ammunition : int = max_ammunition
@@ -134,19 +140,19 @@ AVAILABLE_WEAPONS = {
     "P99" : [
         "P99",
         50,             #50 Kugeln in der Waffe
-        0.8/TICK_RATE,  #Jede 0.8 Sekunden kann geschossen werden
+        round(0.8/TICK_RATE),  #Jede 0.8 Sekunden kann geschossen werden
         20              # The weapon reduces 20 health per bullet
     ],
     "MP5" : [
         "MP5",
         200,            #200 Kugeln in der Waffe
-        0.1/TICK_RATE,  #Jede 0.1 Sekunden kann geschossen werden   
+        round(0.1/TICK_RATE),  #Jede 0.1 Sekunden kann geschossen werden   
         10              # The Weapon reduces 10 Health per Bullet 
     ],
     "Shotgun" : [
         "Shotgun",
         10,            #200 Kugeln in der Waffe
-        1.4/TICK_RATE, #Jede 1.4 Sekunden kann geschossen werden   
+        round(1.4/TICK_RATE), #Jede 1.4 Sekunden kann geschossen werden   
         50             # The Weapon reduces 50 Health per Bullet 
     ],
 }
@@ -165,79 +171,103 @@ class Map:
         self.spawns = spawns
         self.tick = 0
     
+    #Helper function for from_list()
+    def func(spawns, x, y, char) -> str:
+
+        # Spawn was found
+        spawn_flag = False
+
+        # in what direction is the spawn
+        dir = 0
+
+        #Check if the direction fits to the coordinate
+        # N and S are reversed, so N gets math.pi
+        if(char == 'N'):
+            h                       = 'N'
+            spawn_flag              = True
+            dir                     = math.pi
+
+        #Check if the direction fits to the coordinate
+        if(char == 'E'):
+            h                       = 'E'
+            spawn_flag              = True
+            dir                     = math.pi/2
+    
+        #Check if the direction fits to the coordinate
+        # N and S are reversed, so S gets 0
+        if(char == 'S'):
+            h                       = 'S'
+            spawn_flag              = True
+            dir                     = 0
+    
+        #Check if the direction fits to the coordinate
+        if(char == 'W'):
+            h                       = 'W'
+            spawn_flag              = True
+            dir                     = -math.pi/2
+
+        # if spawn was found
+        if(spawn_flag):
+
+            char = len(spawns)
+
+            spawns.append(
+                Spawn(
+                    Coordinate(
+                        x + 0.5,
+                        y + 0.5,
+                    ),
+                    dir   
+                )
+            )
+
+        return char
+    
     # validate the input string of map
     # Static Method
     def from_list(strings: list):
 
         spawns = list()
 
-        map = pd.DataFrame([list(string) for string in strings])
+        #TODO: Anpassen an das gewünschte Format
+        map = pd.DataFrame([list(string) for string in strings], dtype='string')
+
+        inv_map = map[map == np.nan].dropna()
+
+        if(not inv_map.empty):
+            print(F"Map is invalid: {inv_map}")
+
+        inv_map = map.replace(["#", ".", "W", "S", "N", "E"], np.nan).dropna()
+
+        if(not inv_map.empty):
+            print(F"map contains invalid letters: {inv_map}")
+
+        map.apply(lambda x: x.apply(lambda y: Map.func(spawns, x.name, x[x==y].index[0], y)))
         
+        '''
         for idx_s, string in enumerate(strings):
             
-            if len(string.replace('#','').replace('.','').replace('N','').replace('E','').replace('S','').replace('W','')) != 0:
-                print('Map contains invalid values. It only accepts \"#\" or \".\" and spawn fields')
+            #if len(string.replace('#','').replace('.','').replace('N','').replace('E','').replace('S','').replace('W','')) != 0:
+            #    print('Map contains invalid values. It only accepts \"#\" or \".\" and spawn fields')
 
             #Check if Map fits the format
-            if len(string) != len(strings[-1]):
-                print("Map is invalid")
+            #if len(string) != len(strings[-1]):
+            #    print("Map is invalid")
+
+            
 
             #Handling for spawns
             for idx_c, char in enumerate(string):
 
-                # Spawn was found
-                spawn_flag = False
+                #print("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN")
 
-                # in what direction is the spawn
-                dir = 0
-
-                #Check if the direction fits to the coordinate
-                # N and S are reversed, so N gets math.pi
-                if(char == 'N' and strings[idx_s-1][idx_c] == '.'):
-                    h                       = 'N'
-                    spawn_flag              = True
-                    dir                     = math.pi
-
-                #Check if the direction fits to the coordinate
-                if(char == 'E' and strings[idx_s][idx_c+1] == '.'):
-                    h                       = 'E'
-                    spawn_flag              = True
-                    dir                     = math.pi/2
-            
-                #Check if the direction fits to the coordinate
-                # N and S are reversed, so S gets 0
-                if(char == 'S' and strings[idx_s+1][idx_c] == '.'):
-                    h                       = 'S'
-                    spawn_flag              = True
-                    dir                     = 0
-            
-                #Check if the direction fits to the coordinate
-                if(char == 'W' and strings[idx_s][idx_c-1] == '.'):
-                    h                       = 'W'
-                    spawn_flag              = True
-                    dir                     = -math.pi/2
-
-                # if spawn was found
-                if(spawn_flag):
-
-                    # Replace the direction index with the position of the spawn in the list
-                    strings[idx_s] = strings[idx_s].replace(h,F"{len(spawns)}", 1)
-
-                    spawns.append(
-                        Spawn(
-                            Coordinate(
-                                idx_c + 0.5,
-                                idx_s + 0.5,
-                            ),
-                            dir   
-                        )
-                    )
+        '''        
             
         if(len(spawns) == 0):
             print("Map contains no spawn fields")
 
         return Map(
-            len(string),
+            len(strings[0]),
             len(strings),
             map,
             strings,
@@ -297,7 +327,7 @@ class Map:
             C_l = self.map.iloc[round(coordinate.y - (0.5 - tol)),round(coordinate.x - (0.5 + tol))] == "#"
             D_l = self.map.iloc[round(coordinate.y - (0.5 - tol)),round(coordinate.x - (0.5 - tol))] == "#"
 
-            '''
+            
             print(F"A_l: {A_l}")
             print(F"B_l: {B_l}")
             print(F"C_l: {C_l}")
@@ -306,8 +336,8 @@ class Map:
             print(F"B: {B}")
             print(F"C: {C}")
             print(F"D: {D}")
-            print(F"cor: {Corner}\n\n")
-            '''
+            #print(F"cor: {Corner}\n\n")
+            
 
             north = A and B
             east = B and D
@@ -363,7 +393,7 @@ class Player:
     '''
 
     # Initiate player
-    def __init__(self, username : str, position : Coordinate = Coordinate(3.5,3.5), weapons: list[Weapon] = [Weapon(*AVAILABLE_WEAPONS["P99"]), Weapon(*AVAILABLE_WEAPONS["MP5"]), Weapon(*AVAILABLE_WEAPONS["Shotgun"])], speed : float = PLAYER_SPEED, rotation_speed : float = ROTATION_SPEED, alive : int = 0):
+    def __init__(self, username : str, position : Coordinate = Coordinate(3.5,3.5), weapons: list[Weapon] = None, speed : float = PLAYER_SPEED, rotation_speed : float = ROTATION_SPEED, alive : int = 0):
         
         # Initiate the Username
         self.name = username
@@ -386,11 +416,11 @@ class Player:
         self.justHit = 0
 
         # Represents the current available weapons
-        self.weapons : list[Weapon]= weapons
+        self.weapons : list[Weapon]= [Weapon(*AVAILABLE_WEAPONS["P99"]), Weapon(*AVAILABLE_WEAPONS["MP5"]), Weapon(*AVAILABLE_WEAPONS["Shotgun"])]
 
         #Represents the current weapon
         #Current Weapon
-        self.current_weapon : Weapon = weapons[0] 
+        self.current_weapon : Weapon = self.weapons[0] 
 
         self.current_weapon_idx = 0
 
@@ -431,6 +461,11 @@ class Player:
 
         map_len = len(map.spawns)
 
+        print(F"map_len: {map_len}")
+
+        for spawn in map.spawns:
+            print(F"spawn {spawn} x: {spawn.coordinate.x} y: {spawn.coordinate.y}")
+
         rnd_idx = random.randint(0,map_len-1)
 
         for idx in range(map_len):
@@ -458,11 +493,12 @@ class Player:
         self.direction = spawn.direction
 
         # Initiate the current position
-        self.current_position = spawn.coordinate
+        self.current_position = Coordinate(spawn.coordinate.x,spawn.coordinate.y)
+
         # Spawn was found
         return True
 
-    def shoot(self, state):
+    def shoot(self, state, move_flag = False):
         '''
         Describes the function to be called when the player shoots
         '''
@@ -484,6 +520,12 @@ class Player:
 
             dir = self.direction
 
+            # if the player is moving in that frame, reduce the accuracy
+            if(move_flag):
+                rnd = random.uniform(-ACCURACY_REDUCTION,ACCURACY_REDUCTION)
+                print(rnd)
+                dir += rnd
+
             # Add bullet to current state
             state.bullets.append(
             Bullet(
@@ -491,16 +533,16 @@ class Player:
                 self,
                 Coordinate(
                     #0.5 Blöcke vom Spieler entfernt entstehen die Bullets
-                    self.current_position.x + 1 * np.sin(dir),
-                    self.current_position.y + 1 * np.cos(dir)
+                    self.current_position.x + 1 * np.sin(self.direction),
+                    self.current_position.y + 1 * np.cos(self.direction)
                 ),
                 #Shot in direction of player itself
-                self.direction
+                dir
             )
         )
         else:
             pass
-            #print(F"{self.name} has no bullets: {weapon.curr_ammunition} or latency is still active : {weapon.curr_latency} ")
+            print(F"{self.name} has no bullets: {weapon.curr_ammunition} or latency is still active : {weapon.curr_latency} ")
 
     def change_weapon(self, idx):
         '''
@@ -522,7 +564,7 @@ class Player:
 
         print(F"Player {self.name} is hit by player {bullet.player.name}")
 
-        self.health -= bullet.player.current_weapon.damage
+        self.health -= bullet.weapon.damage
         
         if(self.health < 1):
             
@@ -535,7 +577,7 @@ class Player:
                 try:
                     bullet.player.kill_death = bullet.player.kills/bullet.player.deaths
                 except ZeroDivisionError:
-                    bullet.player.kill_death = bullet._player.kills/1
+                    bullet.player.kill_death = bullet.player.kills/1
 
                 # Player is not alive anymore and waits till he respawns
                 self.die()
@@ -658,7 +700,6 @@ class Player:
             "alive"       : self.alive,
         }
 
-
 class Bullet:
     '''
     Creating and handling Bullets
@@ -670,6 +711,7 @@ class Bullet:
         #print("A bullet has been created")
 
         self.player           : Player     = origin_player
+        self.weapon                        = origin_player.current_weapon
         self.prior_position   : Coordinate = origin_pos
         self.middle_position  : Coordinate = origin_pos
         self.current_position : Coordinate = origin_pos
@@ -719,17 +761,21 @@ class State:
         self.map     : Map          = map
         self.players : list[Player] = []#[Player(name, ) for name in players_name]
         self.bullets = bullets
+        self.corpses : list[Player] = []
 
 
     def render(self) -> Mapping[str, Any]:
         return { 
             "map" :     self.map.render(),
             "players" : {p.name: p.render() for p in self.players},
-            "bullets" : [b.render() for b in self.bullets]
+            "bullets" : [b.render() for b in self.bullets],
+            "corpses" : self.corpses,
         }
 
-# Create a thread to run it indefinitely
 class GameEngine(threading.Thread):
+    '''
+    Thread for handling a game
+    '''
 
     # Constructor function for GameEngine
     def __init__(self, group_name, players_name : list[str] = [], map_string = MAPS[0], max_players : int = 6, game_mode : int = 0, win_score : int = 20, end_time : int = MAX_END_TIME):
@@ -805,7 +851,7 @@ class GameEngine(threading.Thread):
                 try:
                     time.sleep(TICK_RATE - (time.time() - start))
                 except ValueError:
-                    #print("1", end="")
+                    print("1", end="")
                     #self.start_flag = False
                     pass
 
@@ -930,15 +976,20 @@ class GameEngine(threading.Thread):
                 
                 self.win([player])
                 
+            #print(events.keys())
+
             if player.name in events.keys():
 
                 #print(F"Process players {self.state.players} with {events}")
 
-                if(player.delayed_tick > 1):
-                    print(F"Player {player.name} did not respond for {player.delayed_tick} ticks")
+                # Does the player move in that frame
+                move_flag = False
 
-                #reset the delayed_tick
-                player.delayed_tick = 0
+                if(player.delayed_tick > 1):
+                    #print(F"Player {player.name} did not respond for {player.delayed_tick} ticks")
+
+                    #reset the delayed_tick
+                    player.delayed_tick = 0
 
                 event = events[player.name]
 
@@ -956,12 +1007,15 @@ class GameEngine(threading.Thread):
                     weapon.curr_latency -= 1
                 
                 if(event["x"] != 0 or event["y"] != 0):
+                    move_flag = True
                     player.move(self.state, event["x"], event["y"])
 
-                if(event["leftClick"] and player.change_weapon_delay == 0):
-                   player.shoot(self.state)
-
-            elif(player.alive != 0):
+                if(event["leftClick"]):
+                    if(player.change_weapon_delay == 0):
+                        player.shoot(self.state, move_flag)
+                    else:
+                        print("Weapon delay")
+            elif(player.alive == 0):
                 #Increase the delayed tick of the player
                 player.delayed_tick += 1
             
@@ -987,6 +1041,7 @@ class GameEngine(threading.Thread):
 
                 if dis_1 < 0.25 or dis_2 < 0.25 :
 
+                    # execute the function
                     player.get_hit(self.state, bullet, self.game_mode)
 
 
@@ -1024,26 +1079,26 @@ class GameEngine(threading.Thread):
 
     def join_game(self, player_name: str) -> None:
 
-        print(F"\n\nPlayer {player_name} joined game!\n\n", )
+        #print(F"\n\nPlayer {player_name} joined game!\n\n", )
 
         state_p = next((obj for obj in self.state.players if obj.name == player_name), False)
         state_q = next((obj for obj in self.player_queue if obj.name == player_name), False)
 
         # Look if player is already in the game
         if(state_p):                    
-            print(F"\n\nPlayer {player_name} is already in game!\n")
+            print(F"\n\nPlayer {player_name} is already in game and playing!\n")
             return
         try:
             # Look if the Player did not disconnect and is still in game
             if(state_q.alive != -2):
-                print(F"\n\nPlayer {player_name} is already in game!\n")
+                print(F"\n\nPlayer {player_name} is already in game and waiting!\n")
                 return  
             # if the Player is disconnected and rejoined the game
             else:
                 print(F"\n\nPlayer {player_name} is rejoining the game!\n")
                 state_q.alive = PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
         except:
-            print(F"\n\nPlayer {player_name} is joining the game!\n")
+            print(F"\n\nPlayer {player_name} is joining as new player the game!\n")
             # if the Player joins the game for the first time
             with self.player_lock:
                 # Append Player to the queue so it can be appended to the game
@@ -1059,6 +1114,7 @@ class GameEngine(threading.Thread):
 
         for player in self.player_queue:
 
+            # if player is ready to spawn on the battle
             if(player.alive == 0):
 
                 #if spawn is found returns true
@@ -1067,18 +1123,27 @@ class GameEngine(threading.Thread):
                     print("No spawn was found yet")
 
                     #Wait for specific time if player could not spawn
-                    player.alive =PLAYER_WAITING_TIME_OCCUPIED_SPAWN 
+                    player.alive = PLAYER_WAITING_TIME_OCCUPIED_SPAWN 
 
                 #set his health back to 100
                 player.health = 100
 
+                # reset the delayed tick of the rejoined player
+                player.delayed_tick = 0
+
                 # add the players to the game
                 self.state.players.append(self.player_queue.pop(idx))
 
+
                 print(player.name)
+
             # if player is waiting for rejoining
             # -1 Players are not included
             elif player.alive > 0:
+
+                # If the player died in that frame
+                if(player.alive == REVIVE_WAITING_TIME):
+                    self.state.corpses.append({"username" : player.name, "x" : player.current_position.x, "y" : player.current_position.y, "duration" : JUST_DIED_ANIMATION}) 
 
                 #reduce wait time of player
                 player.alive -= 1
@@ -1088,6 +1153,19 @@ class GameEngine(threading.Thread):
             else:
                 #skip Player for pop() method
                 idx += 1   
+
+    def process_corpses(self) -> None : 
+        '''
+        Process the current Corpses on the battlefield
+        '''
+
+
+        for corpse in self.state.corpses:
+
+            if(corpse["duration"] == 0):
+                self.state.corpses.remove(corpse)
+
+            corpse["duration"] -= 1 
 
     def win(self, winning_players : list[Player]) -> None:
 

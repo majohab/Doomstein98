@@ -95,6 +95,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+        '''
         await self.channel_layer.group_send(
             self.group_name,
             {
@@ -105,6 +106,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                 },
             },
         )
+        '''
         
         await self.channel_layer.send(
             "game_engine",
