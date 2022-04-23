@@ -71,7 +71,7 @@ function initRuntimeVariables()
     ammoTextBounds_sizeX = ammoText[0].length;
     ammoTextBounds_sizeY = ammoText.length;
 
-    weaponImageBounds = [218, 151];
+    weaponImageBounds = [200, 102];
     //#endregion
 
     lastFrameTime = Date.now();
