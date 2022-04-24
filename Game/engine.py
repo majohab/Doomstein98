@@ -877,10 +877,10 @@ class State:
     Class for handling the states of the game
     '''
 
-    def __init__(self, map : Map, playersName : list[str] = [], bullets : list[Bullet] = []):
+    def __init__(self, map : Map):
         self.map     : Map          = map
         self.players : list[Player] = []#[Player(name, ) for name in playersName]
-        self.bullets = bullets
+        self.bullets : list[Bullet] = []
         self.corpses : dict[Player] = []
 
 
@@ -898,7 +898,7 @@ class GameEngine(threading.Thread):
     '''
 
     # Constructor function for GameEngine
-    def __init__(self, lobbyname, playersName : list[str] = [], mapString = MAPS[1], maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME):
+    def __init__(self, lobbyname, mapString = None, playersName : list[str] = [], maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME):
         
         # Did the game started?
         self.startFlag = False
@@ -942,7 +942,7 @@ class GameEngine(threading.Thread):
         #How man players are allowed in the game
         self.maxPlayers = maxPlayers
 
-        mapString = mapString
+        mapString = MAPS[1]
 
         self.state = State(
             Map.from_list(mapString), 
