@@ -36,13 +36,74 @@ PLAYER_DELAY_TOLERANCE  = round(3/TICK_RATE)
 PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING = round(10/TICK_RATE)
 PLAYER_WAITING_TIME_OCCUPIED_SPAWN = round(0.1/TICK_RATE)
 
-MAX_END_TIME            = (30*60)/TICK_RATE # for 30 Min
+MAX_ENDTIME            = (30*60)/TICK_RATE # for 30 Min
 
-ACCURACY_REDUCTION      = 0.08
+ACCURACY_REDUCTION      = 0.11
 HIT_BOX                 = 0.40
+
+#key constants
+ammo_key                = 'a'
+bullet_key              = 'b'
+corpses_key             = 'c'
+click_key               = 'c'
+duration_key            = 'd'
+direction_key           = 'd'
+health_key              = 'h'
+inactive_key            = 'i'
+kills_key               = 'k'
+map_key                 = 'm'
+mouseDelta_key          = 'm'
+player_key              = 'p'
+state_key               = 's'
+weapon_key              = 'w'
+x_coordinate_key        = 'x'
+y_coordinate_key        = 'y'
+justShot_animation      = 's_a'
+justHit_animation       = 'h_a'
+weapon_change_animation = 'w_a'
 
 #Reversed direction
 MAPS = [
+    [
+    "#######################################################################################",
+    "#..E.#................................................................................#",
+    "#....#..........................................................................#######",
+    "#.####................................................................................#",
+    "#.....................................................................................#",
+    "#..###..........................................................................#######",
+    "###########...........................................................................#",
+    "#.....................................................................................#",
+    "#...............................................................................#######",
+    "#.....................................................................................#",
+    "#.....................................................................................#",
+    "#...............................................................................#######",
+    "#.....................................................................................#",
+    "#.....................................................................................#",
+    "#...............................##.##################...........................#######",
+    "#...............................##.#....#.....#.....#.................................#",
+    "#...............................##.#..###.....#..####.................................#",
+    "#...............................##.#................#...........................#######",
+    "#...............................##.########..##.....#.................................#",
+    "#...............................##............#.......................................#",
+    "#...............................####..........#.....#...........................#######",
+    "#..................................###.######.###.###.................................#",
+    "#....................................#.#......#...#...................................#",
+    "#....................................#.#..#...#.#.#.............................#######",
+    "#....................................#.#..#.....#.#...................................#",
+    "#....................................#.#..#######.....................................#",
+    "#...............................................................................#######",
+    "#.....................................................................................#",
+    "#.....................................................................................#",
+    "#...............................................................................#######",
+    "#.....................................................................................#",
+    "#.....................................................................................#",
+    "####..######....................................................................#######",
+    "#......#...#..........................................................................#",
+    "####...#...#..........................................................................#",
+    "#.S#.......#....................................................................#######",
+    "#.. .......#..........................................................................#",
+    "#######################################################################################"
+    ],
     [
     "################",
     "#............W.#",
@@ -101,7 +162,7 @@ class Spawn:
         '''
         A spawn is occupied by the player
         '''
-        print(F"Spawn at x: {self.coordinate.x} y: {self.coordinate.y} is occupied")
+        #print(F"Spawn at x: {self.coordinate.x} y: {self.coordinate.y} is occupied")
 
         # The Spawn is occupied for 5 Seconds
         self.lock_time = SPAWN_LOCK_TIME
@@ -113,26 +174,27 @@ class Spawn:
         '''
 
         if self.lock_time == 1:
-            print(F"Spawn {self} at x: {self.coordinate.x} y: {self.coordinate.y} is free again")
+            pass
+            #print(F"Spawn {self} at x: {self.coordinate.x} y: {self.coordinate.y} is free again")
 
         if(self.lock_time > 0):
             self.lock_time -= 1
 
 class Weapon:
 
-    def __init__(self, name : str, max_ammunition : int, latency : int, dmg : int):
+    def __init__(self, name : str, maxAmmunition : int, latency : int, dmg : int):
 
         #print(F"Weapon: {self}")
 
         self.name :str = name
     
-        self.max_ammunition : int = max_ammunition
+        self.maxAmmunition : int = maxAmmunition
 
-        self.curr_ammunition : int = max_ammunition
+        self.currAmmunition : int = maxAmmunition
 
         #How much Frames does the Player have to wait for the next shot
         self.latency : int = latency
-        self.curr_latency : int = 0
+        self.currLatency : int = 0
 
         #How much damage does the Weapon cause
         self.damage : int = dmg
@@ -169,7 +231,7 @@ class Map:
         self.width = width
         self.height = height
         self.map = map
-        self.map_string = strings
+        self.mapString = strings
         self.spawns = spawns
         self.tick = 0
     
@@ -240,6 +302,8 @@ class Map:
 
         if(not inv_map.empty):
             print(F"map contains invalid letters: {inv_map}")
+
+        #print(map)
 
         map.apply(lambda x: x.apply(lambda y: Map.func(spawns, x.name, x[x==y].index[0], y)))
         
@@ -340,7 +404,7 @@ class Map:
                 ( b and (look_north_east or look_south_east)) and not
                 ( c and (look_south_west or look_north_west)) and not 
                 ( d and (look_south_east or look_north_east))):
-                    object.current_position.x = coordinate.x
+                    object.currentPosition.x = coordinate.x
 
                 # Is the player allowed to move in y
                 if((not (A and B or C and D) or 
@@ -352,7 +416,7 @@ class Map:
                 ( b and (look_south_west or look_south_east)) and not
                 ( c and (look_north_east or look_north_west)) and not 
                 ( d and (look_north_west or look_north_east))):
-                    object.current_position.y = coordinate.y
+                    object.currentPosition.y = coordinate.y
 
                 ne = A and B and D
                 se = B and C and D
@@ -385,16 +449,16 @@ class Map:
                 
                 return False
 
-            #print(F"x: {object.current_position.x} y: {object.current_position.y}")
+            #print(F"x: {object.currentPosition.x} y: {object.currentPosition.y}")
 
         except IndexError:
                 print(F"Bewegung nach x:{coordinate.x} und y:{coordinate.y} war ungültig und wurde zurückgesetzt!")
-                object.current_position = Coordinate(3.5,3.5)
+                object.currentPosition = Coordinate(3.5,3.5)
                 return True
 
     # Return für updating the state     
     def render(self) -> Mapping[str, Any]:
-        return self.map_string
+        return self.mapString
 
 class Player:
     '''
@@ -410,7 +474,7 @@ class Player:
         self.alive = alive
 
         # Position is an Object of Coordinate
-        self.current_position = position
+        self.currentPosition = position
 
         # Represents the health
         self.health = 100
@@ -429,16 +493,16 @@ class Player:
 
         #Represents the current weapon
         #Current Weapon
-        self.current_weapon : Weapon = self.weapons[0] 
+        self.currentWeapon : Weapon = self.weapons[0] 
 
-        self.current_weapon_idx = 0
+        self.currentWeaponIdx = 0
 
-        self.change_weapon_delay : int = 0
+        self.changeWeaponDelay : int = 0
 
         # Represents score for kill and deaths
         self.kills  = 0
         self.deaths = 0
-        self.kill_death = 0
+        self.killDeath = 0
 
         '''
         Float describes how fast the Player is moving
@@ -457,7 +521,7 @@ class Player:
         '''
         Counts how many times a player did not send something in a row
         '''
-        self.delayed_tick = 0
+        self.delayedTick = 0
 
     def find_spawn(self, map : Map):
         '''
@@ -502,7 +566,7 @@ class Player:
         self.direction = spawn.direction
 
         # Initiate the current position
-        self.current_position = Coordinate(spawn.coordinate.x,spawn.coordinate.y)
+        self.currentPosition = Coordinate(spawn.coordinate.x,spawn.coordinate.y)
 
         # Spawn was found
         return True
@@ -512,9 +576,9 @@ class Player:
         Describes the function to be called when the player shoots
         '''
         
-        weapon = self.current_weapon
+        weapon = self.currentWeapon
 
-        if weapon.curr_ammunition > 0 and weapon.curr_latency == 0:
+        if weapon.currAmmunition > 0 and weapon.currLatency == 0:
 
             print(F"{self.name} just shot a bullet!")
 
@@ -522,10 +586,10 @@ class Player:
             self.justShot = JUST_SHOT_ANIMATION
 
             # Reduce the current ammo of current weapon by one
-            weapon.curr_ammunition -= 1
+            weapon.currAmmunition -= 1
 
             # Start the delay of the weapon
-            weapon.curr_latency = weapon.latency
+            weapon.currLatency = weapon.latency
 
             dir = self.direction
 
@@ -542,27 +606,27 @@ class Player:
                 # From whom was a bullet shot?
                 self,
                 #0.5 Blöcke vom Spieler entfernt entstehen die Bullets
-                self.current_position.x + 1 * np.sin(self.direction),
-                self.current_position.y + 1 * np.cos(self.direction),
+                self.currentPosition.x + 1 * np.sin(self.direction),
+                self.currentPosition.y + 1 * np.cos(self.direction),
                 #Shot in direction of player itself
                 dir
             )
         )
         else:
             pass
-            #print(F"{self.name} has no bullets: {weapon.curr_ammunition} or latency is still active : {weapon.curr_latency} ")
+            #print(F"{self.name} has no bullets: {weaponA} or latency is still active : {weapon.curr_latency} ")
 
     def change_weapon(self, idx):
         '''
         Change the weapon by an indicator
         '''
         # if the idx is too high then modulo the length of the weapons
-        self.current_weapon_idx = idx % len(self.weapons)
+        self.currentWeaponIdx = idx % len(self.weapons)
 
-        self.current_weapon = self.weapons[self.current_weapon_idx]
+        self.currentWeapon = self.weapons[self.currentWeaponIdx]
 
         # Wait 1 seconds to be able to shoot again
-        self.change_weapon_delay = CHANGE_WEAPON_DELAY
+        self.changeWeaponDelay = CHANGE_WEAPON_DELAY
         
     #Describes the function to be called when the player is hit
     def get_hit(self, state, bullet, mode : int):
@@ -583,9 +647,9 @@ class Player:
 
                 # Update the kill/death rate
                 try:
-                    bullet.player.kill_death = bullet.player.kills/bullet.player.deaths
+                    bullet.player.killDeath = bullet.player.kills/bullet.player.deaths
                 except ZeroDivisionError:
-                    bullet.player.kill_death = bullet.player.kills/1
+                    bullet.player.killDeath = bullet.player.kills/1
 
                 # Player is not alive anymore and waits till he respawns
                 self.die()
@@ -615,7 +679,7 @@ class Player:
 
         dir += math.atan2(x, y)
 
-        tmp = Coordinate(self.current_position.x, self.current_position.y)
+        tmp = Coordinate(self.currentPosition.x, self.currentPosition.y)
 
         if dir < 0:
             dir = (dir % -(2*math.pi)) 
@@ -632,13 +696,13 @@ class Player:
         tmp.cod_move(self.speed, dir)
 
         #print(F"2 tmp x: {tmp.x} y: {tmp.y}")
-        #print(F"obj x: {object.current_position.x} y: {object.current_position.y}")
+        #print(F"obj x: {object.currentPosition.x} y: {object.currentPosition.y}")
 
         # Look for collision with other Players
         for player in state.players:
 
             # if the on-going move is too close to another player then turn the boolean flag
-            if(player.name != self.name and tmp.get_distance(player.current_position) < 1):
+            if(player.name != self.name and tmp.get_distance(player.currentPosition) < 1):
                 
                 print(F"Player {self.name} is too close to another player {player.name}")
 
@@ -648,7 +712,7 @@ class Player:
         if(not too_close):
             state.map.check_collision(tmp, self, dir = dir)
 
-        #print(F"x: {self.current_position.x} y: {self.current_position.y}")
+        #print(F"x: {self.currentPosition.x} y: {self.currentPosition.y}")
 
     '''
         Change the direction of the player by the given direction
@@ -680,10 +744,10 @@ class Player:
 
         # Update the kill/death rate
         try:
-            self.kill_death = self.kills/self.deaths
+            self.killDeath = self.kills/self.deaths
         # if there is no death at all
         except ZeroDivisionError:
-            self.kill_death = self.kills/1
+            self.killDeath = self.kills/1
 
         self.alive = REVIVE_WAITING_TIME
 
@@ -695,21 +759,30 @@ class Player:
         self.alive = value
 
     '''
-    Returns all relevant information about the Player for the Client
+    Returns all relevant information about the player for the Client
     '''
     def render(self) -> Mapping[str, Any]:
+
         return{
-            "x"           : self.current_position.x,
-            "y"           : self.current_position.y,
-            "h"           : self.health,
-            "k"           : self.kills,
-            "dir"         : self.direction,
-            "shot_an"     : self.justShot,
-            "hit_an"      : self.justHit,
-            "cha_weap_an" : self.change_weapon_delay,
-            "weapon"      : self.current_weapon_idx,
-            "ammo"        : self.current_weapon.curr_ammunition,
-            "alive"       : self.alive,
+            x_coordinate_key        : self.currentPosition.x,
+            y_coordinate_key        : self.currentPosition.y,
+            health_key              : self.health,
+            kills_key               : self.kills,
+            direction_key           : self.direction,
+            justShot_animation      : self.justShot,
+            justHit_animation       : self.justHit,
+            weapon_change_animation : self.changeWeaponDelay,
+            weapon_key              : self.currentWeaponIdx,
+            ammo_key                : self.currentWeapon.currAmmunition,
+            #"alive"       : self.alive,
+        }
+
+    '''
+    Returns all relelvant information about the inactive player for the client
+    '''
+    def render_inactive(self) -> Mapping[str, Any]:
+        return{
+            state_key : self.alive
         }
 
 class Bullet:
@@ -718,17 +791,17 @@ class Bullet:
     '''
 
     # Initiate bullet
-    def __init__(self, origin_player : Player, x : float, y : float, direction : float):
+    def __init__(self, originPlayer : Player, x : float, y : float, direction : float):
 
         #print("A bullet has been created")
 
-        self.player           : Player     = origin_player
-        self.weapon                        = origin_player.current_weapon
-        self.prior_position   : Coordinate = Coordinate(x,y)
-        self.middle_position  : Coordinate = Coordinate(x,y)
-        self.current_position : Coordinate = Coordinate(x,y)
+        self.player           : Player     = originPlayer
+        self.weapon                        = originPlayer.currentWeapon
+        self.priorPosition    : Coordinate = Coordinate(x,y)
+        self.middlePosition   : Coordinate = Coordinate(x,y)
+        self.currentPosition  : Coordinate = Coordinate(x,y)
 
-        self.direction : float = direction
+        self.direction        : float      = direction
 
         # One Movement per frame
         self.speed : float = BULLET_SPEED
@@ -737,30 +810,30 @@ class Bullet:
     # Returns True if bullet collide with Wall
     def update_pos(self, map : Map):
 
-        tmp = deepcopy(self.current_position)
+        tmp = deepcopy(self.currentPosition)
 
-        #print(self.current_position.x, "\n")
+        #print(self.currentPosition.x, "\n")
 
         tmp.cod_move(self.speed, self.direction)
 
-        #print(self.current_position.x, "\n")
+        #print(self.currentPosition.x, "\n")
 
         # Check collision with Wall
-        if map.check_collision(tmp, self, tolerance = 0.05):
+        if map.check_collision(tmp, self, tolerance = 0.15):
             return True
         else:
 
-            #print(F"{self.prior_position}\n{self.middle_position}\n{self.current_position}\n{tmp}\n")
+            #print(F"{self.prior_position}\n{self.middle_position}\n{self.currentPosition}\n{tmp}\n")
 
             #if Bullet did not collide with wall
-            self.prior_position = deepcopy(self.current_position)
+            self.priorPosition = deepcopy(self.currentPosition)
 
-            self.current_position = deepcopy(tmp)
+            self.currentPosition = deepcopy(tmp)
 
-            self.middle_position.x = (self.prior_position.x + self.current_position.x)/2
-            self.middle_position.y = (self.prior_position.y + self.current_position.y)/2
+            self.middlePosition.x = (self.priorPosition.x + self.currentPosition.x)/2
+            self.middlePosition.y = (self.priorPosition.y + self.currentPosition.y)/2
 
-            #print(F"{self.prior_position.x}\n{self.middle_position.x}\n{self.current_position.x}\n{tmp.x}\n")
+            #print(F"{self.prior_position.x}\n{self.middle_position.x}\n{self.currentPosition.x}\n{tmp.x}\n")
 
             return False
 
@@ -768,29 +841,28 @@ class Bullet:
     # If information is requested for rendering and update the game
     def render(self) -> Mapping[str, Any]:
         return {
-            "x": self.current_position.x,
-            "y": self.current_position.y
+            x_coordinate_key : self.currentPosition.x,
+            y_coordinate_key : self.currentPosition.y
         }
-
 
 class State:
     '''
     Class for handling the states of the game
     '''
 
-    def __init__(self, map : Map, players_name : list[str] = [], bullets : list[Bullet] = []):
+    def __init__(self, map : Map, playersName : list[str] = [], bullets : list[Bullet] = []):
         self.map     : Map          = map
-        self.players : list[Player] = []#[Player(name, ) for name in players_name]
+        self.players : list[Player] = []#[Player(name, ) for name in playersName]
         self.bullets = bullets
         self.corpses : list[Player] = []
 
 
     def render(self) -> Mapping[str, Any]:
         return { 
-            "map" :     self.map.render(),
-            "players" : {p.name: p.render() for p in self.players},
-            "bullets" : [b.render() for b in self.bullets],
-            "corpses" : self.corpses,
+            map_key : self.map.render(),
+            player_key : {p.name: p.render() for p in self.players},
+            bullet_key : [b.render() for b in self.bullets],
+            corpses_key : self.corpses,
         }
 
 class GameEngine(threading.Thread):
@@ -799,66 +871,66 @@ class GameEngine(threading.Thread):
     '''
 
     # Constructor function for GameEngine
-    def __init__(self, group_name, players_name : list[str] = [], map_string = MAPS[0], max_players : int = 6, game_mode : int = 0, win_score : int = 20, end_time : int = MAX_END_TIME):
+    def __init__(self, lobbyname, playersName : list[str] = [], mapString = MAPS[1], maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME):
         
         # Did the game started?
-        self.start_flag = False
+        self.startFlag = False
 
         self.running = True
 
         #game_modes
         # 0: Play until one player has enough kills. Revive after 10 Seconds
         # 1: Last man standing, no reviving at all
-        self.game_mode = game_mode
+        self.gameMode = gameMode
 
-        print(F"Initializing GameEngine: {group_name} with players: {players_name}")
+        #print(F"Initializing GameEngine: {lobbyname} with players: {playersName}")
 
         # Create a thread to run the game
         super(GameEngine, self).__init__(daemon = True, name = "GameEngine")
 
         # the times of total ticks
-        self.tick_num = 0
+        self.tickNum = 0
 
         # random ID for the game
         self.name = uuid.uuid4()
 
-        # group_name for communication
-        self.group_name = group_name
+        # groupName for communication
+        self.groupName = lobbyname
 
         # how many kills are necessary to win the game
-        self.win_score = win_score
+        self.winScore = winScore
 
-        # end_time in seconds
-        self.end_time  = end_time
+        # endTime in seconds
+        self.endTime  = endTime
 
         # get all the available channels
-        self.channel_layer = get_channel_layer()
+        self.channelLayer = get_channel_layer()
 
-        self.event_changes = {}
-        self.event_lock = threading.Lock()
-        self.player_lock = threading.Lock()
+        self.eventChanges = {}
+        self.eventLock = threading.Lock()
+        self.playerLock = threading.Lock()
 
-        self.player_queue : list[Player] = []
+        self.playerQueue : list[Player] = []
 
         #How man players are allowed in the game
-        self.max_players = max_players
+        self.maxPlayers = maxPlayers
 
-        map_string = MAPS[0]
+        mapString = mapString
 
         self.state = State(
-            Map.from_list(map_string), 
-            players_name
+            Map.from_list(mapString), 
+            playersName
             )
 
     # The main loop for the game engine
     def run(self) -> None:
 
-        print(F"Starting engine loop with self.running: {self.running}")
+        #print(F"Starting engine loop with self.running: {self.running}")
 
         # infinite loop
         while self.running:
 
-            if self.start_flag:
+            if self.startFlag:
 
                 start = time.time()
 
@@ -873,26 +945,30 @@ class GameEngine(threading.Thread):
                     time.sleep(TICK_RATE - (time.time() - start))
                 except ValueError:
                     print("1", end="")
-                    #self.start_flag = False
+                    #self.startFlag = False
                     pass
 
-
+    '''
+    Broadcast every important information about the state
+    '''
     def broadcast_state(self) -> None: 
         '''
         The broadcast method which broadcast the current game state to the channel
         '''
 
-        # Get the current information about the game state
-        state_json = self.state.render()
+        #print(stateJson)
 
-        #print(state_json)
+        # Get the current information about the game state
+        stateJson = self.state.render()
+
+        stateJson[inactive_key] = {player.name : player.render_inactive() for player in self.playerQueue}
 
         # Synchronize the channel's information and send them to all participants
-        async_to_sync(self.channel_layer.group_send)(
-            self.group_name, 
+        async_to_sync(self.channelLayer.group_send)(
+            self.groupName, 
             {
              "type": "game.update",
-             "state": state_json
+             state_key   : stateJson
             }
         )
 
@@ -902,20 +978,20 @@ class GameEngine(threading.Thread):
 
         '''
 
-        self.tick_num += 1         
+        self.tickNum += 1         
 
-        if(self.tick_num >= self.end_time):
+        if(self.tickNum >= self.endTime):
             
             # if time limit was reached
             self.time_limit_reached()
         
-        #print(F"Tick {self.tick_num} for game {self.name}")
+        #print(F"Tick {self.tickNum} for game {self.name}")
 
         #start = time.time()
 
-        with self.event_lock:
-            events = self.event_changes.copy()
-            self.event_changes.clear()
+        with self.eventLock:
+            events = self.eventChanges.copy()
+            self.eventChanges.clear()
 
         #end = time.time()
 
@@ -964,7 +1040,7 @@ class GameEngine(threading.Thread):
         '''
 
         # if game is about last man standing and only one Player remained
-        if self.game_mode == 1 and len(self.state.players) == 1:
+        if self.gameMode == 1 and len(self.state.players) == 1:
 
             print("Last Man Standing was won because only one player left")
             # Declare it as a win
@@ -973,7 +1049,7 @@ class GameEngine(threading.Thread):
         for idx, player in enumerate(self.state.players):
 
             #if player did not respond for one second or more
-            if player.delayed_tick >= PLAYER_DELAY_TOLERANCE:
+            if player.delayedTick >= PLAYER_DELAY_TOLERANCE:
 
                 player.remove_from_game(-2)
 
@@ -981,7 +1057,7 @@ class GameEngine(threading.Thread):
 
                 #Remove the Player from current Game
                 #Add him to the queue
-                self.player_queue.append(self.state.players.pop(idx))
+                self.playerQueue.append(self.state.players.pop(idx))
 
                 continue
 
@@ -989,9 +1065,9 @@ class GameEngine(threading.Thread):
             if player.alive > 0:
 
                 # remove him from current game and add him to queue
-                self.player_queue.append(self.state.players.pop(idx))
+                self.playerQueue.append(self.state.players.pop(idx))
 
-            if self.game_mode == 0 and player.kills >= self.win_score:
+            if self.gameMode == 0 and player.kills >= self.winScore:
                 
                 print(F"Enough player were killed by {player.name}")
                 
@@ -1006,48 +1082,60 @@ class GameEngine(threading.Thread):
                 # Does the player move in that frame
                 move_flag = False
 
-                if(player.delayed_tick > 1):
-                    #print(F"Player {player.name} did not respond for {player.delayed_tick} ticks")
+                if(player.delayedTick > 1):
+                    #print(F"Player {player.name} did not respond for {player.delayedTick} ticks")
 
-                    #reset the delayed_tick
-                    player.delayed_tick = 0
+                    #reset the delayedTick
+                    player.delayedTick = 0
 
                 event = events[player.name]
 
-                player.change_direction(event["mouseDeltaX"])
+                player.change_direction(event[mouseDelta_key])
 
                 # If the player wants to change the weapon                
-                if(event["weapon"] != player.current_weapon_idx and len(player.weapons) > 1):
+                if(event[weapon_key] != player.currentWeaponIdx and len(player.weapons) > 1):
 
-                    player.change_weapon(event["weapon"])
+                    player.change_weapon(event[weapon_key])
 
-                weapon = player.current_weapon
+                weapon = player.currentWeapon
 
-                if(weapon.curr_latency > 0):
+                # reduce currLatency counter if needed
+                if(weapon.currLatency > 0):
+
                     # reduce the latency of the current weapon
-                    weapon.curr_latency -= 1
+                    weapon.currLatency -= 1
                 
-                if(event["x"] != 0 or event["y"] != 0):
-                    move_flag = True
-                    player.move(self.state, event["x"], event["y"])
+                # reduce justShot counter if needed
+                if(player.justShot > 0):
 
-                if(event["leftClick"]):
-                    if(player.change_weapon_delay == 0):
+                    player.justShot -= 1
+
+                # reduce justHit counter if needed  
+                if(player.justHit > 0):
+
+                    player.justHit  -= 1
+
+                if(event[x_coordinate_key] != 0 or event[y_coordinate_key] != 0):
+                    move_flag = True
+                    player.move(self.state, event[x_coordinate_key], event[y_coordinate_key])
+
+                if(event[click_key]):
+                    if(player.changeWeaponDelay == 0):
                         player.shoot(self.state, move_flag)
                     else:
                         #print("Weapon delay")
                         pass
             elif(player.alive == 0):
                 #Increase the delayed tick of the player
-                player.delayed_tick += 1
+                player.delayedTick += 1
             
             #if the player is currently changing its weapon
-            if player.change_weapon_delay > 0:
+            if player.changeWeaponDelay > 0:
 
-                #print(player.change_weapon_delay)
+                #print(player.changeWeaponDelay)
 
                 #reduce the delay
-                player.change_weapon_delay -= 1
+                player.changeWeaponDelay -= 1
             
     def process_hits(self) -> None:
         '''
@@ -1058,8 +1146,8 @@ class GameEngine(threading.Thread):
 
             for bullet in self.state.bullets:
 
-                dis_1 = bullet.current_position.get_distance(player.current_position)
-                dis_2 = bullet.middle_position.get_distance(player.current_position)
+                dis_1 = bullet.currentPosition.get_distance(player.currentPosition)
+                dis_2 = bullet.middlePosition.get_distance(player.currentPosition)
 
                 if dis_1 < HIT_BOX or dis_2 < HIT_BOX :
                     
@@ -1067,10 +1155,10 @@ class GameEngine(threading.Thread):
                     #print(F"{dis_1} and {dis_2}")
 
                     # execute the function
-                    player.get_hit(self.state, bullet, self.game_mode)
+                    player.get_hit(self.state, bullet, self.gameMode)
 
 
-        #[player.get_hit(self, bullet, self.game_mode)  for player in self.state.players for bullet in self.state.bullets if bullet.current_position.get_distance(player.current_position) < 0.1]
+        #[player.get_hit(self, bullet, self.gameMode)  for player in self.state.players for bullet in self.state.bullets if bullet.currentPosition.get_distance(player.currentPosition) < 0.1]
 
     def process_bullets(self) -> None:
         '''
@@ -1099,39 +1187,39 @@ class GameEngine(threading.Thread):
 
         #print("Applying changes for " + player)
         
-        with self.event_lock:
-            self.event_changes[player] = events
+        with self.eventLock:
+            self.eventChanges[player] = events
 
-    def join_game(self, player_name: str) -> None:
+    def join_game(self, playerName: str) -> None:
 
-        #print(F"\n\nPlayer {player_name} joined game!\n\n", )
+        #print(F"\n\nPlayer {playerName} joined game!\n\n", )
 
-        state_p = next((obj for obj in self.state.players if obj.name == player_name), False)
-        state_q = next((obj for obj in self.player_queue if obj.name == player_name), False)
+        stateP = next((obj for obj in self.state.players if obj.name == playerName), False)
+        stateQ = next((obj for obj in self.playerQueue if obj.name == playerName),False)
 
         # Look if player is already in the game
-        if(state_p):
-            if(state_p.delayed_tick < 30):
-                #state_p.alive = 0
-                state_p.delayed_tick = 0
+        if(stateP):
+            if(stateP.delayedTick < 30):
+                #stateP.alive = 0
+                stateP.delayedTick = 0
             else:               
-                print(F"\n\nPlayer {player_name} is already in game and playing!\n")
+                print(F"\n\nPlayer {playerName} is already in game and playing!\n")
                 return
         try:
             # Look if the Player did not disconnect and is still in game
-            if(state_q.alive != -2):
-                print(F"\n\nPlayer {player_name} is already in game and waiting!\n")
+            if(stateQ.alive != -2):
+                print(F"\n\nPlayer {playerName} is already in game and waiting!\n")
                 return  
             # if the Player is disconnected and rejoined the game
             else:
-                print(F"\n\nPlayer {player_name} is rejoining the game!\n")
-                state_q.alive = PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
+                print(F"\n\nPlayer {playerName} is rejoining the game!\n")
+                stateQ.alive = PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
         except:
-            print(F"\n\nPlayer {player_name} is joining as new player the game!\n")
+            #print(F"\n\nPlayer {playerName} is joining as new player the game!\n")
             # if the Player joins the game for the first time
-            with self.player_lock:
+            with self.playerLock:
                 # Append Player to the queue so it can be appended to the game
-                self.player_queue.append(Player(player_name, alive = 0))
+                self.playerQueue.append(Player(playerName, alive = 0))
 
     def process_new_players(self) -> None:
         '''
@@ -1141,7 +1229,7 @@ class GameEngine(threading.Thread):
         #Where is the pointer 
         idx = 0
 
-        for player in self.player_queue:
+        for player in self.playerQueue:
 
             # if player is ready to spawn on the battle
             if(player.alive == 0):
@@ -1158,10 +1246,10 @@ class GameEngine(threading.Thread):
                 player.health = 100
 
                 # reset the delayed tick of the rejoined player
-                player.delayed_tick = 0
+                player.delayedTick = 0
 
                 # add the players to the game
-                self.state.players.append(self.player_queue.pop(idx))
+                self.state.players.append(self.playerQueue.pop(idx))
 
 
                 print(player.name)
@@ -1172,7 +1260,7 @@ class GameEngine(threading.Thread):
 
                 # If the player died in that frame
                 if(player.alive == REVIVE_WAITING_TIME):
-                    self.state.corpses.append({"username" : player.name, "x" : player.current_position.x, "y" : player.current_position.y, "duration" : JUST_DIED_ANIMATION}) 
+                    self.state.corpses.append({"username" : player.name, x_coordinate_key : player.currentPosition.x, y_coordinate_key : player.currentPosition.y, duration_key : JUST_DIED_ANIMATION}) 
 
                 #reduce wait time of player
                 player.alive -= 1
@@ -1196,25 +1284,25 @@ class GameEngine(threading.Thread):
 
             corpse["duration"] -= 1 
 
-    def win(self, winning_players : list[Player]) -> None:
+    def win(self, winningPlayers : list[Player]) -> None:
 
-        print(F"{winning_players} wins the game")
+        print(F"{winningPlayers} wins the game")
 
         # Send the essential information for validate the winner of the game
-        async_to_sync(self.channel_layer.send)(
+        async_to_sync(self.channelLayer.send)(
             "game_engine", 
             {
              "type"    : "win",
-             "time"    : self.tick_num * TICK_RATE,
-             "group"   : self.group_name, 
+             "time"    : self.tickNum * TICK_RATE,
+             "group"   : self.groupName, 
              "players" : 
              [
-                 { "name"       : winning_player.name,
-                   "kills"      : winning_player.kills,
-                   "deaths"     : winning_player.deaths,
-                   "kill_death" : winning_player.kill_death,
+                 { "name"       : winningPlayer.name,
+                   "kills"      : winningPlayer.kills,
+                   "deaths"     : winningPlayer.deaths,
+                   "killDeath" : winningPlayer.killDeath,
                  } 
-                   for winning_player in winning_players]
+                   for winningPlayer in winningPlayers]
             }
         )
 
@@ -1224,39 +1312,39 @@ class GameEngine(threading.Thread):
         print("the time limit has been reached")
 
         # if the winner is about the highest kills
-        if self.game_mode == 0:
+        if self.gameMode == 0:
 
             # Get the best players out of all players and broadcast them
-            self.win(self.look_for_best_players(self.state.players + self.player_queue))
+            self.win(self.look_for_best_players(self.state.players + self.playerQueue))
         
-        elif self.game_mode == 1:
+        elif self.gameMode == 1:
 
             # Get the best players out of still alive players and broadcast them
             self.win(self.look_for_best_players(self.state.players))
 
         
-    def look_for_best_players(self, players):
+    def look_for_best_players(self, players : list[Player]):
 
         # Look for the highest kills in queue and in current game
         highest_kills = max(players, key=attrgetter('kills')).kills
 
         # Look for all Players with highest kills
-        best_players = [player for player in players if player.kills == highest_kills]
+        bestPlayers = [player for player in players if player.kills == highest_kills]
 
         # if there is only one Player the best player
-        if len(best_players) == 1:
+        if len(bestPlayers) == 1:
 
-           return best_players
+           return bestPlayers
 
         else:
 
             # Look for the highest kills in queue and in current game
-            highest_kill_death = max(best_players, key=attrgetter('kill_death')).kill_death
+            highestKillDeath = max(bestPlayers, key=attrgetter('killDeath')).killDeath
 
             # Look for all Players with highest kills
-            best_players = [player for player in best_players if player.kill_death == highest_kill_death]   
+            bestPlayers = [player for player in bestPlayers if player.killDeath == highestKillDeath]   
 
-            return best_players 
+            return bestPlayers 
 
 
 
