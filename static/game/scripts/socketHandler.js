@@ -201,6 +201,7 @@ function socketHandler_init()
             }
         
             //console.log('Data:', data);
+            console.log(data['players'][userName]['shot_an']);
         }
     };
 
