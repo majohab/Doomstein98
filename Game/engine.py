@@ -17,7 +17,7 @@ from copy import deepcopy
 log = logging.getLogger(__name__)
 
 #TODO: fit that for customized fps
-TICK_RATE = 0.016
+TICK_RATE = 1/60
 
 PLAYER_SPEED            = TICK_RATE/0.1
 ROTATION_SPEED          = TICK_RATE/1
@@ -25,7 +25,7 @@ BULLET_SPEED            = TICK_RATE/0.025
 
 
 # Every Unit is in Seconds
-JUST_SHOT_ANIMATION     = round(1/TICK_RATE)   # 1 Second
+JUST_SHOT_ANIMATION     = 100
 JUST_HIT_ANIMATION      = round(1/TICK_RATE)   # 1 Second
 JUST_DIED_ANIMATION     = round(10/TICK_RATE)
 
@@ -582,7 +582,7 @@ class Player:
 
             print(F"{self.name} just shot a bullet!")
 
-            # The animation of shooting shall go on for 1 seconds
+            # The animation of shooting
             self.justShot = JUST_SHOT_ANIMATION
 
             # Reduce the current ammo of current weapon by one
@@ -1033,7 +1033,6 @@ class GameEngine(threading.Thread):
     def calculate_distances(self) -> None:
         pass
 
-
     def process_players(self, events) -> None:
         '''
         Handle the actions of a player and check the winning conditions
@@ -1082,12 +1081,6 @@ class GameEngine(threading.Thread):
                 # Does the player move in that frame
                 move_flag = False
 
-                if(player.delayedTick > 1):
-                    #print(F"Player {player.name} did not respond for {player.delayedTick} ticks")
-
-                    #reset the delayedTick
-                    player.delayedTick = 0
-
                 event = events[player.name]
 
                 player.change_direction(event[mouseDelta_key])
@@ -1099,6 +1092,13 @@ class GameEngine(threading.Thread):
 
                 weapon = player.currentWeapon
 
+                if(player.delayedTick > 1):
+                    #print(F"Player {player.name} did not respond for {player.delayedTick} ticks")
+
+                    #reset the delayedTick
+                    player.delayedTick = 0
+
+
                 # reduce currLatency counter if needed
                 if(weapon.currLatency > 0):
 
@@ -1108,12 +1108,18 @@ class GameEngine(threading.Thread):
                 # reduce justShot counter if needed
                 if(player.justShot > 0):
 
-                    player.justShot -= 1
+                    player.justShot -= round(JUST_SHOT_ANIMATION/player.currentWeapon.latency)
 
                 # reduce justHit counter if needed  
                 if(player.justHit > 0):
 
                     player.justHit  -= 1
+
+                #if the player is currently changing its weapon
+                if player.changeWeaponDelay > 0:
+
+                    #reduce the delay
+                    player.changeWeaponDelay -= 1
 
                 if(event[x_coordinate_key] != 0 or event[y_coordinate_key] != 0):
                     move_flag = True
@@ -1128,15 +1134,7 @@ class GameEngine(threading.Thread):
             elif(player.alive == 0):
                 #Increase the delayed tick of the player
                 player.delayedTick += 1
-            
-            #if the player is currently changing its weapon
-            if player.changeWeaponDelay > 0:
-
-                #print(player.changeWeaponDelay)
-
-                #reduce the delay
-                player.changeWeaponDelay -= 1
-            
+                        
     def process_hits(self) -> None:
         '''
         Checks if any bullet hits a player
@@ -1170,6 +1168,19 @@ class GameEngine(threading.Thread):
             if bullet.update_pos(self.state.map):
                 tmp = self.state.bullets.pop(idx)  
                 del tmp
+
+    def process_corpses(self) -> None : 
+        '''
+        Process the current Corpses on the battlefield
+        '''
+
+
+        for corpse in self.state.corpses:
+
+            if(corpse["duration"] == 0):
+                self.state.corpses.remove(corpse)
+
+            corpse["duration"] -= 1 
 
     def process_spawns(self) -> None:
         '''
@@ -1270,19 +1281,6 @@ class GameEngine(threading.Thread):
             else:
                 #skip Player for pop() method
                 idx += 1   
-
-    def process_corpses(self) -> None : 
-        '''
-        Process the current Corpses on the battlefield
-        '''
-
-
-        for corpse in self.state.corpses:
-
-            if(corpse["duration"] == 0):
-                self.state.corpses.remove(corpse)
-
-            corpse["duration"] -= 1 
 
     def win(self, winningPlayers : list[Player]) -> None:
 

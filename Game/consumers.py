@@ -14,7 +14,7 @@ from django.utils.translation import gettext
 from .engine import GameEngine
 
 #TODO: Anpassen
-MAX_DEGREE = 1000
+MAX_DEGREE = 300
 
 #TODO: fit that for customized fps
 TICK_RATE = 0.016
