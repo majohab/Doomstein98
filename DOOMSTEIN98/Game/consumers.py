@@ -13,16 +13,47 @@ from django.utils.translation import gettext
 from .engine import GameEngine
 
 #TODO: Anpassen
-MAX_DEGREE = 1000
+MAX_DEGREE = 300
 
 #TODO: fit that for customized fps
-tick_rate = 0.01
+TICK_RATE = 0.016
 
 log = logging.getLogger(__name__)
 
-#Die serverseitige Spielerklasse
+#Key Constants
+channel_key    = 'c'
+click_key      = 'c'
+down_key       = 'd'
+group_key      = 'g'
+inactive_key   = 'i'
+left_key       = 'l'
+loose_key      = 'l'
+lobby_key      = 'l'
+mouseDelta_key = 'm'
+message_key    = 'm'
+map_key        = 'm'
+name_key       = 'n'
+player_key     = 'p'
+right_key      = 'r'
+state_key      = 's'
+time_key       = 't'
+type_key       = 't'
+update_key     = 'u'
+up_key         = 'u'
+weapon_key     = 'w'
+win_key        = 'w'
+joinLobby_key  = 'jL'
+joinGame_key   = 'jG' 
+
 class PlayerConsumer(AsyncWebsocketConsumer):
+    '''
+    The asynchronous player class which handles the incoming messages from the client
+    And send the messages to the client back
+    '''
  
+    '''
+    Connect the client with the server
+    '''
     async def connect(self):
 
         #If user is unknown
@@ -35,14 +66,23 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         # Accept the connection with Browser
         await self.accept()
 
+    '''
+    Disconnect the player from the lobby if he has no connection anymore
+    '''
     async def disconnect(self, close_code):
-        # Leave game and
-        #print(F"Disconnect: {close_code}")
-        await self.channel_layer.group_discard(
-            self.group_name,
-            self.channel_name
-        )
+
+        try:
+            print(F"Disconnect: {close_code}")
+            await self.channelLayer.group_discard(
+                self.groupName,
+                self.channel_name
+            )
+        except:
+            pass
     
+    '''
+    If the client sent something
+    '''
     async def receive(self, text_data=None, byte_data=None):
         '''
         Die Daten werden erhalten und in Variablen verpackt, um sie der weiteren Verarbeitung zu übergeben
@@ -50,20 +90,22 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         content = json.loads(text_data)
 
+        #print(content)
+
         #Den Message-Typ extrahieren
-        msg_type = content["type"]
-        msg      = content["msg"]
+        msg_type = content[type_key]
+        msg      = content[message_key]
 
         #print(content)
 
         forwarding = {
-            "loop"      :  self.validate(msg),
-            "joinGame"  :  self.join_game(msg),
-            "joinLobby" :  self.join_lobby(msg),
+            update_key    :  self.validate(msg),
+            joinGame_key  :  self.join_game(msg),
+            joinLobby_key :  self.join_lobby(msg),
         }
 
         try:
-            return await forwarding[content["type"]]
+            return await forwarding[content[type_key]]
         except KeyError:
             #Der Typ der Message ist unbekannt
             print(F"Incoming msg {msg_type} is unknown")
@@ -74,25 +116,31 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
     async def join_lobby(self, msg):
         
-        print(F"Join lobby {msg['lobby']}")
+        print(F"Join lobby {msg[lobby_key]}")
 
-        self.channel_layer = get_channel_layer()
-        self.group_name = msg['lobby']
+        self.channelLayer = get_channel_layer()
+        self.groupName = msg[lobby_key]
 
         # Has map already been sent?
-        self.map = False
+        self.map = 0
 
+    '''
+    If Player joined the game
+    '''
+    async def join_game(self, msg: dict):
+
+        print(F"Joining {self.channel_name}")
+
+        # Add the player to the channel from which the information will be recieved about the status
         # Join a common group with all other Players
-        await self.channel_layer.group_add(
-            self.group_name, 
+        await self.channelLayer.group_add(
+            self.groupName, 
             self.channel_name
         )
 
-
-    async def join_game(self, msg: dict):
-
-        await self.channel_layer.group_send(
-            self.group_name,
+        '''
+        await self.channelLayer.group_send(
+            self.groupName,
             {
                 "type": "message", 
                 "msg": {
@@ -101,25 +149,22 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                 },
             },
         )
+        '''
         
-        await self.channel_layer.send(
+        await self.channelLayer.send(
             "game_engine",
             {
-                "type"    : "player.new", 
-                "player"  : self.username, 
-                "channel" : self.channel_name,
-                "lobby"   : msg['lobby'],
+                "type"       : "new.player", # execute new_player() 
+                player_key   : self.username, 
+                channel_key  : self.channel_name, #channel
+                lobby_key    : msg[lobby_key], #lobby
             },
         )
 
-        print(self.username + " joining game")
-
-
     async def message(self, msg):
 
-        print(F"{msg['msg']['message']} was sent by {msg['msg']['channel']}")
+        print(F"{msg[message_key][message_key]} was sent by {msg[message_key][channel_key]}")
 
-    #Validate movements
     async def validate(self, msg):
         '''
         Die Interaktionen des Spielers werden übertragen
@@ -129,26 +174,27 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             #print(F"User {self.username}: Attempting to join game")
             return
 
-        if abs(msg["mouseDeltaX"]) > MAX_DEGREE:
-            msg["mouseDeltaX"] = MAX_DEGREE
-            print("Mouse change invalid!")
+        if abs(msg[mouseDelta_key]) > MAX_DEGREE:
+            msg[mouseDelta_key] = MAX_DEGREE
+            #print("Mouse change invalid!")
 
         # If both directions are pressed then dont move in those directions
-        msg["y"] = msg["up"] - msg["down"]
+        msg["y"] = msg[up_key] - msg[down_key]
 
-        msg["x"] = msg["right"] - msg["left"]
+        msg["x"] = msg[right_key] - msg[left_key]
 
 
-        await self.channel_layer.send(
+        await self.channelLayer.send(
             "game_engine",
             { 
-              "type"    : "player.validate", 
-              "player"  : self.username, 
-              "msg"     : {
-                  "mouseDeltaX" : msg["mouseDeltaX"],
-                  "leftClick"   : msg["leftClick"],
-                  "y"           : msg["y"],
-                  "x"           : msg["x"]
+              "type"    : "validate.event", 
+              player_key  : self.username, 
+              message_key     : {
+                  mouseDelta_key : msg[mouseDelta_key],
+                  click_key : msg[click_key],
+                  "y" : msg["y"],
+                  "x" : msg["x"],
+                  weapon_key : msg[weapon_key],
               },
             }
         )
@@ -158,23 +204,54 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         Send game data to room group after a Tick is processed
         '''
 
-        #print(F"Game Update: {event}")
-
         # Send message to WebSocket
-        state = event["state"]
+        event = event[state_key] #state
+ 
+        event[type_key] = update_key   #type update
 
-        if(self.map):
+        #print(F"Game Update: {(event['i'])}")
+
+        try:
+            # look if the the own username is in the inactive array
+            event = event[inactive_key][self.username]
+        except KeyError:
+
             try:
-                state.pop("map")
-            except KeyError as e:
+                # drop the information about inactive players
+                event.pop(inactive_key)
+            except KeyError:
                 pass
-                #print(e)       
-        else:
-            self.map = True
+            # if the map was already sent 10 times
+            if(self.map > 10):
+                try:
+                    event.pop(map_key)
+                except KeyError:
+                    pass       
+            # if the map was not sent that much yet
+            else:
+                self.map += 1
+                pass
+        
+        #event[isd]
 
-        #print(state)
+        # send the update information to the client
+        await self.send(json.dumps(event))
 
-        await self.send(json.dumps(state))
+    async def win(self, event):
+        '''
+        Check if current player won the game and forward the message to player
+        '''
+        event[type_key] = loose_key #type loose
+
+        for player in event[player_key]: #player
+
+            if player[name_key] == self.username:  #player's name
+
+                event[type_key] = win_key
+
+        await self.send(json.dumps(event))
+
+
 
 class GameConsumer(SyncConsumer): 
     '''
@@ -182,55 +259,87 @@ class GameConsumer(SyncConsumer):
     They communicate through channels.
     '''
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         """
         Created on demand when the first player joins.
         """
-        #print(F"Game Consumer: {args} {kwargs}")
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
-        self.channel_layer = get_channel_layer()
-        self.engine = {} #The games are saved in there
-        self.lobby = {} #What player is in what game
+        self.channelLayer = get_channel_layer()
+        self.engines : dict[GameEngine] = {} #The games are saved in there
+        self.lobbies = {} #What player is in what game
 
-    def player_new(self, event):
+    def new_player(self, event):
         '''
         Join an existing game or Create a new game
         '''
 
-        lobbyname = event['lobby']
-        username = event['player']
+        lobbyname = event[lobby_key]
+        username = event[player_key]
 
-        print(F"Player {username} joined lobby: {lobbyname}")
+        #print(F"Player {username} joined lobby: {lobbyname}")
 
+        # for further information in what game the player is
+        self.lobbies[username] = lobbyname 
 
         try:
-            if len(self.engine[lobbyname].state.players) < self.engine[lobbyname].max_players:
-                self.engine[lobbyname].join_game(username)
+            if len(self.engines[lobbyname].state.players) < self.engines[lobbyname].maxPlayers:
+                self.engines[lobbyname].join_game(username)
             else:
-                async_to_sync(self.channel_layer.send)(
-                event['channel'],
+                async_to_sync(self.channelLayer.send)(
+                event[channel_key], #channel
                 {
                     "type": "message", 
-                    "msg": {
-                        "message": F"Es gibt schon zu viele Spieler in der Lobby: {event['lobby']}",
-                        "channel": self.channel_name,
+                    message_key: { #message
+                        message_key: F"Es gibt schon zu viele Spieler in der Lobby: {event[lobby_key]}",
+                        channel_key: self.channel_name, #channel_name
                     }, 
                 },
             )
+
         # if the game does not exist, create it
         except KeyError:
-            self.engine[lobbyname] = GameEngine(lobbyname)
-            self.engine[lobbyname].start()
-            self.engine[lobbyname].join_game(username)
-            # for further information in what game the player is
-            self.lobby[username] = lobbyname
 
-    def player_validate(self, event):
+            self.engines[lobbyname] = GameEngine(lobbyname)
+            self.engines[lobbyname].start()
+            self.engines[lobbyname].join_game(username)
 
-        username = event["player"]
+            #TODO: Only for TESTING
+            self.engines[lobbyname].startFlag = True
+
+        #print(self.lobbies)
+
+
+    def validate_event(self, event):
+
+        username = event[player_key]
 
         '''
         Send the data to engine
         '''
-        self.engine[self.lobby[username]].apply_events(username, event["msg"])
+        self.engines[self.lobbies[username]].apply_events(username, event[message_key]) #msg
+
+    def win(self, event):
+        '''
+        handling when game is finished
+        '''
+        groupName = event[group_key] #group
+
+        # Stop the thread by ending its tasks
+        self.engines[groupName].running = False
+
+        # Synchronize the channel's information and send them to all participants
+        async_to_sync(self.channelLayer.group_send)(
+            groupName, 
+            {
+             "type"   : "win",
+             time_key : event[time_key], #time
+             player_key: event[player_key], #player
+            }
+        )
+
+        
+
+
+
+

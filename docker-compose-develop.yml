@@ -1,0 +1,21 @@
+version: '3.9'
+
+services:
+  app:
+    build: 
+      context: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./DOOMSTEIN98:/DOOMSTEIN98
+    command: 
+      - sh -c "python manage.py runserver 0.0.0.0:8000 & python manage.py runworker game_engine"
+    env_file:
+      - ./.devenv/.env
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    command: ["redis-server", "--bind", "redis", "--port", "6379"]
+    

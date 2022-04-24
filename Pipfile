@@ -9,14 +9,15 @@ channels = "*"
 six = "*"
 Cython = "*"
 numpy = "*"
+pandas = "*"
 uvicorn = "*"
 daphne = "*"
 django-redis = "*"
 channels-redis = "*"
 uWSGI = "*"
+django-debug-toolbar = "*"
 
 [dev-packages]
-django-debug-toolbar = "*"
 coverage = "*"
 
 [requires]

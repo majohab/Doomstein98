@@ -5,9 +5,9 @@ services:
     build: 
       context: .
     volumes:
-      - static_data:/vol/web/
+      - static_data:/vol/web
     env_file:
-      - .env
+      - ./.devenv/.env
     depends_on:
       - redis
     ports:
