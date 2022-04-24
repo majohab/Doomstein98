@@ -212,13 +212,13 @@ AVAILABLE_WEAPONS = {
     "P99" : [
         "P99",
         50,             #50 Kugeln in der Waffe
-        round(0.8/TICK_RATE),  #Jede 0.8 Sekunden kann geschossen werden
+        round(0.25/TICK_RATE),  #Jede 0.8 Sekunden kann geschossen werden
         20              # The weapon reduces 20 health per bullet
     ],
     "MP5" : [
         "MP5",
         200,            #200 Kugeln in der Waffe
-        round(0.1/TICK_RATE),  #Jede 0.1 Sekunden kann geschossen werden   
+        round(0.08/TICK_RATE),  #Jede 0.1 Sekunden kann geschossen werden   
         10              # The Weapon reduces 10 Health per Bullet 
     ],
     "Shotgun" : [
