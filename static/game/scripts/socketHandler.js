@@ -115,6 +115,7 @@ function socketHandler_init()
             ammo        = data[player_key][userName][ammo_key];
             health      = data[player_key][userName][health_key];
             currWeapon  = data[player_key][userName][weapon_key];
+            weaponAnimTime = data[player_key][userName][justShot_animation];
 
             let mouseDeltaX = lastRecordedMouseX - lastMouseX;
             lastMouseX = lastRecordedMouseX;
@@ -200,7 +201,7 @@ function socketHandler_init()
             }
         
             //console.log('Data:', data);
-            console.log(data['players'][userName]['shot_an']);
+            //console.log(data[player_key][userName][justShot_animation]);
         }
     };
 

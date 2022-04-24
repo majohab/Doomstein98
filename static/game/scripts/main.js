@@ -31,10 +31,8 @@ let objectCount;
 let opponents;
 let currWeapon;
 let health;
-let healthTextBounds;
 let ammo;               // ToRefactor: Merge a padded sprite and its bounds into a new class
-let ammoTextBounds;
-let weaponImageBounds;
+let weaponAnimTime;
 
 async function init()
 {    

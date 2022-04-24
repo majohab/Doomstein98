@@ -135,6 +135,7 @@ class SpriteSet
         }
 
         this.dict = dict;
+        this.letterCount = letters.length;
         
         //console.log ('New SpriteSet: ' + JSON.stringify(dict));
     }
@@ -142,6 +143,18 @@ class SpriteSet
     getSprite(identifier)
     {
         return this.dict[identifier];
+    }
+
+    getAnimationSprite(t) // t: [0, 1]
+    {
+        // Example: 5 Sprites, Index 1 to 4 for Animation
+        // [0, 0.25):   Index 1
+        // [0.25, 0.5): Index 2
+        // [0.5, 0.75): Index 3
+        // [0.75, 1):   Index 4
+        // 1:           Index 0
+        let index = (Math.floor(t * (this.letterCount - 1)) + 1) % this.letterCount;
+        return this.dict[index]
     }
 }
 
@@ -293,7 +306,7 @@ async function spriteReader_init()
                 new Subsprite(6, 476 + 91 * 2, 32, 164, 70),
                 new Subsprite(7, 640 + 91 * 2, 45, 125, 57),
                 new Subsprite(8, 765 + 91 * 2, 68, 87, 34),
-                new Subsprite(9, 854 + 91 * 2, 24, 93, 78)
+                new Subsprite(9, 1034, 24, 93, 78)
             ]
         );
         inits++;
@@ -342,7 +355,7 @@ async function spriteReader_init()
                 new Subsprite('7', 92, 17, 14, 15),
                 new Subsprite('8', 107, 17, 12, 15),
                 new Subsprite('9', 120, 17, 13, 15)
-                //new Letter(''),
+                //new Subsprite(''),
             ]
         );
         inits++;

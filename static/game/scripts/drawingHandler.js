@@ -30,6 +30,8 @@ let ammoTextBounds_sizeX;
 let ammoTextBounds_sizeY;
 let ammoTextBounds_scale;
 
+let weaponImageBounds;
+
 function drawingHandler_init()
 {
     screenWidth = 1000;
@@ -159,8 +161,10 @@ function drawingHandler_draw_gpu()
     ammoText = padSprite(ammoText, ammoTextBounds_sizeX, ammoTextBounds_sizeY, -1, 0);
 
     let weaponFrame_startY = 2 + currWeapon * 12;
-    
-    let weaponImage = currWeapon == 0 ? handgun.getSprite(0) : currWeapon == 1 ? machinegun.getSprite(0) : shotgun.getSprite(0);
+
+    let t = weaponAnimTime / 62;
+    t = 1 - t; // [0, 1): Animation; 1: Still
+    let weaponImage = currWeapon == 0 ? handgun.getAnimationSprite(t) : currWeapon == 1 ? machinegun.getAnimationSprite(t) : shotgun.getAnimationSprite(t);
     weaponImage = padSprite(weaponImage, weaponImageBounds[0], weaponImageBounds[1], 0, 1);
 
     buffer = gpu_kernel(playerX, playerY, playerAngle,
