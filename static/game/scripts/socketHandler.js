@@ -199,7 +199,7 @@ function socketHandler_init()
                 shortClicked = false;
             }
         
-            //console.log('Data:', data);
+            console.log( data[corpses_key]);
         }
     };
 
