@@ -12,6 +12,7 @@ import math
 import pandas as pd
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from copy import deepcopy
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ TICK_RATE = 0.016
 
 PLAYER_SPEED            = TICK_RATE/0.1
 ROTATION_SPEED          = TICK_RATE/1
-BULLET_SPEED            = TICK_RATE/0.02
+BULLET_SPEED            = TICK_RATE/0.025
 
 
 # Every Unit is in Seconds
@@ -38,6 +39,7 @@ PLAYER_WAITING_TIME_OCCUPIED_SPAWN = round(0.1/TICK_RATE)
 MAX_END_TIME            = (30*60)/TICK_RATE # for 30 Min
 
 ACCURACY_REDUCTION      = 0.08
+HIT_BOX                 = 0.40
 
 #Reversed direction
 MAPS = [
@@ -286,35 +288,36 @@ class Map:
             e_3 = self.map.iloc[round(coordinate.y - (0.5 - tolerance)), round(coordinate.x - (0.5 + tolerance))]
             e_4 = self.map.iloc[round(coordinate.y - (0.5 - tolerance)), round(coordinate.x - (0.5 - tolerance))] 
 
-            # if the the next field is a spawn
-
-            try:
-                self.spawns[int(e_1)].lock_time = SPAWN_LOCK_TIME
-            except ValueError:
-                pass
-
-            try:
-                self.spawns[int(e_2)].lock_time = SPAWN_LOCK_TIME
-            except ValueError:
-                pass
-
-            try:
-                self.spawns[int(e_3)].lock_time = SPAWN_LOCK_TIME
-            except ValueError:
-                pass
-
-            try:
-                self.spawns[int(e_4)].lock_time = SPAWN_LOCK_TIME
-            except ValueError:
-                pass
-
             # Check on what edge is a wall
             A = e_1 == "#"
             B = e_2 == "#"
             C = e_3 == "#"
             D = e_4 == "#"
 
+            # if the player moves
             if(type(object).__name__ == "Player"):
+
+                # if the the next field is a spawn
+
+                try:
+                    self.spawns[int(e_1)].lock_time = SPAWN_LOCK_TIME
+                except ValueError:
+                    pass
+
+                try:
+                    self.spawns[int(e_2)].lock_time = SPAWN_LOCK_TIME
+                except ValueError:
+                    pass
+
+                try:
+                    self.spawns[int(e_3)].lock_time = SPAWN_LOCK_TIME
+                except ValueError:
+                    pass
+
+                try:
+                    self.spawns[int(e_4)].lock_time = SPAWN_LOCK_TIME
+                except ValueError:
+                    pass
 
                 a =     A and not B and not C and not D
                 b = not A and     B and not C and not D
@@ -327,7 +330,7 @@ class Map:
                 look_south_west = dir <= -math.pi/2 and dir > -math.pi
 
                 # Is the player allowed to move in x
-                move_x = (
+                if(
                 (not(A and C or B and D) or
                 ( a and look_south_east) or
                 ( b and look_south_west) or                 
@@ -336,10 +339,11 @@ class Map:
                 ( a and (look_north_west or look_south_west)) and not
                 ( b and (look_north_east or look_south_east)) and not
                 ( c and (look_south_west or look_north_west)) and not 
-                ( d and (look_south_east or look_north_east))) 
+                ( d and (look_south_east or look_north_east))):
+                    object.current_position.x = coordinate.x
 
                 # Is the player allowed to move in y
-                move_y = ((not (A and B or C and D) or 
+                if((not (A and B or C and D) or 
                 ( a and look_north_west) or 
                 ( b and look_north_east) or
                 ( c and look_south_west) or 
@@ -347,7 +351,8 @@ class Map:
                 ( a and (look_south_east or look_south_west)) and not 
                 ( b and (look_south_west or look_south_east)) and not
                 ( c and (look_north_east or look_north_west)) and not 
-                ( d and (look_north_west or look_north_east)))
+                ( d and (look_north_west or look_north_east))):
+                    object.current_position.y = coordinate.y
 
                 ne = A and B and D
                 se = B and C and D
@@ -370,22 +375,15 @@ class Map:
                     print(F"D: {D}\n")
                 ''' 
             else:
-                # Is the bullet allowed to move in x
-                move_x = not (A and C or B and D)                
+                # Is the bullet colliding in x
+                if(A and C or B and D):                
+                    return True
+
+                # Is bullet colliding in y
+                if(A and B or C and D):
+                    return True
                 
-                # Is the player allowed to move in y
-                move_y = not (A and B or C and D)
-
-                if (not move_x or not move_y):
-                    return True         
-
-            # if Player is not located at east nor west wall
-            if move_x:
-                object.current_position.x = coordinate.x            
-        
-            # if Player is not located at north nor south wall
-            if move_y:
-                object.current_position.y = coordinate.y
+                return False
 
             #print(F"x: {object.current_position.x} y: {object.current_position.y}")
 
@@ -472,10 +470,10 @@ class Player:
 
         map_len = len(map.spawns)
 
-        print(F"map_len: {map_len}")
+        #print(F"map_len: {map_len}")
 
-        for spawn in map.spawns:
-            print(F"spawn {spawn} x: {spawn.coordinate.x} y: {spawn.coordinate.y}")
+        #for spawn in map.spawns:
+        #    print(F"spawn {spawn} x: {spawn.coordinate.x} y: {spawn.coordinate.y}")
 
         rnd_idx = random.randint(0,map_len-1)
 
@@ -543,11 +541,9 @@ class Player:
             Bullet(
                 # From whom was a bullet shot?
                 self,
-                Coordinate(
-                    #0.5 Blöcke vom Spieler entfernt entstehen die Bullets
-                    self.current_position.x + 1 * np.sin(self.direction),
-                    self.current_position.y + 1 * np.cos(self.direction)
-                ),
+                #0.5 Blöcke vom Spieler entfernt entstehen die Bullets
+                self.current_position.x + 1 * np.sin(self.direction),
+                self.current_position.y + 1 * np.cos(self.direction),
                 #Shot in direction of player itself
                 dir
             )
@@ -600,7 +596,10 @@ class Player:
                 self.remove_from_game()
         
         #Remove bullet from State and delete the object
-        state.bullets.remove(bullet)
+        try:
+            state.bullets.remove(bullet)
+        except ValueError:
+            print("Bullet already gone")
 
         del(bullet)
             
@@ -703,6 +702,7 @@ class Player:
             "x"           : self.current_position.x,
             "y"           : self.current_position.y,
             "h"           : self.health,
+            "k"           : self.kills,
             "dir"         : self.direction,
             "shot_an"     : self.justShot,
             "hit_an"      : self.justHit,
@@ -718,15 +718,15 @@ class Bullet:
     '''
 
     # Initiate bullet
-    def __init__(self, origin_player : Player, origin_pos : Coordinate, direction : float):
+    def __init__(self, origin_player : Player, x : float, y : float, direction : float):
 
         #print("A bullet has been created")
 
         self.player           : Player     = origin_player
         self.weapon                        = origin_player.current_weapon
-        self.prior_position   : Coordinate = origin_pos
-        self.middle_position  : Coordinate = origin_pos
-        self.current_position : Coordinate = origin_pos
+        self.prior_position   : Coordinate = Coordinate(x,y)
+        self.middle_position  : Coordinate = Coordinate(x,y)
+        self.current_position : Coordinate = Coordinate(x,y)
 
         self.direction : float = direction
 
@@ -737,21 +737,30 @@ class Bullet:
     # Returns True if bullet collide with Wall
     def update_pos(self, map : Map):
 
-        tmp = Coordinate(self.current_position.x,self.current_position.y)
+        tmp = deepcopy(self.current_position)
+
+        #print(self.current_position.x, "\n")
 
         tmp.cod_move(self.speed, self.direction)
+
+        #print(self.current_position.x, "\n")
 
         # Check collision with Wall
         if map.check_collision(tmp, self, tolerance = 0.05):
             return True
         else:
+
+            #print(F"{self.prior_position}\n{self.middle_position}\n{self.current_position}\n{tmp}\n")
+
             #if Bullet did not collide with wall
-            self.prior_position = self.current_position
+            self.prior_position = deepcopy(self.current_position)
+
+            self.current_position = deepcopy(tmp)
 
             self.middle_position.x = (self.prior_position.x + self.current_position.x)/2
             self.middle_position.y = (self.prior_position.y + self.current_position.y)/2
 
-            self.current_position = tmp
+            #print(F"{self.prior_position.x}\n{self.middle_position.x}\n{self.current_position.x}\n{tmp.x}\n")
 
             return False
 
@@ -1052,7 +1061,10 @@ class GameEngine(threading.Thread):
                 dis_1 = bullet.current_position.get_distance(player.current_position)
                 dis_2 = bullet.middle_position.get_distance(player.current_position)
 
-                if dis_1 < 0.25 or dis_2 < 0.25 :
+                if dis_1 < HIT_BOX or dis_2 < HIT_BOX :
+                    
+                    #print(F"\nbullet: {bullet}")
+                    #print(F"{dis_1} and {dis_2}")
 
                     # execute the function
                     player.get_hit(self.state, bullet, self.game_mode)
