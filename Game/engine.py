@@ -183,26 +183,23 @@ class Map:
         #Check if the direction fits to the coordinate
         # N and S are reversed, so N gets math.pi
         if(char == 'N'):
-            h                       = 'N'
             spawn_flag              = True
             dir                     = math.pi
 
         #Check if the direction fits to the coordinate
         if(char == 'E'):
-            h                       = 'E'
+
             spawn_flag              = True
             dir                     = math.pi/2
     
         #Check if the direction fits to the coordinate
         # N and S are reversed, so S gets 0
         if(char == 'S'):
-            h                       = 'S'
             spawn_flag              = True
             dir                     = 0
     
         #Check if the direction fits to the coordinate
         if(char == 'W'):
-            h                       = 'W'
             spawn_flag              = True
             dir                     = -math.pi/2
 
@@ -276,13 +273,10 @@ class Map:
 
     # Check if Object collides with Map
     # Returns True if Oject collide with wall in any way
-    def check_collision(self, coordinate : Coordinate, object, tolerance : float = 0.25) -> int:        
+    def check_collision(self, coordinate : Coordinate, object, dir = 0, tolerance : float = 0.25) -> int | None:        
         '''
         Checks collision for bullets.
         '''
-
-        # check collision in for fields around the object
-        collision = False
 
         try:
             
@@ -320,63 +314,80 @@ class Map:
             C = e_3 == "#"
             D = e_4 == "#"
 
-            tol = 0.07
+            if(type(object).__name__ == "Player"):
 
-            A_l = self.map.iloc[round(coordinate.y - (0.5 + tol)),round(coordinate.x - (0.5 + tol))] == "#"
-            B_l = self.map.iloc[round(coordinate.y - (0.5 + tol)),round(coordinate.x - (0.5 - tol))] == "#"
-            C_l = self.map.iloc[round(coordinate.y - (0.5 - tol)),round(coordinate.x - (0.5 + tol))] == "#"
-            D_l = self.map.iloc[round(coordinate.y - (0.5 - tol)),round(coordinate.x - (0.5 - tol))] == "#"
+                a =     A and not B and not C and not D
+                b = not A and     B and not C and not D
+                c = not A and not B and     C and not D
+                d = not A and not B and not C and     D
 
-            
-            print(F"A_l: {A_l}")
-            print(F"B_l: {B_l}")
-            print(F"C_l: {C_l}")
-            print(F"D_l: {D_l}")
-            print(F"A: {A}")
-            print(F"B: {B}")
-            print(F"C: {C}")
-            print(F"D: {D}")
-            #print(F"cor: {Corner}\n\n")
-            
+                look_north_east = dir > 0 and dir <= math.pi/2
+                look_south_east = dir > math.pi/2 and dir <= math.pi
+                look_north_west = dir <= 0 and dir > -math.pi/2
+                look_south_west = dir <= -math.pi/2 and dir > -math.pi
 
-            north = A and B
-            east = B and D
-            south = C and D
-            west = A and C
+                # Is the player allowed to move in x
+                move_x = (
+                (not(A and C or B and D) or
+                ( a and look_south_east) or
+                ( b and look_south_west) or                 
+                ( c and look_north_east) or 
+                ( d and look_north_west))                     and not
+                ( a and (look_north_west or look_south_west)) and not
+                ( b and (look_north_east or look_south_east)) and not
+                ( c and (look_south_west or look_north_west)) and not 
+                ( d and (look_south_east or look_north_east))) 
 
-            #print(north)
-            #print(east)
-            #print(south)
-            #print(west)
+                # Is the player allowed to move in y
+                move_y = ((not (A and B or C and D) or 
+                ( a and look_north_west) or 
+                ( b and look_north_east) or
+                ( c and look_south_west) or 
+                ( d and look_south_east))                     and not
+                ( a and (look_south_east or look_south_west)) and not 
+                ( b and (look_south_west or look_south_east)) and not
+                ( c and (look_north_east or look_north_west)) and not 
+                ( d and (look_north_west or look_north_east)))
 
-            ne = A and B and D  or     A_l and not B_l and not C_l and not D_l
-            se = B and C and D  or not A_l and     B_l and not C_l and not D_l
-            sw = A and C and D  or not A_l and not B_l and     C_l and not D_l
-            nw = A and B and C  or not A_l and not B_l and not C_l and     D_l     
+                ne = A and B and D
+                se = B and C and D
+                sw = A and C and D
+                nw = A and B and C    
 
-            # If Player is in corner, dont change anything
-            if ne or se or sw or nw:
-                #print(F"Player is located at a corner: y: {coordinate.y} x: {coordinate.x}")
-                return True
+                # If Player is in corner, dont change anything
+                if ne or se or sw or nw:
+                    #print(F"Player is located at a corner: y: {coordinate.y} x: {coordinate.x}")
+                    return
+                '''
+                if(A or B or C or D):
+                    print(F"\nne: {look_north_east}")
+                    print(F"se: {look_south_east}")
+                    print(F"nw: {look_north_west}")
+                    print(F"sw: {look_south_west}")
+                    print(F"A: {A}")
+                    print(F"B: {B}")
+                    print(F"C: {C}")
+                    print(F"D: {D}\n")
+                ''' 
+            else:
+                # Is the bullet allowed to move in x
+                move_x = not (A and C or B and D)                
+                
+                # Is the player allowed to move in y
+                move_y = not (A and B or C and D)
+
+                if (not move_x or not move_y):
+                    return True         
 
             # if Player is not located at east nor west wall
-            if not (west or east):
-                object.current_position.x = coordinate.x
-            else:
-                #print("x")
-                collision = True
-            
+            if move_x:
+                object.current_position.x = coordinate.x            
         
             # if Player is not located at north nor south wall
-            if not (north or south):
+            if move_y:
                 object.current_position.y = coordinate.y
-            else:
-                #print("y")
-                collision = True
-        
-            #print(F"x: {object.current_position.x} y: {object.current_position.y}")
 
-            return collision
+            #print(F"x: {object.current_position.x} y: {object.current_position.y}")
 
         except IndexError:
                 print(F"Bewegung nach x:{coordinate.x} und y:{coordinate.y} war ungültig und wurde zurückgesetzt!")
@@ -522,8 +533,9 @@ class Player:
 
             # if the player is moving in that frame, reduce the accuracy
             if(move_flag):
+
                 rnd = random.uniform(-ACCURACY_REDUCTION,ACCURACY_REDUCTION)
-                print(rnd)
+                #print(rnd)
                 dir += rnd
 
             # Add bullet to current state
@@ -542,7 +554,7 @@ class Player:
         )
         else:
             pass
-            print(F"{self.name} has no bullets: {weapon.curr_ammunition} or latency is still active : {weapon.curr_latency} ")
+            #print(F"{self.name} has no bullets: {weapon.curr_ammunition} or latency is still active : {weapon.curr_latency} ")
 
     def change_weapon(self, idx):
         '''
@@ -635,7 +647,7 @@ class Player:
 
         # if player is not too close to an object
         if(not too_close):
-            state.map.check_collision(tmp, self)
+            state.map.check_collision(tmp, self, dir = dir)
 
         #print(F"x: {self.current_position.x} y: {self.current_position.y}")
 
@@ -730,7 +742,7 @@ class Bullet:
         tmp.cod_move(self.speed, self.direction)
 
         # Check collision with Wall
-        if map.check_collision(tmp, self, 0.05):
+        if map.check_collision(tmp, self, tolerance = 0.05):
             return True
         else:
             #if Bullet did not collide with wall
@@ -1014,7 +1026,8 @@ class GameEngine(threading.Thread):
                     if(player.change_weapon_delay == 0):
                         player.shoot(self.state, move_flag)
                     else:
-                        print("Weapon delay")
+                        #print("Weapon delay")
+                        pass
             elif(player.alive == 0):
                 #Increase the delayed tick of the player
                 player.delayed_tick += 1
@@ -1085,9 +1098,13 @@ class GameEngine(threading.Thread):
         state_q = next((obj for obj in self.player_queue if obj.name == player_name), False)
 
         # Look if player is already in the game
-        if(state_p):                    
-            print(F"\n\nPlayer {player_name} is already in game and playing!\n")
-            return
+        if(state_p):
+            if(state_p.delayed_tick < 30):
+                #state_p.alive = 0
+                state_p.delayed_tick = 0
+            else:               
+                print(F"\n\nPlayer {player_name} is already in game and playing!\n")
+                return
         try:
             # Look if the Player did not disconnect and is still in game
             if(state_q.alive != -2):
