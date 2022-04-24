@@ -80,7 +80,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'Doomstein98.wsgi.application'
 ASGI_APPLICATION = 'Game.routing.application'
 
-#'''
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -89,25 +88,6 @@ CHANNEL_LAYERS = {
         },
     },
 }
-
-'''
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    }
-}
-
-
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
-    }
-}
-#'''
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
