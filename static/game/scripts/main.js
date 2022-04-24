@@ -13,9 +13,10 @@ All this will then be processed by the server and send back to the client for th
 
 // Config
 const fov = Math.PI / 3;
-const mapHeight = 16;
-const mapWidth = 16;
+const mapHeight = 16;   // 38
+const mapWidth = 16;    // 87
 const max_objects = 100;
+const max_corpses = 2;
 
 // Runtime variables
 let lastFrameTime;
@@ -31,10 +32,8 @@ let objectCount;
 let opponents;
 let currWeapon;
 let health;
-let healthTextBounds;
 let ammo;               // ToRefactor: Merge a padded sprite and its bounds into a new class
-let ammoTextBounds;
-let weaponImageBounds;
+let weaponAnimTime;
 
 async function init()
 {    
@@ -81,8 +80,9 @@ function initObjects()
 {
     objects = [];
     for (let i = 0; i < max_objects; i++)
-        objects.push([-10, -10, -1]);
+        objects.push([-10, -10, -1, -1]); // x, y, spriteIndex, t (from animation)
 }
+
 
 function getHealthText()
 {

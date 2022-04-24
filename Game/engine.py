@@ -510,7 +510,7 @@ class Player:
         self.direction = 0
 
         # Counts down from a specific number to zero for every tick, when it got activated
-        self.justShot = 0
+        self.justShot = -1
 
         # Counts down from a specific number to zero for every tick, when it got activated
         self.justHit = 0
@@ -1138,6 +1138,9 @@ class GameEngine(threading.Thread):
                 if(player.justShot > 0):
 
                     player.justShot -= round(JUST_SHOT_ANIMATION/player.currentWeapon.latency)
+
+                    if (player.justShot <= 0):
+                        player.justShot = -1
 
                 # reduce justHit counter if needed  
                 if(player.justHit > 0):

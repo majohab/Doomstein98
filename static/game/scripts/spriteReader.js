@@ -89,7 +89,7 @@ class Sprite
     }
 }
 
-class Subsprite
+class Still
 {
     constructor(identifier, startX, startY, sizeX, sizeY)
     {
@@ -101,9 +101,18 @@ class Subsprite
     }
 }
 
+class StillSequence
+{
+    constructor(identifier, sprites)
+    {
+        this.identifier = identifier;
+        this.sprites = sprites;
+    }
+}
+
 class SpriteSet
 {
-    constructor(img, letters)
+    constructor(img, stills, animations)
     {
         let imgData = new Sprite(img, 1, 1).data;
 
@@ -114,25 +123,43 @@ class SpriteSet
 
         let dict = {};
 
-        for (let letter of letters)
+        function getStillData(still)
         {
-            let letterData = [];
-            for (let y = 0; y < letter.sizeY; y++)
+            let stillData = [];
+            for (let y = 0; y < still.sizeY; y++)
             {
-                letterData.push([]);
-                for (let x = 0; x < letter.sizeX; x++)
+                stillData.push([]);
+                for (let x = 0; x < still.sizeX; x++)
                 {
-                    letterData[y].push([]);
+                    stillData[y].push([]);
 
-                    letterData[y][x] = imgData[imgHeight - (letter.startY + y) - 1][letter.startX + x];
+                    stillData[y][x] = imgData[imgHeight - (still.startY + y) - 1][still.startX + x];
                 }
             }
+            
+            return stillData;
+        }
 
-            dict[letter.identifier] = letterData;
+        for (let still of stills)
+        {
+            dict[still.identifier] = getStillData(still);
 
             //console.log('New Letter: ');
             //console.log(letterData);
         }
+
+        if (animations != null && typeof animations != undefined)
+        {
+            for (let animation of animations)
+            {
+                dict[animation.identifier] = [];
+                for (let still of animation.sprites)
+                {
+                    dict[animation.identifier].push(getStillData(still));
+                }
+            }
+        }
+        
 
         this.dict = dict;
         
@@ -142,6 +169,27 @@ class SpriteSet
     getSprite(identifier)
     {
         return this.dict[identifier];
+    }
+
+    getAnimationSprite(t, animationIdentifier = 'Idle') // t: [0, 1]
+    {
+        if (!Array.isArray(this.dict[animationIdentifier][0][0][0])) // Still
+        {
+            return this.getSprite(animationIdentifier);
+        }
+        else    // Animation
+        {
+            // Example: 5 Sprites, Index 1 to 4 for Animation
+            // [0, 0.25):   Index 1
+            // [0.25, 0.5): Index 2
+            // [0.5, 0.75): Index 3
+            // [0.75, 1):   Index 4
+            // 1:           Index 0
+            let index = Math.floor(t * this.dict[animationIdentifier].length);
+            return this.dict[animationIdentifier][index];
+        }
+
+        
     }
 }
 
@@ -260,6 +308,7 @@ let shotgun;
 let machinegun;
 
 let opponentSprite;
+let corpseSprite;
 
 let font;
 
@@ -267,7 +316,7 @@ let font;
 async function spriteReader_init()
 {
     let inits = 0;
-    const initCount = 11;
+    const initCount = 12;
 
     spriteReader_getSpriteString('rrock10',                 (img) => { wallSprite = new Sprite(img, 0.5, 0.66); inits++; });
     spriteReader_getSpriteString('floor5_1',                 (img) => { floorSprite = new Sprite(img, 1, 1); inits++; })
@@ -284,16 +333,25 @@ async function spriteReader_init()
     {
         shotgun = new SpriteSet(img,
             [
-                new Subsprite(0, 0, 39, 91, 63),
-                new Subsprite(1, 91, 22, 91, 80),
-                new Subsprite(2, 0 + 91 * 2, 6, 91, 96),
-                new Subsprite(3, 91 + 91 * 2, 0, 92, 102),
-                new Subsprite(4, 183 + 91 * 2, 24, 93, 78),
-                new Subsprite(5, 276 + 91 * 2, 74, 200, 28),
-                new Subsprite(6, 476 + 91 * 2, 32, 164, 70),
-                new Subsprite(7, 640 + 91 * 2, 45, 125, 57),
-                new Subsprite(8, 765 + 91 * 2, 68, 87, 34),
-                new Subsprite(9, 854 + 91 * 2, 24, 93, 78)
+                new Still('Idle', 0, 39, 91, 63)
+            ],
+            [
+                new StillSequence('Shoot',
+                [
+                    new Still(1, 91, 22, 91, 80),
+                    new Still(2, 0 + 91 * 2, 6, 91, 96),
+                    new Still(3, 91 + 91 * 2, 0, 92, 102),
+                    new Still(4, 183 + 91 * 2, 24, 93, 78),
+                    new Still(5, 276 + 91 * 2, 74, 200, 28),
+                    new Still(6, 476 + 91 * 2, 32, 164, 70),
+                    new Still(7, 640 + 91 * 2, 45, 125, 57),
+                    new Still(8, 765 + 91 * 2, 68, 87, 34),
+                    new Still(9, 1034, 24, 93, 78),
+                    new Still(10, 0, 39, 91, 63), // First Image
+                    new Still(11, 0, 39, 91, 63),
+                    new Still(10, 0, 39, 91, 63),
+                    new Still(10, 0, 39, 91, 63)
+                ])
             ]
         );
         inits++;
@@ -303,9 +361,14 @@ async function spriteReader_init()
     {
         machinegun = new SpriteSet(img,
             [
-                new Subsprite(0, 0, 0, 110, 54),
-                new Subsprite(1, 110, 0, 110, 85),
-                new Subsprite(2, 220, 15, 110, 70)
+                new Still('Idle', 0, 0, 110, 54)
+            ],
+            [
+                new StillSequence('Shoot',
+                [
+                    new Still(1, 110, 0, 110, 85),
+                    new Still(2, 220, 15, 110, 70)
+                ])
             ]
         );
         inits++;
@@ -315,34 +378,64 @@ async function spriteReader_init()
     {
         handgun = new SpriteSet(img,
             [
-                new Subsprite(0, 0, 23, 50, 64),
-                new Subsprite(1, 50, 0, 52, 102),
-                new Subsprite(2, 102, 7, 50, 80),
-                new Subsprite(3, 152, 3, 51, 84),
-                new Subsprite(4, 203, 0, 51, 87)
+                new Still('Idle', 0, 23, 50, 64)
+            ],
+            [
+                new StillSequence('Shoot',
+                [
+                    new Still(1, 50, 0, 52, 102),
+                    new Still(2, 102, 7, 50, 80),
+                    new Still(3, 152, 3, 51, 84),
+                    new Still(4, 203, 0, 51, 87),
+                    new Still(5, 0, 23, 50, 64) // First Image
+                ])
             ]
         );
         inits++;
     });
 
+    
+    spriteReader_getSpriteString('Corpse', (img) =>
+    {
+        corpseSprite = new SpriteSet(img,
+            [
+                new Still('Idle', 335, 0, 53, 16) // Last Sprite of Animation
+            ],
+            [
+                new StillSequence('Explode',
+                [
+                    new Still(0, 0, 0, 41, 53),
+                    new Still(0, 41, 0, 44, 49),
+                    new Still(0, 85, 0, 46, 45),
+                    new Still(0, 131, 0, 49, 39),
+                    new Still(0, 180, 0, 49, 35),
+                    new Still(0, 229, 0, 53, 27),
+                    new Still(0, 282, 0, 53, 16),
+                    new Still(0, 335, 0, 53, 16)
+                ])
+            ]
+        );
+        inits++;
+    })
+
     spriteReader_getSpriteString('Font_Denex', (img) =>
     {
         font = new Font(img,
             [
-                new Subsprite(' ', 1, 1, 9, 15),
-                new Subsprite('!', 11, 1, 5, 15),
-                new Subsprite('%', 53, 1, 13, 15),
-                new Subsprite('0', 1, 17, 15, 15),
-                new Subsprite('1', 17, 17, 8, 15),
-                new Subsprite('2', 26, 17, 11, 15),
-                new Subsprite('3', 39, 17, 11, 15),
-                new Subsprite('4', 51, 17, 13, 15),
-                new Subsprite('5', 65, 17, 12, 15),
-                new Subsprite('6', 78, 17, 13, 15),
-                new Subsprite('7', 92, 17, 14, 15),
-                new Subsprite('8', 107, 17, 12, 15),
-                new Subsprite('9', 120, 17, 13, 15)
-                //new Letter(''),
+                new Still(' ', 1, 1, 9, 15),
+                new Still('!', 11, 1, 5, 15),
+                new Still('%', 53, 1, 13, 15),
+                new Still('0', 1, 17, 15, 15),
+                new Still('1', 17, 17, 8, 15),
+                new Still('2', 26, 17, 11, 15),
+                new Still('3', 39, 17, 11, 15),
+                new Still('4', 51, 17, 13, 15),
+                new Still('5', 65, 17, 12, 15),
+                new Still('6', 78, 17, 13, 15),
+                new Still('7', 92, 17, 14, 15),
+                new Still('8', 107, 17, 12, 15),
+                new Still('9', 120, 17, 13, 15)
+                //new Subsprite(''),
             ]
         );
         inits++;
