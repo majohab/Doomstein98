@@ -285,14 +285,15 @@ async function spriteReader_init()
         shotgun = new SpriteSet(img,
             [
                 new Subsprite(0, 0, 39, 91, 63),
-                new Subsprite(1, 0 + 91, 6, 91, 96),
-                new Subsprite(2, 91 + 91, 0, 92, 102),
-                new Subsprite(3, 183 + 91, 24, 93, 78),
-                new Subsprite(4, 276 + 91, 74, 200, 28),
-                new Subsprite(5, 476 + 91, 32, 164, 70),
-                new Subsprite(6, 640 + 91, 45, 125, 57),
-                new Subsprite(7, 765 + 91, 68, 87, 34),
-                new Subsprite(8, 854 + 91, 24, 93, 78)
+                new Subsprite(1, 91, 22, 91, 80),
+                new Subsprite(2, 0 + 91 * 2, 6, 91, 96),
+                new Subsprite(3, 91 + 91 * 2, 0, 92, 102),
+                new Subsprite(4, 183 + 91 * 2, 24, 93, 78),
+                new Subsprite(5, 276 + 91 * 2, 74, 200, 28),
+                new Subsprite(6, 476 + 91 * 2, 32, 164, 70),
+                new Subsprite(7, 640 + 91 * 2, 45, 125, 57),
+                new Subsprite(8, 765 + 91 * 2, 68, 87, 34),
+                new Subsprite(9, 854 + 91 * 2, 24, 93, 78)
             ]
         );
         inits++;
@@ -303,7 +304,8 @@ async function spriteReader_init()
         machinegun = new SpriteSet(img,
             [
                 new Subsprite(0, 0, 0, 110, 54),
-                new Subsprite(1, 110, 7, 110, 47)
+                new Subsprite(1, 110, 0, 110, 85),
+                new Subsprite(2, 220, 15, 110, 70)
             ]
         );
         inits++;
@@ -314,7 +316,7 @@ async function spriteReader_init()
         handgun = new SpriteSet(img,
             [
                 new Subsprite(0, 0, 23, 50, 64),
-                new Subsprite(1, 50, 2, 52, 85),
+                new Subsprite(1, 50, 0, 52, 102),
                 new Subsprite(2, 102, 7, 50, 80),
                 new Subsprite(3, 152, 3, 51, 84),
                 new Subsprite(4, 203, 0, 51, 87)
