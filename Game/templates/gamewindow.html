@@ -50,8 +50,12 @@
                 <div class="title-bar">
                   <div class="title-bar-text">Doomstein98</div>
                   <div class="title-bar-controls">
-                    <button aria-label="Help"></button>
-                    <button aria-label="Close"></button>
+                    <a href="{% url 'impressum' %}">
+                      <button aria-label="Help"></button>
+                    </a>
+                    <a href="{% url 'play' %}">
+                      <button aria-label="Close"></button>
+                    </a>
                   </div>
                 </div>
                 <div id="canvas-container" class="window-body">
