@@ -1172,6 +1172,9 @@ class GameEngine(threading.Thread):
         Checks if any bullet hits a player
         '''
 
+        [player.get_hit(self.state, bullet, self.gameMode) for player in self.state.players for bullet in self.state.bullets if bullet.currentPosition.get_distance(player.currentPosition) < HIT_BOX or bullet.middlePosition.get_distance(player.currentPosition) < HIT_BOX]
+
+        '''
         for player in self.state.players:
 
             for bullet in self.state.bullets:
@@ -1186,20 +1189,21 @@ class GameEngine(threading.Thread):
 
                     # execute the function
                     player.get_hit(self.state, bullet, self.gameMode)
-
-
-        #[player.get_hit(self, bullet, self.gameMode)  for player in self.state.players for bullet in self.state.bullets if bullet.currentPosition.get_distance(player.currentPosition) < 0.1]
+        '''
 
     def process_bullets(self) -> None:
         '''
         Checks if bullet hits the wall
         '''
+
+        [self.state.bullets.pop(idx) for idx, bullet in enumerate(self.state.bullets) if bullet.update_pos(self.state.map)].clear()
+
         # Make the next move for all bullets
         # if True then it collide with Wall or Player, so remove it
-        for idx, bullet in enumerate(self.state.bullets):
-            if bullet.update_pos(self.state.map):
-                tmp = self.state.bullets.pop(idx)  
-                del tmp
+        #for idx, bullet in enumerate(self.state.bullets):
+        #    if bullet.update_pos(self.state.map):
+        #        tmp = self.state.bullets.pop(idx)  
+        #        del tmp
 
     def process_corpses(self) -> None : 
         '''
