@@ -1275,6 +1275,8 @@ class GameEngine(threading.Thread):
         #Where is the pointer 
         idx = 0
 
+        disconnect = 0
+
         for player in self.playerQueue:
 
             # if player is ready to spawn on the battle
@@ -1322,9 +1324,26 @@ class GameEngine(threading.Thread):
 
                 #skip Player for pop() method
                 idx += 1
-            else:
+            elif player.alive == -2:
+
+                disconnect += 1
+
                 #skip Player for pop() method
-                idx += 1   
+                idx += 1 
+            else:
+                idx += 1
+
+        if(disconnect > 0 and not self.state.players and disconnect == len(self.playerQueue)):
+            print(F"Lobby will be closed since nobody connected in game")
+
+            # Send the essential information for validate the winner of the game
+            async_to_sync(self.channelLayer.send)(
+                "game_engine", 
+                {
+                "type"    : "close.game",
+                group_key   : self.groupName,
+                }
+            )           
 
     def win(self, winningPlayers : list[Player]) -> None:
 
@@ -1334,7 +1353,7 @@ class GameEngine(threading.Thread):
         async_to_sync(self.channelLayer.send)(
             "game_engine", 
             {
-             "t"    : "w",
+             "type"    : "win",
              time_key    : self.tickNum * TICK_RATE,
              group_key   : self.groupName, 
              player_key : 
