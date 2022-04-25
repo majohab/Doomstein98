@@ -34,7 +34,7 @@ const justShot_animation      = 's_a';
 const justHit_animation       = 'h_a';
 const weapon_change_animation = 'w_a';
 
-let rec_corpses;
+let rec_corpses = [];
 
 function socketHandler_init()
 {
@@ -113,6 +113,7 @@ function socketHandler_init()
 
 
             rec_corpses = data[corpses_key];
+            console.log(rec_corpses);
 
 
             ammo        = data[player_key][userName][ammo_key];

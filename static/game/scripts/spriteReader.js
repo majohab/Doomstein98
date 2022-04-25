@@ -91,13 +91,14 @@ class Sprite
 
 class Still
 {
-    constructor(identifier, startX, startY, sizeX, sizeY)
+    constructor(identifier, startX, startY, sizeX, sizeY, padding)
     {
         this.identifier = identifier;
         this.startX = startX;
         this.startY = startY;
         this.sizeX = sizeX;
         this.sizeY = sizeY;
+        this.padding = padding;
     }
 }
 
@@ -136,6 +137,9 @@ class SpriteSet
                     stillData[y][x] = imgData[imgHeight - (still.startY + y) - 1][still.startX + x];
                 }
             }
+
+            if (still.padding != null && typeof still.padding != undefined)
+                stillData = padSprite (stillData, still.padding);
             
             return stillData;
         }
@@ -252,10 +256,26 @@ class Font extends SpriteSet
     }
 }
 
-function padSprite(sprite, destWidth, destHeight, 
+class PaddingConfig
+{
+    constructor(destWidth, destHeight, 
     pad_x, // -1: left, 0: mid, 1: right
     pad_y) // -1: bottom, 0: mid, 1: top
+    {
+        this.destWidth = destWidth;
+        this.destHeight = destHeight;
+        this.pad_x = pad_x;
+        this.pad_y = pad_y;
+    }
+}
+
+function padSprite(sprite, paddingConfig)
 {
+    let destWidth = paddingConfig.destWidth;
+    let destHeight = paddingConfig.destHeight;
+    let pad_x = paddingConfig.pad_x;
+    let pad_y = paddingConfig.pad_y;
+
     let spriteWidth = sprite[0].length;
     let spriteHeight = sprite.length;
 
@@ -399,7 +419,7 @@ async function spriteReader_init()
     {
         corpseSprite = new SpriteSet(img,
             [
-                new Still('Idle', 335, 0, 53, 16) // Last Sprite of Animation
+                new Still('Idle', 335, 0, 53, 16, new PaddingConfig(53, 53, 0, 1)) // Last Sprite of Animation
             ],
             [
                 new StillSequence('Explode',

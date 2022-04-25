@@ -23,14 +23,17 @@ let healthTextBounds_startY;
 let healthTextBounds_sizeX;
 let healthTextBounds_sizeY;
 let healthTextBounds_scale;
+let healthTextPaddingConfig;
 
 let ammoTextBounds_startX;
 let ammoTextBounds_startY;
 let ammoTextBounds_sizeX;
 let ammoTextBounds_sizeY;
 let ammoTextBounds_scale;
+let ammoTextPaddingConfig;
 
 let weaponImageBounds;
+let weaponImagePaddingConfig;
 
 function drawingHandler_init()
 {
@@ -131,7 +134,7 @@ function drawingHandler_init()
             weaponImage, weaponImageBounds,
             healthText, bulletsText,
             weaponFrame_startY,
-            corpses, corpseCount, corpses_startIndezes) {
+            corpses, corpses_startIndezes, corpseBounds, corpseCount) {
             drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
                 map_numbers,
                 wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, playerSprite, weaponFrameSprite,
@@ -139,7 +142,7 @@ function drawingHandler_init()
                 weaponImage, weaponImageBounds,
                 healthText, bulletsText,
                 weaponFrame_startY,
-                corpses, corpseCount, corpses_startIndezes);
+                corpses, corpses_startIndezes, corpseBounds, corpseCount);
         },
         gpu_kernel_settings
     );
@@ -157,11 +160,11 @@ function drawingHandler_drawCells()
 function drawingHandler_draw_gpu()
 {
     let healthText = getHealthText();
-    healthText = padSprite(healthText, healthTextBounds_sizeX, healthTextBounds_sizeY, -1, 0);
+    healthText = padSprite(healthText, healthTextPaddingConfig);
 
     
     let ammoText = getAmmoText();
-    ammoText = padSprite(ammoText, ammoTextBounds_sizeX, ammoTextBounds_sizeY, -1, 0);
+    ammoText = padSprite(ammoText, ammoTextPaddingConfig);
 
 
     let weaponFrame_startY = 2 + currWeapon * 12;
@@ -179,21 +182,41 @@ function drawingHandler_draw_gpu()
         weaponImage = weaponToUse.getAnimationSprite(t, 'Shoot');
     }
 
-    weaponImage = padSprite(weaponImage, weaponImageBounds[0], weaponImageBounds[1], 0, 1);
+    weaponImage = padSprite(weaponImage, weaponImagePaddingConfig);
 
     let corpses = [];
     let corpses_startIndezes = [];
+    let corpseBounds = []; // Note: Using this makes corpses_startIndezes redundant, as they can now be calculated
 
     for (let i = 0; i < max_corpses; i++)
     {
         corpses_startIndezes.push(corpses.length);
-        corpses = corpses.concat(corpseSprite.getSprite('Idle'));
-        //console.log(corpses);
+        let newCorpse;
+        if (i < rec_corpses.length)
+        {
+            let t = rec_corpses[i][duration_key];
+            t -= 500;
+            if (t > 0)
+            {
+                t = t / 100;
+                t = 1 - t;
+                newCorpse = corpseSprite.getAnimationSprite(t, 'Explode');
+                console.log('Explode: ' + t);
+            }
+            else
+            {
+                newCorpse = corpseSprite.getSprite('Idle');
+                console.log('Idle: ' + t);
+            }
+        }
+        {
+            newCorpse = corpseSprite.getSprite('Idle');
+        }
+        corpses = corpses.concat(newCorpse);
+        corpseBounds.push([newCorpse[0].length, newCorpse.length]);
     }
 
     let corpseCount = corpses_startIndezes.length;
-
-    console.log(corpses_startIndezes);
 
     //for (let i = 0; i < rec_corpses.length && i < max_corpses; i++)
     //{
@@ -217,7 +240,7 @@ function drawingHandler_draw_gpu()
         weaponImage, weaponImageBounds,
         healthText, ammoText,
         weaponFrame_startY,
-        corpses, corpseCount, corpses_startIndezes);
+        corpses, corpses_startIndezes, corpseBounds, corpseCount);
 }
 
 function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // Coordinates and Angle
@@ -227,7 +250,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
     weaponImage, weaponImageBounds,
     healthText, bulletsText,            // Status-Bar-Texts
     weaponFrame_startY,                 // Status-Bar-Weapon-Frame
-    corpses, corpseCount, corpses_startIndezes)                                                     
+    corpses, corpses_startIndezes, corpseBounds, corpseCount)                                                     
 {
     //#region Init
 
@@ -635,8 +658,8 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
             {
                 let objX = 5 + corpse//corpses[corpses_startIndezes[corpse]][0];
                 let objY = 5 + corpse//corpses[corpses_startIndezes[corpse]][1];
-                let spriteWidth = 53//corpses[corpses_startIndezes[corpse]][2];
-                let spriteHeight = 16//corpses[corpses_startIndezes[corpse]][3];
+                let spriteWidth = corpseBounds[corpse][0];//corpses[corpses_startIndezes[corpse]][2];
+                let spriteHeight = corpseBounds[corpse][1];//corpses[corpses_startIndezes[corpse]][3];
 
                 let vecX = objX - playerX;
                 let vecY = objY - playerY;
@@ -673,7 +696,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                     if (x >= objMinX && x <= objMaxX && y >= objMinY && y <= objMaxY)
                     {
                         let pix_x = Math.floor(((x - objMinX) / objWidth) * spriteWidth);
-                        let pix_y = Math.floor(((objMaxY - y) / objHeight) * spriteHeight);
+                        let pix_y = Math.floor(((y - objMinY) / objHeight) * spriteHeight);
 
                         let offset = corpses_startIndezes[corpse];
                         if (corpses[offset + pix_y][pix_x][3] > 0)  // If not transparent

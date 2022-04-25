@@ -65,12 +65,15 @@ function initRuntimeVariables()
     let healthText = getHealthText();
     healthTextBounds_sizeX = healthText[0].length;
     healthTextBounds_sizeY = healthText.length;
+    healthTextPaddingConfig = new PaddingConfig(healthText[0].length, healthText.length, -1, 0)
 
     let ammoText = getAmmoText();
     ammoTextBounds_sizeX = ammoText[0].length;
     ammoTextBounds_sizeY = ammoText.length;
+    ammoTextPaddingConfig = new PaddingConfig(ammoTextBounds_sizeX, ammoTextBounds_sizeY, -1, 0);
 
     weaponImageBounds = [200, 102];
+    weaponImagePaddingConfig = new PaddingConfig(weaponImageBounds[0], weaponImageBounds[1], 0, 1);
     //#endregion
 
     lastFrameTime = Date.now();
