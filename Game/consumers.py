@@ -280,9 +280,15 @@ class GameConsumer(SyncConsumer):
 
         #print(F"Player {username} joined lobby: {lobbyname}")
 
-        # for further information in what game the player is
-        self.lobbies[username] = lobbyname 
+        # is player already in a game?
+        try:
+            print(F"Player already in a game {self.lobbies[username]}")
+            return
+        except:
+            # for further information in what game the player is
+            self.lobbies[username] = lobbyname 
 
+        # look if Lobby is new
         try:
             if len(self.engines[lobbyname].state.players) < self.engines[lobbyname].maxPlayers:
                 self.engines[lobbyname].join_game(username)
@@ -328,6 +334,10 @@ class GameConsumer(SyncConsumer):
 
         # Stop the thread by ending its tasks
         self.engines[groupName].running = False
+        self.engines.remove(groupName)
+        
+        # remove all player from the lobby list
+        self.lobbies = {lobby : self.lobbies[lobby] for lobby in self.lobbies.values() if lobby != groupName}
 
         # Synchronize the channel's information and send them to all participants
         async_to_sync(self.channelLayer.group_send)(
@@ -339,6 +349,22 @@ class GameConsumer(SyncConsumer):
             }
         )
 
+    def close_game(self, event):
+        '''
+        When lobby is closed due to inactivity
+        '''
+
+        groupName = event[group_key] #group
+
+        print(F"Lobby {groupName} is closed due to inactivity")
+
+        # Stop the thread by ending its tasks
+        #self.engines[groupName].running = False
+        self.engines.pop(groupName).running = False
+        
+        # remove all player from the lobby list
+        self.lobbies = {lobby : self.lobbies[lobby] for lobby in self.lobbies.values() if lobby != groupName}
+       
         
 
 

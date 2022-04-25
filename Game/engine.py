@@ -898,7 +898,7 @@ class GameEngine(threading.Thread):
     '''
 
     # Constructor function for GameEngine
-    def __init__(self, lobbyname, mapString = None, playersName : list[str] = [], maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME):
+    def __init__(self, lobbyname, mapString = None, maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME):
         
         # Did the game started?
         self.startFlag = False
@@ -945,8 +945,7 @@ class GameEngine(threading.Thread):
         mapString = MAPS[1]
 
         self.state = State(
-            Map.from_list(mapString), 
-            playersName
+            Map.from_list(mapString),
             )
 
     # The main loop for the game engine
@@ -1172,6 +1171,9 @@ class GameEngine(threading.Thread):
         Checks if any bullet hits a player
         '''
 
+        [player.get_hit(self.state, bullet, self.gameMode) for player in self.state.players for bullet in self.state.bullets if bullet.currentPosition.get_distance(player.currentPosition) < HIT_BOX or bullet.middlePosition.get_distance(player.currentPosition) < HIT_BOX]
+
+        '''
         for player in self.state.players:
 
             for bullet in self.state.bullets:
@@ -1186,20 +1188,21 @@ class GameEngine(threading.Thread):
 
                     # execute the function
                     player.get_hit(self.state, bullet, self.gameMode)
-
-
-        #[player.get_hit(self, bullet, self.gameMode)  for player in self.state.players for bullet in self.state.bullets if bullet.currentPosition.get_distance(player.currentPosition) < 0.1]
+        '''
 
     def process_bullets(self) -> None:
         '''
         Checks if bullet hits the wall
         '''
+
+        [self.state.bullets.pop(idx) for idx, bullet in enumerate(self.state.bullets) if bullet.update_pos(self.state.map)].clear()
+
         # Make the next move for all bullets
         # if True then it collide with Wall or Player, so remove it
-        for idx, bullet in enumerate(self.state.bullets):
-            if bullet.update_pos(self.state.map):
-                tmp = self.state.bullets.pop(idx)  
-                del tmp
+        #for idx, bullet in enumerate(self.state.bullets):
+        #    if bullet.update_pos(self.state.map):
+        #        tmp = self.state.bullets.pop(idx)  
+        #        del tmp
 
     def process_corpses(self) -> None : 
         '''
@@ -1271,6 +1274,8 @@ class GameEngine(threading.Thread):
         #Where is the pointer 
         idx = 0
 
+        disconnect = 0
+
         for player in self.playerQueue:
 
             # if player is ready to spawn on the battle
@@ -1318,9 +1323,26 @@ class GameEngine(threading.Thread):
 
                 #skip Player for pop() method
                 idx += 1
-            else:
+            elif player.alive == -2:
+
+                disconnect += 1
+
                 #skip Player for pop() method
-                idx += 1   
+                idx += 1 
+            else:
+                idx += 1
+
+        if(disconnect > 0 and not self.state.players and disconnect == len(self.playerQueue)):
+            print(F"Lobby will be closed since nobody connected in game")
+
+            # Send the essential information for validate the winner of the game
+            async_to_sync(self.channelLayer.send)(
+                "game_engine", 
+                {
+                "type"    : "close.game",
+                group_key   : self.groupName,
+                }
+            )           
 
     def win(self, winningPlayers : list[Player]) -> None:
 
@@ -1330,7 +1352,7 @@ class GameEngine(threading.Thread):
         async_to_sync(self.channelLayer.send)(
             "game_engine", 
             {
-             "t"    : "w",
+             "type"    : "win",
              time_key    : self.tickNum * TICK_RATE,
              group_key   : self.groupName, 
              player_key : 
