@@ -213,7 +213,7 @@ LOGGING = {
     },
 }
 
-# HTTPS Setting
+# HTTPS Setting (uncomment in prod)
 #SESSION_COOKIE_SECURE = True # Serves session cookie over https
 #CSRF_COOKIE_SECURE = True # Serves csrf tokens over https
 #SECURE_SSL_REDIRECT = True # Redirect from http to https

@@ -11,5 +11,17 @@ USER root
 RUN mkdir -p /vol/static
 RUN chmod 755 /vol/static
 
+# Install certbot 
+
+# Install python
+#RUN apk add --update python3 py3-pip # uncomment in prod
+
+# Install certbot
+#RUN apk add certbot # uncomment in prod
+#RUN pip install certbot-nginx # uncomment in prod
+
+# Add openrc for automatic renewal
+RUN apk add openrc --no-cache
+
 # change back to restricted user
 USER nginx

@@ -10,8 +10,6 @@ services:
       - ./.devenv/.env
     depends_on:
       - redis
-    ports:
-      - "8001:8001"
 
   proxy:
     build:
@@ -19,7 +17,8 @@ services:
     volumes:
       - static_data:/vol/static
     ports:
-      - "8080:8080"
+      - "8080:8080" # 80 for prod
+      #- "443:443" # uncomment in prod
     depends_on:
       - app
 
