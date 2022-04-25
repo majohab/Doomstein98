@@ -898,7 +898,7 @@ class GameEngine(threading.Thread):
     '''
 
     # Constructor function for GameEngine
-    def __init__(self, lobbyname, mapString = None, playersName : list[str] = [], maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME):
+    def __init__(self, lobbyname, mapString = None, maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME):
         
         # Did the game started?
         self.startFlag = False
@@ -945,8 +945,7 @@ class GameEngine(threading.Thread):
         mapString = MAPS[1]
 
         self.state = State(
-            Map.from_list(mapString), 
-            playersName
+            Map.from_list(mapString),
             )
 
     # The main loop for the game engine

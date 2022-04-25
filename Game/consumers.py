@@ -359,8 +359,8 @@ class GameConsumer(SyncConsumer):
         print(F"Lobby {groupName} is closed due to inactivity")
 
         # Stop the thread by ending its tasks
-        self.engines[groupName].running = False
-        self.engines.remove(groupName)
+        #self.engines[groupName].running = False
+        self.engines.pop(groupName).running = False
         
         # remove all player from the lobby list
         self.lobbies = {lobby : self.lobbies[lobby] for lobby in self.lobbies.values() if lobby != groupName}
