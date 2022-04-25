@@ -21,7 +21,7 @@ TICK_RATE = 1/60
 
 PLAYER_SPEED            = TICK_RATE/0.1
 ROTATION_SPEED          = TICK_RATE/1
-BULLET_SPEED            = TICK_RATE/0.025
+BULLET_SPEED            = TICK_RATE/TICK_RATE
 
 
 # Every Unit is in Seconds
@@ -48,13 +48,19 @@ corpses_key             = 'c'
 click_key               = 'c'
 duration_key            = 'd'
 direction_key           = 'd'
+death_key               = 'd'
+group_key               = 'g'
 health_key              = 'h'
 inactive_key            = 'i'
 kills_key               = 'k'
+killDeath_key           = 'kd'
+map_length_key          = 'l'
 map_key                 = 'm'
 mouseDelta_key          = 'm'
+name_key                = 'n'
 player_key              = 'p'
 state_key               = 's'
+time_key                = 't'
 weapon_key              = 'w'
 x_coordinate_key        = 'x'
 y_coordinate_key        = 'y'
@@ -64,64 +70,66 @@ weapon_change_animation = 'w_a'
 
 #Reversed direction
 MAPS = [
-    [
-    "#######################################################################################",
-    "#..E.#................................................................................#",
-    "#....#..........................................................................#######",
-    "#.####................................................................................#",
-    "#.....................................................................................#",
-    "#..###..........................................................................#######",
-    "###########...........................................................................#",
-    "#.....................................................................................#",
-    "#...............................................................................#######",
-    "#.....................................................................................#",
-    "#.....................................................................................#",
-    "#...............................................................................#######",
-    "#.....................................................................................#",
-    "#.....................................................................................#",
-    "#...............................##.##################...........................#######",
-    "#...............................##.#....#.....#.....#.................................#",
-    "#...............................##.#..###.....#..####.................................#",
-    "#...............................##.#................#...........................#######",
-    "#...............................##.########..##.....#.................................#",
-    "#...............................##............#.......................................#",
-    "#...............................####..........#.....#...........................#######",
-    "#..................................###.######.###.###.................................#",
-    "#....................................#.#......#...#...................................#",
-    "#....................................#.#..#...#.#.#.............................#######",
-    "#....................................#.#..#.....#.#...................................#",
-    "#....................................#.#..#######.....................................#",
-    "#...............................................................................#######",
-    "#.....................................................................................#",
-    "#.....................................................................................#",
-    "#...............................................................................#######",
-    "#.....................................................................................#",
-    "#.....................................................................................#",
-    "####..######....................................................................#######",
-    "#......#...#..........................................................................#",
-    "####...#...#..........................................................................#",
-    "#.S#.......#....................................................................#######",
-    "#.. .......#..........................................................................#",
-    "#######################################################################################"
-    ],
-    [
-    "################",
-    "#............W.#",
-    "#........#######",
-    "#............S.#",
-    "#..............#",
-    "#.....##.......#",
-    "#.....##.......#",
-    "#..............#",
-    "#.E............#",
-    "#..............#",
-    "######.........#",
-    "#....#.........#",
-    "#.S..#.........#",
-    "#..........N.###",
-    "#............###",
-    "################"
-    ]
+    {
+        "len" : len("#######################################################################################"),
+        "map" :     "#######################################################################################" +
+                    "#..S.#.............................#..............###.S......####.......####........W.#" +
+                    "#....#............#.E..............#..............###........#................######..#" +
+                    "#.####.....####...######...####..........................#...#..#####.........##......#" +
+                    "#.............#####...........#..E.......................#..........############......#" +
+                    "#..###............#...........###########.....############.#####....#..........#.######" +
+                    "###########...................#.S....#..............#......#........#..##......#......#" +
+                    "#.S.#.............................#.....#...........###....#........#..##.............#" +
+                    "#...#...................#################...........#......#.....####..##..##########.#" +
+                    "#...........................W.#.....................#....N.#........#..##......#......#" +
+                    "#.....####........#...........#................######.######........#..........#......#" +
+                    "#........###......#...........###########...........................#..E.......#.######" +
+                    "#........###...####.....###.........................................########...#......#" +
+                    "######...#....#####.....###....................................................#......#" +
+                    "#.E......#......S.#.....###.....##.##################.........######...........######.#" +
+                    "#........######...#.............##.#.S..#.....#...W.#.........######...........#....S.#" +
+                    "###......######...#.............##.#..###.....#..########.....######...........#......#" +
+                    "#....#..........................##.#................#.............E............###.####" +
+                    "#..###..................#.......##.########..##.....#..........................#......#" +
+                    "#..###..........######..#.......##............#................#######...#######......#" +
+                    "#....#..........#.S.....#.......####.E........#.....#..........#...............#.######" +
+                    "#....####.......#....####.#........###.######.###.#######...####...............#......#" +
+                    "###..#..........#....#....#..........#.#......#...#............#..#########...........#" +
+                    "###..####............#..N.#..........#.#..#...#.#.#............#...............######.#" +
+                    "#....#..........######.####..........#.#..#.N...#.#######......#...............#......#" +
+                    "#..W.#...............#...............#.#..#######..............###.....#########....W.#" +
+                    "#..###...............#..........................#............W.#.......#.......#.######" +
+                    "#..###...............#############.............##.....##########...............#......#" +
+                    "#....#............#........................................#####...............#......#" +
+                    "#....###########..#.########...............................#####.....#####...########.#" +
+                    "#....#............#..E.....#..##...####....###....####...................#............#" +
+                    "#.................#.###....####.......#....###....#......................#...#####....#" +
+                    "####..#############...#...............#....###....#........#.............#.......#..###" +
+                    "#......#...#......#.#.#####...#.......#.........W.#........#.......#######.......#....#" +
+                    "####...#...##.#.###.#.....#...############.....#########...#...#.........#.......#..###" +
+                    "#.S#.......#........#####.#......#.S.....##...##.......#####...#.........#####.#.#....#" +
+                    "#.. .......#.....##.......#..........#............##.........N##...............#....N.#" +
+                    "#######################################################################################",
+    },
+    {
+        "len" : len("################"),
+        "map" : "################" +
+                "#............W.#" +
+                "#........#######" +
+                "#............S.#" +
+                "#..............#" +
+                "#.....##.......#" +
+                "#.....##.......#" +
+                "#..............#" +
+                "#.E............#" +
+                "#..............#" +
+                "######.........#" +
+                "#....#.........#" +
+                "#.S..#.........#" +
+                "#..........N.###" +
+                "#............###" +
+                "################"
+    }
 ]
 
 #Class for handling coordinates
@@ -204,13 +212,13 @@ AVAILABLE_WEAPONS = {
     "P99" : [
         "P99",
         50,             #50 Kugeln in der Waffe
-        round(0.8/TICK_RATE),  #Jede 0.8 Sekunden kann geschossen werden
+        round(0.25/TICK_RATE),  #Jede 0.8 Sekunden kann geschossen werden
         20              # The weapon reduces 20 health per bullet
     ],
     "MP5" : [
         "MP5",
         200,            #200 Kugeln in der Waffe
-        round(0.1/TICK_RATE),  #Jede 0.1 Sekunden kann geschossen werden   
+        round(0.08/TICK_RATE),  #Jede 0.1 Sekunden kann geschossen werden   
         10              # The Weapon reduces 10 Health per Bullet 
     ],
     "Shotgun" : [
@@ -227,13 +235,13 @@ class Map:
     It can read a map from strings array
     '''
 
-    def __init__(self, width : int, height : int, map : pd.DataFrame, strings : list[str], spawns : list[Spawn]):
-        self.width = width
-        self.height = height
-        self.map = map
-        self.mapString = strings
-        self.spawns = spawns
-        self.tick = 0
+    def __init__(self, width : int, height : int, map : list[list[str]], mapString : str, spawns : list[Spawn]):
+        self.width      = width
+        self.height     = height
+        self.map        = map
+        self.mapString  = mapString
+        self.spawns     = spawns
+        self.tick       = 0
     
     #Helper function for from_list()
     def func(spawns, x, y, char) -> str:
@@ -286,60 +294,76 @@ class Map:
     
     # validate the input string of map
     # Static Method
-    def from_list(strings: list):
+    def from_list(mapDict : dict[str]):
 
         spawns = list()
 
+        char_count = len(mapDict["map"])
+
+        width  = mapDict["len"]
+        height = char_count/mapDict["len"]
+
         #TODO: Anpassen an das gewünschte Format
-        map = pd.DataFrame([list(string) for string in strings], dtype='string')
+        #map = pd.DataFrame([list(string) for string in strings], dtype='string')
 
-        inv_map = map[map == np.nan].dropna()
+        #inv_map = map[map == np.nan].dropna()
 
-        if(not inv_map.empty):
-            print(F"Map is invalid: {inv_map}")
+        #if(not inv_map.empty):
+        #    print(F"Map is invalid: {inv_map}")
 
-        inv_map = map.replace(["#", ".", "W", "S", "N", "E"], np.nan).dropna()
+        inv_map = mapDict["map"].replace("#","").replace(".","").replace("W","").replace("S","").replace("N","").replace("E","")
 
-        if(not inv_map.empty):
-            print(F"map contains invalid letters: {inv_map}")
+        mapString = mapDict["map"]
 
-        #print(map)
+        if(len(inv_map) != 0):
+            print(F"map contains invalid letters: >>>{inv_map}<<<<")
 
-        map.apply(lambda x: x.apply(lambda y: Map.func(spawns, x.name, x[x==y].index[0], y)))
-        
-        '''
-        for idx_s, string in enumerate(strings):
-            
-            #if len(string.replace('#','').replace('.','').replace('N','').replace('E','').replace('S','').replace('W','')) != 0:
-            #    print('Map contains invalid values. It only accepts \"#\" or \".\" and spawn fields')
+        # Look for spawns in the map
+        for dir in [('N', math.pi), ('E', math.pi/2), ('S', 0), ('W', -math.pi/2)]:
 
-            #Check if Map fits the format
-            #if len(string) != len(strings[-1]):
-            #    print("Map is invalid")
+            #print(dir)
+            idx = 0
 
-            
+            while idx < char_count:
 
-            #Handling for spawns
-            for idx_c, char in enumerate(string):
+                idx = mapString.find(dir[0])
+                
+                if idx == -1:
+                    break
 
-                #print("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN")
+                mapString = mapString.replace(dir[0], F"{len(spawns)}", 1)
 
-        '''        
-            
+                x = idx % width
+                y = (idx - x)/width
+
+                spawns.append(
+                    Spawn(
+                        Coordinate(
+                            x + 0.5,
+                            y + 0.5,
+                        ),
+                        dir[1]   
+                    )
+                )
+
+        map = []
+
+        [map.append(list(mapDict["map"][sub-width:sub])) for sub in range(width, char_count + width, width) ]
+                         
         if(len(spawns) == 0):
             print("Map contains no spawn fields")
 
         return Map(
-            len(strings[0]),
-            len(strings),
+            width,
+            height,
             map,
-            strings,
+            mapDict["map"],
             spawns,
         )
 
     # Check if Object collides with Map
     # Returns True if Oject collide with wall in any way
-    def check_collision(self, coordinate : Coordinate, object, dir = 0, tolerance : float = 0.25) -> int | None:        
+    def check_collision(self, coordinate : Coordinate, object, dir : float = 0, tolerance : float = 0.25) -> int | None:        
         '''
         Checks collision for bullets.
         '''
@@ -347,10 +371,10 @@ class Map:
         try:
             
             # Find char on next edge
-            e_1 = self.map.iloc[round(coordinate.y - (0.5 + tolerance)), round(coordinate.x - (0.5 + tolerance))]
-            e_2 = self.map.iloc[round(coordinate.y - (0.5 + tolerance)), round(coordinate.x - (0.5 - tolerance))]
-            e_3 = self.map.iloc[round(coordinate.y - (0.5 - tolerance)), round(coordinate.x - (0.5 + tolerance))]
-            e_4 = self.map.iloc[round(coordinate.y - (0.5 - tolerance)), round(coordinate.x - (0.5 - tolerance))] 
+            e_1 = self.map[round(coordinate.y - (0.5 + tolerance))][round(coordinate.x - (0.5 + tolerance))]
+            e_2 = self.map[round(coordinate.y - (0.5 + tolerance))][round(coordinate.x - (0.5 - tolerance))]
+            e_3 = self.map[round(coordinate.y - (0.5 - tolerance))][round(coordinate.x - (0.5 + tolerance))]
+            e_4 = self.map[round(coordinate.y - (0.5 - tolerance))][round(coordinate.x - (0.5 - tolerance))] 
 
             # Check on what edge is a wall
             A = e_1 == "#"
@@ -458,7 +482,10 @@ class Map:
 
     # Return für updating the state     
     def render(self) -> Mapping[str, Any]:
-        return self.mapString
+        return {
+            map_length_key : self.width,
+            map_key        : self.mapString,
+        }
 
 class Player:
     '''
@@ -552,7 +579,7 @@ class Player:
             if(spawn.lock_time == 0):
                 
                 flag = True
-                print(F"\nSpawn: x: {spawn.coordinate.x} y: {spawn.coordinate.y}")
+                #print(F"\nSpawn: x: {spawn.coordinate.x} y: {spawn.coordinate.y}")
                 break
 
         # no available Spawn was found?
@@ -580,7 +607,7 @@ class Player:
 
         if weapon.currAmmunition > 0 and weapon.currLatency == 0:
 
-            print(F"{self.name} just shot a bullet!")
+            #print(F"{self.name} just shot a bullet!")
 
             # The animation of shooting
             self.justShot = JUST_SHOT_ANIMATION
@@ -850,11 +877,11 @@ class State:
     Class for handling the states of the game
     '''
 
-    def __init__(self, map : Map, playersName : list[str] = [], bullets : list[Bullet] = []):
+    def __init__(self, map : Map):
         self.map     : Map          = map
         self.players : list[Player] = []#[Player(name, ) for name in playersName]
-        self.bullets = bullets
-        self.corpses : list[Player] = []
+        self.bullets : list[Bullet] = []
+        self.corpses : dict[Player] = []
 
 
     def render(self) -> Mapping[str, Any]:
@@ -871,7 +898,7 @@ class GameEngine(threading.Thread):
     '''
 
     # Constructor function for GameEngine
-    def __init__(self, lobbyname, playersName : list[str] = [], mapString = MAPS[1], maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME):
+    def __init__(self, lobbyname, mapString = None, playersName : list[str] = [], maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME):
         
         # Did the game started?
         self.startFlag = False
@@ -915,7 +942,7 @@ class GameEngine(threading.Thread):
         #How man players are allowed in the game
         self.maxPlayers = maxPlayers
 
-        mapString = mapString
+        mapString = MAPS[1]
 
         self.state = State(
             Map.from_list(mapString), 
@@ -1013,6 +1040,8 @@ class GameEngine(threading.Thread):
         
         self.process_hits()
 
+        if self.state.corpses:
+            self.process_corpses()
         #start = time.time()
 
         #print(F"hits: {start-end}s\n")
@@ -1177,13 +1206,12 @@ class GameEngine(threading.Thread):
         Process the current Corpses on the battlefield
         '''
 
-
         for corpse in self.state.corpses:
 
-            if(corpse["duration"] == 0):
+            if(corpse[duration_key] == 0):
                 self.state.corpses.remove(corpse)
 
-            corpse["duration"] -= 1 
+            corpse[duration_key] -= 1 
 
     def process_spawns(self) -> None:
         '''
@@ -1274,7 +1302,16 @@ class GameEngine(threading.Thread):
 
                 # If the player died in that frame
                 if(player.alive == REVIVE_WAITING_TIME):
-                    self.state.corpses.append({"username" : player.name, x_coordinate_key : player.currentPosition.x, y_coordinate_key : player.currentPosition.y, duration_key : JUST_DIED_ANIMATION}) 
+
+                    print(F"{player.name} was added to the corpses")
+
+                    self.state.corpses.append(
+                        {
+                            player_key       : player.name, 
+                            x_coordinate_key : player.currentPosition.x, 
+                            y_coordinate_key : player.currentPosition.y, 
+                            duration_key     : JUST_DIED_ANIMATION,
+                        }) 
 
                 #reduce wait time of player
                 player.alive -= 1
@@ -1293,15 +1330,16 @@ class GameEngine(threading.Thread):
         async_to_sync(self.channelLayer.send)(
             "game_engine", 
             {
-             "type"    : "win",
-             "time"    : self.tickNum * TICK_RATE,
-             "group"   : self.groupName, 
-             "players" : 
+             "t"    : "w",
+             time_key    : self.tickNum * TICK_RATE,
+             group_key   : self.groupName, 
+             player_key : 
              [
-                 { "name"       : winningPlayer.name,
-                   "kills"      : winningPlayer.kills,
-                   "deaths"     : winningPlayer.deaths,
-                   "killDeath" : winningPlayer.killDeath,
+                 { 
+                   name_key       : winningPlayer.name,
+                   kills_key      : winningPlayer.kills,
+                   death_key      : winningPlayer.deaths,
+                   killDeath_key  : winningPlayer.killDeath,
                  } 
                    for winningPlayer in winningPlayers]
             }

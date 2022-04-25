@@ -137,6 +137,7 @@ function socketHandler_init()
                 keyState69 = false
             }
 
+            // Mousewheel
             if(mouseWheelDelta > 0){
                 new_idx += 1
                 mouseWheelDelta = 0
