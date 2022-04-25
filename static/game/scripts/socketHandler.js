@@ -69,14 +69,14 @@ function socketHandler_init()
                 }
             })
         );
-        webSocket.send(
-            JSON.stringify({
-                't' : joinGame_key,
-                'm'  : {
-                    'l'    : lobbyName,
-                }
-            })
-        );
+        //webSocket.send(
+        //    JSON.stringify({
+        //        't' : joinGame_key,
+        //        'm'  : {
+        //            'l'    : lobbyName,
+        //        }
+        //    })
+        //);
     }
 
     webSocket.onmessage = (e) => {
