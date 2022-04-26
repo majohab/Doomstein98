@@ -314,7 +314,24 @@ class GameConsumer(SyncConsumer):
         # is player already in a game?
         try:
             print(F"Player already in a game {self.lobbies[userName]}")
-            return
+
+            # if the game he is trying to join his current game is
+            if(self.lobbies[userName] == lobbyName):
+                return
+
+            # if the game is some different game
+            else:
+
+                # Remove the Player from former game
+                currLobby = Lobby.objects.get(name=self.lobbies[userName])
+                currLobby.current_player -= 1
+                currLobby.save()
+
+                # Add Player to current game
+                self.lobbies[userName] = lobbyName 
+                lobby.current_players += 1
+                lobby.save()
+
         except:
             # for further information in what game the player is
             self.lobbies[userName] = lobbyName 
