@@ -19,7 +19,7 @@ services:
     volumes:
       - static_data:/vol/static
       - ./ssl_cert/conf/:/nginx/ssl
-      - ./ssl_cert/data/:/usr/share/nginx/html/letsencrypt
+      - ./ssl_cert/data/:/nginx/html/letsencrypt
     ports:
       - "8080:8080" # 80 for prod
       #- "443:443" # uncomment in prod
@@ -36,7 +36,7 @@ services:
     command: certonly --webroot --webroot-path /usr/share/nginx/html/letsencrypt --email doomstein98@gmail.com --agree-tos --no-eff-email -d doomstein98.server-welt.com
     volumes: 
       - ./ssl_cert/conf/:/etc/letsencrypt
-      - ./ssl_cert/logs/:/var/log/letsencry
+      - ./ssl_cert/logs/:/var/log/letsencrypt
       - ./ssl_cert/data/:/usr/share/nginx/html/letsencrypt
 
 
