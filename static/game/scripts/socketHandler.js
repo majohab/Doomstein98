@@ -69,14 +69,6 @@ function socketHandler_init()
                 }
             })
         );
-        //webSocket.send(
-        //    JSON.stringify({
-        //        't' : joinGame_key,
-        //        'm'  : {
-        //            'l'    : lobbyName,
-        //        }
-        //    })
-        //);
     }
 
     webSocket.onmessage = (e) => {
@@ -208,6 +200,16 @@ function socketHandler_init()
         
             //console.log('Data:', data);
             //console.log(data[player_key][userName][justShot_animation]);
+        }else if(data[type_key] == message_key){
+            //TODO: Was soll passieren wenn er eine Nachricht erhält: Lobby kann nicht gefunden werden
+            console.log(data[message_key])
+            window.location.replace(window.location.href.replace(/game([\s\S]*)$/ ,'menu/'));
+        }else if(data[type_key] == win_key){
+            //TODO: Was soll beim Gewinnen passieren
+            console.log(data)
+        }else if(data[type_key] == loose_key){
+            //TODO: Was soll beim Verlieren getan werden
+            console.log(data)
         }
     };
 

@@ -17,7 +17,7 @@ from copy import deepcopy
 log = logging.getLogger(__name__)
 
 #TODO: fit that for customized fps
-TICK_RATE = 1/30
+TICK_RATE = 1/60
 
 PLAYER_SPEED            = TICK_RATE/0.1
 ROTATION_SPEED          = TICK_RATE/1
@@ -939,6 +939,9 @@ class GameEngine(threading.Thread):
 
         self.playerQueue : list[Player] = []
 
+        #Forbidden Player: Players who were once in the game but then left permanently
+        self.playerForbidden : list[str] = []
+
         #How man players are allowed in the game
         self.maxPlayers = maxPlayers
 
@@ -1013,49 +1016,65 @@ class GameEngine(threading.Thread):
         
         #print(F"Tick {self.tickNum} for game {self.name}")
 
-        #start = time.time()
+        begin = time.time()
 
         with self.eventLock:
             events = self.eventChanges.copy()
             self.eventChanges.clear()
 
-        #end = time.time()
+        end = time.time()
 
+        eventLock = end - begin
         #print(F"event: {end-start}s\n")
 
         if self.state.players:
             self.process_players(events)
 
-        #start = time.time()
+        start = time.time()
 
         #print(F"players: {start-end}s\n")
+        processPlayers = start-end
 
         if self.state.bullets:
             self.process_bullets()
         
-        #end = time.time()
+        end = time.time()
 
         #print(F"bullets: {end-start}s\n")
+        bullets = end-start
         
         self.process_hits()
 
         if self.state.corpses:
             self.process_corpses()
-        #start = time.time()
+        
+        start = time.time()
 
         #print(F"hits: {start-end}s\n")
+        processHits = start - end
         
         self.process_new_players()
 
-        #end = time.time()
+        end = time.time()
 
         #print(F"new players: {end-start}s\n")
+        newPlayer = end - start
 
         self.process_spawns()
 
-        #start = time.time()
+        finish = time.time()
 
+        spawns = finish - end
         #print(F"spawns: {start-end}s\n\n")
+        if(finish-begin >= TICK_RATE):
+            print(F'''
+                eventLock {eventLock}\n
+                processPlayers {processPlayers}\n
+                bullets {bullets}\n
+                processHits {processHits}\n
+                newPlayer {newPlayer}\n
+                spawns {spawns}\n
+            ''')
 
 
     def calculate_distances(self) -> None:
@@ -1338,7 +1357,7 @@ class GameEngine(threading.Thread):
             # Send the essential information for validate the winner of the game
             async_to_sync(self.channelLayer.send)(
                 "game_engine", 
-                {
+               {
                 "type"    : "close.game",
                 group_key   : self.groupName,
                 }
@@ -1367,9 +1386,10 @@ class GameEngine(threading.Thread):
             }
         )
 
-    # When the time has reached its limit
     def time_limit_reached(self): 
-
+        '''
+            When the time has reached its limit
+        '''
         print("the time limit has been reached")
 
         # if the winner is about the highest kills
@@ -1406,16 +1426,3 @@ class GameEngine(threading.Thread):
             bestPlayers = [player for player in bestPlayers if player.killDeath == highestKillDeath]   
 
             return bestPlayers 
-
-
-
-
-
-
-
-                
-        
-        
-
-
-
