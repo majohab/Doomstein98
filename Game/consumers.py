@@ -225,8 +225,6 @@ class PlayerConsumer(AsyncWebsocketConsumer):
  
         event[type_key] = update_key   #type update
 
-        #print(F"Game Update: {(event['i'])}")
-
         try:
             # look if the the own username is in the inactive array
             event = event[inactive_key][self.username]
@@ -247,8 +245,6 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             else:
                 self.map += 1
                 pass
-        
-        #event[isd]
 
         # send the update information to the client
         await self.send(json.dumps(event))
