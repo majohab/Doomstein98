@@ -77,8 +77,6 @@ function socketHandler_init()
 
         let data = JSON.parse(e.data)
 
-        console.log(data);
-
         if (data[type_key] == update_key)
         {
             if (mapString == null)

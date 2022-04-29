@@ -945,7 +945,7 @@ class GameEngine(threading.Thread):
         #How man players are allowed in the game
         self.maxPlayers = maxPlayers
 
-        mapString = MAPS[0]
+        mapString = MAPS[1]
 
         self.state = State(
             Map.from_list(mapString),

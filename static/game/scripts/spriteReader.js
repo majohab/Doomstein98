@@ -360,15 +360,80 @@ async function spriteReader_init()
 
     spriteReader_getSpriteString('Bullet_1',            (img) => { bulletSprite = new Sprite(img, 1, 1); inits++; });
 
-    spriteReader_getSpriteString('DoomGuy_Front', (img) =>
+    spriteReader_getSpriteString('DoomGuy', (img) =>
     {
+        let paddingConfig = new PaddingConfig(38, 56, 0, 1);
         playerSprite = new SpriteSet(img,
             [
-                new Still('Idle', 0, 0, 36, 56)
+                new Still('Idle_S', 0, 0, 36, 56, paddingConfig),
+                new Still('Idle_SW', 0, 56, 26, 56, paddingConfig),
+                new Still('Idle_W', 0, 112, 29, 56, paddingConfig),
+                new Still('Idle_NW', 0, 168, 29, 55, paddingConfig),
+                new Still('Idle_N', 0, 224, 38, 56, paddingConfig),
+                new Still('Idle_NE', 0, 280, 29, 55, paddingConfig),
+                new Still('Idle_E', 0, 336, 29, 56, paddingConfig),
+                new Still('Idle_SE', 0, 392, 26, 56, paddingConfig)
             ],
             [
-
-            ]
+                new StillSequence('Walk_S',
+                [
+                    new Still(0, 0, 0, 36, 56),
+                    new Still(0, 36, 0, 36, 56),
+                    new Still(0, 72, 0, 36, 56),
+                    new Still(0, 108, 0, 35, 56)
+                ]),
+                new StillSequence('Walk_SW',
+                [
+                    new Still(0, 0, 56, 26, 56),
+                    new Still(0, 26, 56, 33, 56),
+                    new Still(0, 59, 56, 26, 56),
+                    new Still(0, 85, 56, 31, 56)
+                ]),
+                new StillSequence('Walk_W',
+                [
+                    new Still(0, 0, 112, 29, 56),
+                    new Still(0, 29, 112, 42, 56),
+                    new Still(0, 70, 112, 29, 56),
+                    new Still(0, 99, 112, 39, 55)
+                ]),
+                new StillSequence('Walk_NW',
+                [
+                    new Still(0, 168, 29, 55),
+                    new Still(0, 29, 168, 37, 56),
+                    new Still(0, 66, 168, 29, 56),
+                    new Still(0, 95, 167, 37, 56)
+                ]),
+                new StillSequence('Walk_N',
+                [
+                    new Still(0, 0, 224, 38, 56),
+                    new Still(0, 38, 224, 34, 56),
+                    new Still(0, 72, 224, 35, 56),
+                    new Still(0, 107, 224, 34, 56)
+                ]),
+                new StillSequence('Walk_NE',
+                [
+                    new Still(0, 0, 280, 29, 55),
+                    new Still(0, 29, 280, 37, 56),
+                    new Still(0, 66, 280, 29, 56),
+                    new Still(0, 95, 280, 37, 56)
+                ]),
+                new StillSequence('Walk_E',
+                [
+                    new Still(0, 0, 336, 29, 56),
+                    new Still(0, 29, 336, 41, 56),
+                    new Still(0, 70, 336, 29, 56),
+                    new Still(0, 99, 336, 39, 56)
+                ]),
+                new StillSequence('Walk_SE',
+                [
+                    new Still(0, 0, 392, 26, 56),
+                    new Still(0, 26, 392, 33, 56),
+                    new Still(0, 59, 392, 26, 56),
+                    new Still(0, 85, 392, 31, 56)
+                ])
+                
+            ],
+            false
         );
         inits++;
     });

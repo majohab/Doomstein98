@@ -105,9 +105,6 @@ function drawingHandler_init()
             bulletSprite_width: bulletSprite.width,
             bulletSprite_height: bulletSprite.height,
 
-            playerSprite_width: playerSprite.getSprite('Idle')[0].length,
-            playerSprite_height: playerSprite.getSprite('Idle').length,
-
             weaponFrameSprite_width: weaponFrameSprite.width,
             weaponFrameSprite_height: weaponFrameSprite.height,
 
@@ -218,7 +215,45 @@ function drawingHandler_draw_gpu()
         }
     }
 
-    addObjects(max_opponents, rec_opponents, () => playerSprite.getSprite('Idle'), playerSprite.getSprite('Idle'));
+    addObjects(max_opponents, rec_opponents, (opponent) =>
+    {
+        const PI = Math.PI;
+
+        let vecX = opponent[x_coordinate_key] - playerX;
+        let vecY = opponent[y_coordinate_key] - playerY;
+        let angleToOpponent = Math.atan2(vecX, vecY); // Yeah usually it is (y, x), but it only works like this (maybe there is (x, y) in the backend?)
+
+        // delta is the angle which to opponent looks in relative to the vector between opponent and self
+        let delta = opponent[direction_key] - angleToOpponent;
+        delta += (delta >PI) ? -(2*PI) : (delta < -PI) ? (2*PI) : 0;
+
+        let spriteId;
+        if (delta > PI * (7 / 8) || delta <= -PI * (7 / 8))
+            spriteId = 'Idle_S';
+        else if (delta > PI * (5 / 8))
+            spriteId = 'Idle_SE';
+        else if (delta > PI * (3 / 8))
+            spriteId = 'Idle_E';
+        else if (delta > PI * (1 / 8))
+            spriteId = 'Idle_NE';
+        else if (delta > -PI * (1 / 8))
+            spriteId = 'Idle_N';
+        else if (delta > -PI * (3 / 8))
+            spriteId = 'Idle_NW';
+        else if (delta > -PI * (5 / 8))
+            spriteId = 'Idle_W'
+        else if (delta > -PI * (7 / 8))
+            spriteId = 'Idle_SW'
+        else
+        {
+            spriteId = 'Idle_S';
+            console.error('Something went wrong');
+        }
+
+        
+        return playerSprite.getSprite(spriteId);
+
+    }, playerSprite.getSprite('Idle_N'));
     addObjects(max_bullets, rec_bullets, () => bulletSprite.data, bulletSprite.data);
     addObjects(max_corpses, rec_corpses, (object) =>
     {
@@ -256,7 +291,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
     weaponImage, weaponImageBounds,
     healthText, bulletsText,            // Status-Bar-Texts
     weaponFrame_startY,                 // Status-Bar-Weapon-Frame
-    opponentArray, opponentStartIndezes, opponentBounds, opponentCount)                                                     
+    objectArray, objectStartIndezes, objectBounds, objectCount)                                                     
 {
     //#region Init
 
@@ -585,14 +620,13 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
         //#endregion
 
-        /*
         {
-            for (let corpse = 0; corpse < corpseCount; corpse++) // First element is 0
+            for (let object = 0; object < objectCount; object++) // First element is 0
             {
-                let objX = corpseBounds[corpses_startIndezes[corpse]][0];//corpses[corpses_startIndezes[corpse]][0];
-                let objY = corpseBounds[corpses_startIndezes[corpse]][1];//corpses[corpses_startIndezes[corpse]][1];
-                let spriteWidth = corpseBounds[corpses_startIndezes[corpse]][2];//corpses[corpses_startIndezes[corpse]][2];
-                let spriteHeight = corpseBounds[corpses_startIndezes[corpse]][3];//corpses[corpses_startIndezes[corpse]][3];
+                let objX = objectBounds[object][0];//corpses[corpses_startIndezes[corpse]][0];
+                let objY = objectBounds[object][1];//corpses[corpses_startIndezes[corpse]][1];
+                let spriteWidth = objectBounds[object][2];//corpses[corpses_startIndezes[corpse]][2];
+                let spriteHeight = objectBounds[object][3];//corpses[corpses_startIndezes[corpse]][3];
 
                 let vecX = objX - playerX;
                 let vecY = objY - playerY;
@@ -631,71 +665,12 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                         let pix_x = Math.floor(((x - objMinX) / objWidth) * spriteWidth);
                         let pix_y = Math.floor(((objMaxY - y) / objHeight) * spriteHeight);
 
-                        let offset = corpses_startIndezes[corpse];
-                        if (corpseArray[offset + pix_y][pix_x][3] > 0)  // If not transparent
+                        let offset = objectStartIndezes[object];
+                        if (objectArray[offset + pix_y * spriteWidth + pix_x][3] > 0)  // If not transparent
                         {
-                            r = corpseArray[offset + pix_y][pix_x][0]; //r = corpses[offset + pix_y][pix_x][0];
-                            g = corpseArray[offset + pix_y][pix_x][1]; //g = corpses[offset + pix_y][pix_x][1];
-                            b = corpseArray[offset + pix_y][pix_x][2]; //b = corpses[offset + pix_y][pix_x][2];
-                            depthBuffer = dstFromPlayer;
-                        }
-                    }
-                }
-            }
-        }
-        */
-
-        {
-            for (let opponent = 0; opponent < opponentCount; opponent++) // First element is 0
-            {
-                let objX = opponentBounds[opponent][0];//corpses[corpses_startIndezes[corpse]][0];
-                let objY = opponentBounds[opponent][1];//corpses[corpses_startIndezes[corpse]][1];
-                let spriteWidth = opponentBounds[opponent][2];//corpses[corpses_startIndezes[corpse]][2];
-                let spriteHeight = opponentBounds[opponent][3];//corpses[corpses_startIndezes[corpse]][3];
-
-                let vecX = objX - playerX;
-                let vecY = objY - playerY;
-                let dstFromPlayer = Math.sqrt(vecX*vecX + vecY*vecY);
-
-                let forwardX = Math.sin(playerAngle); let forwardY = Math.cos(playerAngle);
-
-                let objAngle = Math.atan2(forwardY, forwardX) - Math.atan2(vecY, vecX);
-
-                let inFrontOfPlayer = (forwardX * vecX + forwardY * vecY) > 0;
-
-                if (inFrontOfPlayer &&
-                    dstFromPlayer >= this.constants.nearClippingPane &&
-                    dstFromPlayer < depth &&
-                    dstFromPlayer < depthBuffer)
-                {
-                    let objCeiling = (screenHeight * 0.5) - (screenHeight / dstFromPlayer);
-                    let objFloor = screenHeight - objCeiling;
-                    let objHeight = objFloor - objCeiling;
-                    let objRatio = spriteWidth / spriteHeight;
-                    let objWidth = objHeight * objRatio;
-                    let middleOfObject = (0.5 * (objAngle / (fov * 0.5)) + 0.5) * screenWidth;
-
-                    // Absolutely zero idea what the following does and why the f*ck it works... It just works okay?! It just works... for now...
-                    // Also, note that this only seems to work for fov = PI / 3, we probably need to adapt that sh*t calculation for other fovs.
-                    if (middleOfObject < 0 + objWidth * 0.5) middleOfObject += screenWidth * 3;
-                    if (middleOfObject > screenWidth * 3 - objWidth * 0.5) middleOfObject -= screenWidth * 3;
-
-                    let objMinX = middleOfObject - objWidth * 0.5;
-                    let objMaxX = middleOfObject + objWidth * 0.5;
-                    let objMinY = screenHeight * 0.5 - objHeight * 0.5;
-                    let objMaxY = screenHeight * 0.5 + objHeight * 0.5;
-
-                    if (x >= objMinX && x <= objMaxX && y >= objMinY && y <= objMaxY)
-                    {
-                        let pix_x = Math.floor(((x - objMinX) / objWidth) * spriteWidth);
-                        let pix_y = Math.floor(((objMaxY - y) / objHeight) * spriteHeight);
-
-                        let offset = opponentStartIndezes[opponent];
-                        if (opponentArray[offset + pix_y * spriteWidth + pix_x][3] > 0)  // If not transparent
-                        {
-                            r = opponentArray[offset + pix_y * spriteWidth + pix_x][0]; //r = corpses[offset + pix_y][pix_x][0];
-                            g = opponentArray[offset + pix_y * spriteWidth + pix_x][1]; //g = corpses[offset + pix_y][pix_x][1];
-                            b = opponentArray[offset + pix_y * spriteWidth + pix_x][2]; //b = corpses[offset + pix_y][pix_x][2];
+                            r = objectArray[offset + pix_y * spriteWidth + pix_x][0]; //r = corpses[offset + pix_y][pix_x][0];
+                            g = objectArray[offset + pix_y * spriteWidth + pix_x][1]; //g = corpses[offset + pix_y][pix_x][1];
+                            b = objectArray[offset + pix_y * spriteWidth + pix_x][2]; //b = corpses[offset + pix_y][pix_x][2];
                             depthBuffer = dstFromPlayer;
                         }
                     }
