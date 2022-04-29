@@ -160,16 +160,28 @@ AVAILABLE_WEAPONS = [
 ]
 
 class Coordinate:
-    '''
-    Class handling Coordinates
-    ''' 
+    """
+    Class to handle movement and distance calculations
+    """
 
     def __init__(self, x : float, y : float):
+        """Initiate an object by its two coordinates
+
+        Args:
+            x (float): x-coordinate
+            y (float): y-coordinate
+        """
         
         self.x = x
         self.y = y
 
-    def cod_move(self, speed : float = 0, dir : float = 0):
+    def cod_move(self, speed : float = 0, dir : float = 0) -> None:
+        """Moves the coordinate with a specific speed in the specific direction
+
+        Args:
+            speed (float, optional): Unit: blocks per frame. Defaults to 0.
+            dir (float, optional): _description_. Defaults to 0.
+        """
 
         # If direction is   0° then the object only moves on y axis in positive direction
         # If direction is  90° then the object only moves on x axis in positive direction
@@ -178,37 +190,51 @@ class Coordinate:
         self.x += speed * np.sin(dir)
         self.y += speed * np.cos(dir)
 
-    def get_distance(self, sec_cod):
+    def get_distance(self, sec_cod) -> float:
+        """Returns the distance between two coordinates
+
+        Args:
+            sec_cod (Coordiante): other coordinate
+
+        Returns:
+            float: the distance in blocks
+        """
 
         return math.sqrt((self.x - sec_cod.x) ** 2 + (self.y - sec_cod.y) ** 2)
 
 class Spawn:
-    '''
+    """
     Spawn-Class which handles the occupation of a spawn field
-    '''
+    """
 
     def __init__(self, coordinate : Coordinate = Coordinate(3.5,3.5), direction : float = 0):
+        """Creating an object of spawn for a map
 
+        Args:
+            coordinate (Coordinate, optional): On what coordinates is the spawn. Defaults to Coordinate(3.5,3.5).
+            direction (float, optional): the direction in radians in which the player should look if he spawns there. Defaults to 0.
+        """
         self.coordinate = coordinate
 
         self.direction = direction
 
         self.lock_time = 0
 
-    def use(self):
-        '''
-        A spawn is occupied by the player
-        '''
+    def use(self) -> None:
+        """
+        Is called when a spawn is occupied by the player
+        """
+        
         #print(F"Spawn at x: {self.coordinate.x} y: {self.coordinate.y} is occupied")
 
         # The Spawn is occupied for 5 Seconds
         self.lock_time = SPAWN_LOCK_TIME
 
-    def update_occupation(self):
-        '''
+    def update_occupation(self) -> None:
+        """
         Update the status of a spawn
         > -1 means Player is using the Spawn
-        '''
+        """
 
         if self.lock_time == 1:
             pass
@@ -218,9 +244,20 @@ class Spawn:
             self.lock_time -= 1
 
 class Weapon:
+    """
+    Class of the weapon for the players
+    """
 
     def __init__(self, name : str, maxAmmunition : int, latency : int, dmg : int, activated : bool):
+        """Constructor for creating a weapon
 
+        Args:
+            name (str): name of the weapon
+            maxAmmunition (int): maximum of ammunitions the weapon can have
+            latency (int): _description_
+            dmg (int): _description_
+            activated (bool): _description_
+        """
         #print(F"Weapon: {self}")
 
         self.name :str = name

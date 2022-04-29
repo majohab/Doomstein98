@@ -64,8 +64,8 @@ class Lobby(models.Model):
     max_players     = models.PositiveSmallIntegerField  (default=4, validators=[validator.MinValueValidator(2,"To play reasonably, you should play at least with two player"), validator.MaxValueValidator(MAX_PLAYERS, "The Server can not handle more players")])
     current_players = models.PositiveSmallIntegerField  (default=0, validators=[validator.MaxValueValidator(max_players)])
     game_runtime    = models.PositiveSmallIntegerField  (default=10,validators=[validator.MinValueValidator(2), validator.MaxValueValidator(60)])
-    start_weapon    = models.ForeignKey                 (Weapon, on_delete=models.CASCADE) # Bit field - What weapons was chosen
-
+    #start_weapon    = models.ForeignKey                 (Weapon, on_delete=models.CASCADE) # Bit field - What weapons was chosen
+    #start_weapon    = models.            (Weapon, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
         """ Prints user data
