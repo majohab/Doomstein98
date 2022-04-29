@@ -6,10 +6,12 @@ services:
       context: .
     volumes:
       - static_data:/vol/web
+      - ./DOOMSTEIN98/db.sqlite3:/DOOMSTEIN98/db.sqlite3
     env_file:
       - ./.devenv/.env
     ports:
       - "587:587"
+      - "25:25"
     depends_on:
       - redis
 
@@ -37,7 +39,7 @@ services:
     volumes: 
       - ./ssl_cert/conf/:/etc/letsencrypt
       - ./ssl_cert/logs/:/var/log/letsencrypt
-      - ./ssl_cert/data/:/usr/share/nginx/html/letsencrypt
+      - ./ssl_cert/data/:/nginx/html/letsencrypt
 
 
 volumes:

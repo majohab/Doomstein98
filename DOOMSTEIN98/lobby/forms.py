@@ -26,9 +26,7 @@ class LobbyForm(ModelForm):
         }) 
         self.fields['game_runtime'].widget.attrs.update({
             'class': "formfield"
-        }) 
+        })
         self.fields['start_weapon'].widget.attrs.update({
             'class': "formfield"
         })
-
-
