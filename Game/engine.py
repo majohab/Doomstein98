@@ -893,9 +893,12 @@ class State:
         }
 
 class GameEngine(threading.Thread):
-    '''
-    Thread for handling a game
-    '''
+
+    """Thread for handling a game
+
+    Inherits:
+        Class: threading.Thread
+    """
 
     # Constructor function for GameEngine
     def __init__(self, lobbyname, mapString = None, maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME):

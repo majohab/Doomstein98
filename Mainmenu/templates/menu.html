@@ -42,8 +42,7 @@
                 {% if field.html_name == "start_weapon" %}
                     <p {% if field.field.required %} class="required"{% endif %}>{{ field.label }}:</p>
                     {% for choice in field.field.choices %}
-                        <div class="radio">
-                            
+                        <div class="field-row">
                             <label for="{{ field.auto_id }}_{{ forloop.counter }}" class="control-label">
                                 <input type="radio" name="{{ field.name }}" id="{{ field.auto_id }}_{{ forloop.counter }}" value="{{ choice.0 }}">
                                 {% if field.value == choice.0 %} checked{% endif %} {{ choice.1 }}
