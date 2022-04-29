@@ -267,7 +267,7 @@ class Font extends SpriteSet
 
 class PaddingConfig
 {
-    constructor(destWidth, destHeight, 
+    constructor(destWidth, destHeight, // -1: Don't pad, use current value instead
     pad_x, // -1: left, 0: mid, 1: right
     pad_y) // -1: bottom, 0: mid, 1: top
     {
@@ -280,15 +280,15 @@ class PaddingConfig
 
 function padSprite(sprite, paddingConfig)
 {
-    let destWidth = paddingConfig.destWidth;
-    let destHeight = paddingConfig.destHeight;
-    let pad_x = paddingConfig.pad_x;
-    let pad_y = paddingConfig.pad_y;
-
     let spriteWidth = sprite[0].length;
     let spriteHeight = sprite.length;
 
-    if (spriteWidth > destWidth || spriteHeight > destHeight)
+    let destWidth = paddingConfig.destWidth != -1 ? paddingConfig.destWidth : spriteWidth;
+    let destHeight = paddingConfig.destHeight != -1 ? paddingConfig.destHeight : spriteHeight;
+    let pad_x = paddingConfig.pad_x;
+    let pad_y = paddingConfig.pad_y;
+
+    if (spriteWidth > destWidth || spriteHeight > destHeight && destHeight != -1)
     {
         console.log("ERROR: destSize is smaller than current size");
         return sprite;
@@ -329,12 +329,12 @@ let ceilingSprite;
 let statusBarSprite;
 let weaponFrameSprite;
 
-let bulletSprite;
+let fireBulletSprite;
 let playerSprite;
 
-let handgun;
-let shotgun;
-let machinegun;
+let handgunSprite;
+let shotgunSprite;
+let machinegunSprite;
 
 let opponentSprite;
 let corpseSprite;
@@ -358,10 +358,70 @@ async function spriteReader_init()
     spriteReader_getSpriteString('StatusBar_Doom_Own',  (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
     spriteReader_getSpriteString('WeaponFrame',         (img) => { weaponFrameSprite = new Sprite(img, 1, 1); inits++ });
 
-    spriteReader_getSpriteString('Bullet_1',            (img) => { bulletSprite = new Sprite(img, 1, 1); inits++; });
+    spriteReader_getSpriteString('FireBullet',            (img) =>
+    {
+        let paddingConfig = new PaddingConfig(-1, 120, 0, -0.2);
+        fireBulletSprite = new SpriteSet(img,
+            [
+                new Still('Idle_S', 0, 0, 34, 33, paddingConfig),
+                new Still('Idle_SW', 0, 34, 56, 28, paddingConfig),
+                new Still('Idle_W', 0, 62, 67, 25, paddingConfig),
+                new Still('Idle_NW', 0, 89, 54, 26, paddingConfig),
+                new Still('Idle_N', 0, 115, 28, 30, paddingConfig),
+                new Still('Idle_NE', 0, 145, 54, 26, paddingConfig),
+                new Still('Idle_E', 0, 171, 67, 25, paddingConfig),
+                new Still('Idle_SE', 0, 198, 56, 28, paddingConfig)
+            ],
+            [
+                new StillSequence('Fly_S',
+                [
+                    new Still(0, 0, 0, 34, 33, paddingConfig),
+                    new Still(0, 34, 0, 33, 33, paddingConfig)
+                ]),
+                new StillSequence('Fly_SW',
+                [
+                    new Still(0, 0, 34, 56, 28, paddingConfig),
+                    new Still(0, 56, 34, 51, 28, paddingConfig)
+                ]),
+                new StillSequence('Fly_W',
+                [
+                    new Still(0, 0, 62, 67, 25, paddingConfig),
+                    new Still(0, 67, 62, 62, 27, paddingConfig)
+                ]),
+                new StillSequence('Fly_NW',
+                [
+                    new Still(0, 0, 89, 54, 26, paddingConfig),
+                    new Still(0, 54, 89, 46, 26, paddingConfig)
+                ]),
+                new StillSequence('Fly_N',
+                [
+                    new Still(0, 0, 115, 28, 30, paddingConfig),
+                    new Still(0, 28, 115, 25, 27, paddingConfig)
+                ]),
+                new StillSequence('Fly_NE',
+                [
+                    new Still(0, 0, 145, 54, 26, paddingConfig),
+                    new Still(0, 54, 145, 46, 27, paddingConfig)
+                ]),
+                new StillSequence('Fly_E',
+                [
+                    new Still(0, 0, 171, 67, 25, paddingConfig),
+                    new Still(0, 67, 171, 62, 27, paddingConfig)
+                ]),
+                new StillSequence('Fly_SE',
+                [
+                    new Still(0, 0, 198, 56, 28, paddingConfig),
+                    new Still(0, 56, 198, 51, 28, paddingConfig)
+                ])
+            ],
+            false
+        );
+        inits++;
+    });
 
     spriteReader_getSpriteString('DoomGuy', (img) =>
     {
+        // ToDo: Remove paddingConfig, should not be needed
         let paddingConfig = new PaddingConfig(38, 56, 0, 1);
         playerSprite = new SpriteSet(img,
             [
@@ -431,7 +491,6 @@ async function spriteReader_init()
                     new Still(0, 59, 392, 26, 56),
                     new Still(0, 85, 392, 31, 56)
                 ])
-                
             ],
             false
         );
@@ -441,7 +500,7 @@ async function spriteReader_init()
     
     spriteReader_getSpriteString('Shotgun', (img) =>
     {
-        shotgun = new SpriteSet(img,
+        shotgunSprite = new SpriteSet(img,
             [
                 new Still('Idle', 0, 39, 91, 63, weaponImagePaddingConfig)
             ],
@@ -470,7 +529,7 @@ async function spriteReader_init()
 
     spriteReader_getSpriteString('Chaingun', (img) =>
     {
-        machinegun = new SpriteSet(img,
+        machinegunSprite = new SpriteSet(img,
             [
                 new Still('Idle', 0, 0, 110, 54, weaponImagePaddingConfig)
             ],
@@ -488,7 +547,7 @@ async function spriteReader_init()
 
     spriteReader_getSpriteString('Handgun', (img) =>
     {
-        handgun = new SpriteSet(img,
+        handgunSprite = new SpriteSet(img,
             [
                 new Still('Idle', 0, 23, 50, 64, weaponImagePaddingConfig)
             ],

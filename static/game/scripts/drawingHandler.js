@@ -102,9 +102,6 @@ function drawingHandler_init()
             statusBarSprite_width: statusBarSprite.width,
             statusBarSprite_height: statusBarSprite.height,
 
-            bulletSprite_width: bulletSprite.width,
-            bulletSprite_height: bulletSprite.height,
-
             weaponFrameSprite_width: weaponFrameSprite.width,
             weaponFrameSprite_height: weaponFrameSprite.height,
 
@@ -153,6 +150,9 @@ function drawingHandler_drawCells()
 
 function drawingHandler_draw_gpu()
 {
+
+    //#region UI
+
     let healthText = getHealthText();
     healthText = padSprite(healthText, healthTextPaddingConfig);
 
@@ -163,7 +163,7 @@ function drawingHandler_draw_gpu()
 
     let weaponFrame_startY = 2 + currWeapon * 12;
 
-    let weaponToUse = currWeapon == 0 ? handgun : currWeapon == 1 ? machinegun : shotgun;
+    let weaponToUse = currWeapon == 0 ? handgunSprite : currWeapon == 1 ? machinegunSprite : shotgunSprite;
     let weaponImage;
     if (weaponAnimTime == -1)
     {
@@ -175,6 +175,8 @@ function drawingHandler_draw_gpu()
         t = 1 - t; // [0, 1): Animation; 1: Still
         weaponImage = weaponToUse.getAnimationSprite(t, 'Shoot');
     }
+
+    //#endregion
 
     //weaponImage = padSprite(weaponImage, weaponImagePaddingConfig); Note that all padding for static sprites is now down once within spriteReader
 
@@ -254,7 +256,7 @@ function drawingHandler_draw_gpu()
         return playerSprite.getSprite(spriteId);
 
     }, playerSprite.getSprite('Idle_N'));
-    addObjects(max_bullets, rec_bullets, () => bulletSprite.data, bulletSprite.data);
+    addObjects(max_bullets, rec_bullets, () => fireBulletSprite.getSprite('Idle_S'), fireBulletSprite.getSprite('Idle_S'));
     addObjects(max_corpses, rec_corpses, (object) =>
     {
         let corpse;
