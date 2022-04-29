@@ -8,14 +8,12 @@ from channels.generic.websocket import AsyncWebsocketConsumer, AsyncJsonWebsocke
 from channels.layers            import get_channel_layer
 from lobby.models               import Lobby
 from channels.db                import database_sync_to_async
+from engine                     import TICK_RATE
 
-from .engine import GameEngine
+from .engine import AVAILABLE_WEAPONS, GameEngine
 
 #TODO: Anpassen
 MAX_DEGREE = 300
-
-#TODO: fit that for customized fps
-TICK_RATE = 1/60
 
 log = logging.getLogger(__name__)
 
@@ -55,9 +53,12 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         return Lobby.objects.get(name=lobbyName)
 
-    def write_lobby(self, var, data):
+    @database_sync_to_async
+    def get_last_lobby(self):
 
-        return
+        lobby : Lobby = list(Lobby.objects.all().values())
+
+        return lobby
  
     '''
     Connect the client with the server
@@ -164,7 +165,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                     },
                 )
         except:
-            print(F"There is no lobby called {msg[lobby_key]}")
+            print(F"There is no lobby called >>{msg[lobby_key]}<<. Last is >>{await self.get_last_lobby()}<<")
 
             await self.send(json.dumps(
                 {
@@ -352,16 +353,17 @@ class GameConsumer(SyncConsumer):
         except KeyError:
             self.new_lobby(lobby, userName)
 
-    def new_lobby(self, lobby, userName):
+    def new_lobby(self, lobby : Lobby, userName : str):
         '''
         Create new Lobby internally
         '''
 
         self.engines[lobby.name] = GameEngine(
             lobby.name, 
-            maxPlayers=lobby.max_players,
-            gameMode=lobby.mode,
-            endTime=lobby.game_runtime * 1/TICK_RATE * 60,
+            maxPlayers          = lobby.max_players,
+            gameMode            = lobby.mode,
+            endTime             = lobby.game_runtime * 1/TICK_RATE * 60,
+            #availableWeapons    = lobby.start_weapon
             )
         self.engines[lobby.name].start()
         self.engines[lobby.name].join_game(userName)
@@ -422,7 +424,8 @@ class GameConsumer(SyncConsumer):
 
         # Stop the thread by ending its tasks
         #self.engines[groupName].running = False
-        self.engines.pop(lobbyName).running = False
+        self.engines[lobbyName].startFlag = False
+        self.engines.pop(lobbyName).stopFlag = True
 
         # remove all player from the lobby list
         self.lobbies = {key:lob for key, lob in self.lobbies.items() if lob != lobbyName}
