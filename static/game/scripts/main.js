@@ -15,8 +15,9 @@ All this will then be processed by the server and send back to the client for th
 const fov = Math.PI / 3;
 const mapHeight = 16;   // 38
 const mapWidth = 16;    // 87
-const max_objects = 100;
-const max_corpses = 2;
+const max_corpses = 5;
+const max_opponents = 5;
+const max_bullets = 100;
 
 // Runtime variables
 let lastFrameTime;
@@ -27,8 +28,6 @@ let map_numbers;
 let playerX;
 let playerY;
 let playerAngle;
-let objects;
-let objectCount;
 let opponents;
 let currWeapon;
 let health;
@@ -54,33 +53,25 @@ async function init()
 
 function initRuntimeVariables()
 {
-    initObjects();
-
     ammo = 200;
     health = 200;
     currWeapon = 2;
-    objectCount = 0;
+    weaponAnimTime = -1;
 
     //#region Init Textures with their biggest size
     let healthText = getHealthText();
     healthTextBounds_sizeX = healthText[0].length;
     healthTextBounds_sizeY = healthText.length;
+    healthTextPaddingConfig = new PaddingConfig(healthText[0].length, healthText.length, -1, 0)
 
     let ammoText = getAmmoText();
     ammoTextBounds_sizeX = ammoText[0].length;
     ammoTextBounds_sizeY = ammoText.length;
+    ammoTextPaddingConfig = new PaddingConfig(ammoTextBounds_sizeX, ammoTextBounds_sizeY, -1, 0);
 
-    weaponImageBounds = [200, 102];
     //#endregion
 
     lastFrameTime = Date.now();
-}
-
-function initObjects()
-{
-    objects = [];
-    for (let i = 0; i < max_objects; i++)
-        objects.push([-10, -10, -1, -1]); // x, y, spriteIndex, t (from animation)
 }
 
 
@@ -157,11 +148,6 @@ function initMap()
     map_numbers = new Array(mapString.length);
     for(i = 0; i < map_numbers.length; i++)
         map_numbers[i] = mapString.charCodeAt(i);
-
-    //movingObjects = [
-    //    new MovingObject(8.5, 8.5, bulletSprite),
-    //    new MovingObject(7.5, 7.5, bulletSprite)
-    //]
 }
 
 function gameLoop()
