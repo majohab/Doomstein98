@@ -1,7 +1,4 @@
 from django.db import models
-import django.core.validators as validator
-
-MAX_PLAYERS = 10
 
 # Create your models here.
     
@@ -35,11 +32,11 @@ class Weapon(models.Model):
     Returns:
         Weapon: Weapon object
     """
-    name        = models.CharField                      (max_length=50, unique=True)
-    ammunition  = models.PositiveSmallIntegerField      (default=30,  validators=[validator.MinValueValidator(1, 'The Weapon has to have at least 1 bullet')])
-    latency     = models.FloatField                     (default=0.1, validators=[validator.MinValueValidator(0.01),validator.MaxValueValidator(10)]) # in sec
-    damage      = models.PositiveSmallIntegerField      (default=20,  validators=[validator.MinValueValidator(1, "The Weapon has to do at least one damage")])
-    skin        = models.PositiveSmallIntegerField      (default=1)
+    name = models.CharField(max_length=50, unique=True)
+    ammunition = models.IntegerField(default=30)
+    latency = models.DecimalField(max_digits=10, decimal_places=2, default=0.1)
+    damage = models.DecimalField(max_digits=10, decimal_places=2, default=20)
+    skin = models.IntegerField(default=1)
 
     def __str__(self) -> str:
         """ Prints user data
@@ -58,14 +55,14 @@ class Lobby(models.Model):
     Returns:
         Lobby: Lobby object
     """
-    name            = models.CharField                  (max_length=50, unique=True)
-    map             = models.ForeignKey                 (Map, on_delete=models.CASCADE)
-    mode            = models.PositiveSmallIntegerField  (default=0)
-    max_players     = models.PositiveSmallIntegerField  (default=4, validators=[validator.MinValueValidator(2,"To play reasonably, you should play at least with two player"), validator.MaxValueValidator(MAX_PLAYERS, "The Server can not handle more players")])
-    current_players = models.PositiveSmallIntegerField  (default=0, validators=[validator.MaxValueValidator(max_players)])
-    game_runtime    = models.PositiveSmallIntegerField  (default=10,validators=[validator.MinValueValidator(2), validator.MaxValueValidator(60)])
-    #start_weapon    = models.ForeignKey                 (Weapon, on_delete=models.CASCADE) # Bit field - What weapons was chosen
-    #start_weapon    = models.            (Weapon, on_delete=models.CASCADE)
+    name = models.CharField(max_length=50, unique=True)
+    map = models.ForeignKey(Map, on_delete=models.CASCADE)
+    mode = models.IntegerField(default=0)
+    max_players = models.SmallIntegerField(default=4)
+    current_players = models.SmallIntegerField(default=0)
+    game_runtime = models.IntegerField(default=10)
+    start_weapon = models.ForeignKey(Weapon, on_delete=models.CASCADE)
+
 
     def __str__(self) -> str:
         """ Prints user data

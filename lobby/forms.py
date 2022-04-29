@@ -1,4 +1,4 @@
-from django.forms import ModelForm, CheckboxSelectMultiple
+from django.forms import ModelForm
 from .models import Lobby, Weapon, Map
 
 # Create your forms here
@@ -27,6 +27,8 @@ class LobbyForm(ModelForm):
         self.fields['game_runtime'].widget.attrs.update({
             'class': "formfield"
         }) 
-        #self.fields["start_weapon"].widget = CheckboxSelectMultiple
+        self.fields['start_weapon'].widget.attrs.update({
+            'class': "formfield"
+        })
 
 
