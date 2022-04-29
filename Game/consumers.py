@@ -1,15 +1,13 @@
 
 import logging
 import json
-from msilib import type_key
 
-
-from asgiref.sync import  async_to_sync
-from channels.consumer import SyncConsumer
+from asgiref.sync               import  async_to_sync
+from channels.consumer          import SyncConsumer
 from channels.generic.websocket import AsyncWebsocketConsumer, AsyncJsonWebsocketConsumer
-from channels.layers import get_channel_layer
-from channels.auth import UserLazyObject
-from django.utils.translation import gettext
+from channels.layers            import get_channel_layer
+from lobby.models               import Lobby
+from channels.db                import database_sync_to_async
 
 from .engine import GameEngine
 
@@ -17,7 +15,7 @@ from .engine import GameEngine
 MAX_DEGREE = 300
 
 #TODO: fit that for customized fps
-TICK_RATE = 0.016
+TICK_RATE = 1/60
 
 log = logging.getLogger(__name__)
 
@@ -51,6 +49,15 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     The asynchronous player class which handles the incoming messages from the client
     And send the messages to the client back
     '''
+
+    @database_sync_to_async
+    def get_lobby(self, lobbyName):
+
+        return Lobby.objects.get(name=lobbyName)
+
+    def write_lobby(self, var, data):
+
+        return
  
     '''
     Connect the client with the server
@@ -101,7 +108,6 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         forwarding = {
             update_key    :  self.validate(msg),
-            joinGame_key  :  self.join_game(msg),
             joinLobby_key :  self.join_lobby(msg),
         }
 
@@ -116,51 +122,59 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
 
     async def join_lobby(self, msg):
-        
-        print(F"Join lobby {msg[lobby_key]}")
 
-        self.channelLayer = get_channel_layer()
-        self.groupName = msg[lobby_key]
+        try:
+            #if there is a lobby
+            lobby = await self.get_lobby(msg[lobby_key])
+            print(F"Join lobby {lobby.name}")
 
-        # Has map already been sent?
-        self.map = 0
+            try:
+                self.scope["lobby"]
+            except:
+                #Default value
+                self.scope["lobby"] = ""
 
-    '''
-    If Player joined the game
-    '''
-    async def join_game(self, msg: dict):
+            # If the max player was reached and the player is not currently in the game
+            if(lobby.current_players >= lobby.max_players and not lobby.name in self.scope["user"]["lobby"]):
+                print(F"Too many players in Lobby {lobby.name}")
+                await self.close()
+            else:
+                self.channelLayer = get_channel_layer()
+                self.groupName = msg[lobby_key]
 
-        print(F"Joining {self.channel_name}")
+                # Has map already been sent?
+                self.map = 0
 
-        # Add the player to the channel from which the information will be recieved about the status
-        # Join a common group with all other Players
-        await self.channelLayer.group_add(
-            self.groupName, 
-            self.channel_name
-        )
+                #print(F"Joining {self.channel_name}")
 
-        '''
-        await self.channelLayer.group_send(
-            self.groupName,
-            {
-                "type": "message", 
-                "msg": {
-                    "message": F"Spieler {self.username} tritt dem Spiel bei", 
-                    "channel": self.channel_name,
-                },
-            },
-        )
-        '''
-        
-        await self.channelLayer.send(
-            "game_engine",
-            {
-                "type"       : "new.player", # execute new_player() 
-                player_key   : self.username, 
-                channel_key  : self.channel_name, #channel
-                lobby_key    : msg[lobby_key], #lobby
-            },
-        )
+                # Add the player to the channel from which the information will be recieved about the status
+                # Join a common group with all other Players
+                await self.channelLayer.group_add(
+                    self.groupName, 
+                    self.channel_name
+                )
+
+                await self.channelLayer.send(
+                    "game_engine",
+                    {
+                        "type"       : "new.player", # execute new_player() 
+                        player_key   : self.username, 
+                        channel_key  : self.channel_name, #channel
+                        lobby_key    : msg[lobby_key], #lobby
+                    },
+                )
+        except:
+            print(F"There is no lobby called {msg[lobby_key]}")
+
+            await self.send(json.dumps(
+                {
+                    type_key: message_key,
+                    message_key: F"Die Lobby {msg[lobby_key]} existiert nicht",
+                }
+            ))
+
+            # close connection with client
+            await self.close()
 
     async def message(self, msg):
 
@@ -275,47 +289,85 @@ class GameConsumer(SyncConsumer):
         Join an existing game or Create a new game
         '''
 
-        lobbyname = event[lobby_key]
-        username = event[player_key]
+        lobbyName : str = event[lobby_key]
+        userName  : str = event[player_key]
+        channelName : str = event[channel_key]
 
-        #print(F"Player {username} joined lobby: {lobbyname}")
+        lobby : Lobby = Lobby.objects.get(name=lobbyName)
+
+        try:
+            # if the game exists he is trying to join and is on the forbidden list
+            if(userName in self.engines[lobbyName].playerForbidden):
+                print(F"Player {userName} is forbidden to join the game {lobbyName}")
+                
+                print(channelName)
+
+                async_to_sync(self.channelLayer.send)(
+                    channelName, 
+                    {
+                    "type"   : "message",
+                    message_key: F"Player {userName} is forbidden to join the game {lobbyName} because he already joined the game before. It would be cheatin", 
+                    }
+                )
+                return
+        except KeyError:
+            pass
 
         # is player already in a game?
         try:
-            print(F"Player already in a game {self.lobbies[username]}")
-            return
-        except:
+            print(F"Player {userName} already in a game {self.lobbies[userName]}")
+
+            # if the game he is trying to join his current game
+            if(self.lobbies[userName] == lobbyName):
+
+                if(len([player for player in self.engines[lobbyName].playerQueue if userName == player.name]) != 0):
+                    #rejoin the game
+                    self.engines[lobbyName].join_game(userName)
+                    
+                    print("Player is rejoining the game")
+
+                elif(len([player for player in self.engines[lobbyName].playerQueue if userName == player.name]) != 0):
+
+                    print("Player is trying joining the game even though he is already in")
+                
+                return
+
+            # if the game is some different game, so that player is going to log out from his old game
+            else:
+                # if the game exists he wants to join then replace the current status 
+                self.replace_lobby(userName, lobbyName, lobby)
+
+        # if he is not already in a game
+        except KeyError:
             # for further information in what game the player is
-            self.lobbies[username] = lobbyname 
+            self.lobbies[userName] = lobbyName 
+            lobby.current_players += 1
+            lobby.save()
 
         # look if Lobby is new
         try:
-            if len(self.engines[lobbyname].state.players) < self.engines[lobbyname].maxPlayers:
-                self.engines[lobbyname].join_game(username)
-            else:
-                async_to_sync(self.channelLayer.send)(
-                event[channel_key], #channel
-                {
-                    "type": "message", 
-                    message_key: { #message
-                        message_key: F"Es gibt schon zu viele Spieler in der Lobby: {event[lobby_key]}",
-                        channel_key: self.channel_name, #channel_name
-                    }, 
-                },
-            )
+            self.engines[lobbyName].join_game(userName)
 
         # if the game does not exist, create it
         except KeyError:
+            self.new_lobby(lobby, userName)
 
-            self.engines[lobbyname] = GameEngine(lobbyname)
-            self.engines[lobbyname].start()
-            self.engines[lobbyname].join_game(username)
+    def new_lobby(self, lobby, userName):
+        '''
+        Create new Lobby internally
+        '''
 
-            #TODO: Only for TESTING
-            self.engines[lobbyname].startFlag = True
+        self.engines[lobby.name] = GameEngine(
+            lobby.name, 
+            maxPlayers=lobby.max_players,
+            gameMode=lobby.mode,
+            endTime=lobby.game_runtime * 1/TICK_RATE * 60,
+            )
+        self.engines[lobby.name].start()
+        self.engines[lobby.name].join_game(userName)
 
-        #print(self.lobbies)
-
+        #TODO: Only for TESTING
+        self.engines[lobby.name].startFlag = True
 
     def validate_event(self, event):
 
@@ -324,24 +376,20 @@ class GameConsumer(SyncConsumer):
         '''
         Send the data to engine
         '''
-        self.engines[self.lobbies[username]].apply_events(username, event[message_key]) #msg
+        try:
+            self.engines[self.lobbies[username]].apply_events(username, event[message_key])
+        except:
+            print(self.lobbies)
 
     def win(self, event):
         '''
         handling when game is finished
         '''
-        groupName = event[group_key] #group
-
-        # Stop the thread by ending its tasks
-        self.engines[groupName].running = False
-        self.engines.remove(groupName)
-        
-        # remove all player from the lobby list
-        self.lobbies = {lobby : self.lobbies[lobby] for lobby in self.lobbies.values() if lobby != groupName}
+        lobbyName = event[group_key] #group
 
         # Synchronize the channel's information and send them to all participants
         async_to_sync(self.channelLayer.group_send)(
-            groupName, 
+            lobbyName, 
             {
              "type"   : "win",
              time_key : event[time_key], #time
@@ -349,24 +397,54 @@ class GameConsumer(SyncConsumer):
             }
         )
 
+        # Delete the lobby from the DataBase
+        self.delete_lobby(lobbyName)
+
     def close_game(self, event):
         '''
         When lobby is closed due to inactivity
         '''
 
-        groupName = event[group_key] #group
+        lobbyName = event[group_key] #group
 
-        print(F"Lobby {groupName} is closed due to inactivity")
+        print(F"Lobby {lobbyName} is closed due to inactivity")
+       
+        # Delete the lobby from the DataBase
+        self.delete_lobby(lobbyName)
+
+    def delete_lobby(self, lobbyName : str) -> None:
+        '''
+        Delete Lobby in DataBase, Stop the game, set all User free
+        '''
+        print(F"Lobby {lobbyName} has been deleted")
+
+        Lobby.objects.get(name=lobbyName).delete()
 
         # Stop the thread by ending its tasks
         #self.engines[groupName].running = False
-        self.engines.pop(groupName).running = False
-        
+        self.engines.pop(lobbyName).running = False
+
         # remove all player from the lobby list
-        self.lobbies = {lobby : self.lobbies[lobby] for lobby in self.lobbies.values() if lobby != groupName}
-       
+        self.lobbies = {key:lob for key, lob in self.lobbies.items() if lob != lobbyName}
         
+    def replace_lobby(self, userName : str, lobbyName : str, lobby : Lobby) -> None:
+        '''
+        Remove the player from current game and put him there on a forbidden list
+        Add the player to a new game
+        '''
+
+        print(F"Player {userName} is moving from {self.lobbies[userName]} to {lobbyName}")
 
 
+        # Remove the Player from former game
+        currLobby : Lobby = Lobby.objects.get(name=self.lobbies[userName])
+        currLobby.current_players -= 1
+        currLobby.save()
 
+        # Add the player to the forbidden list of the game he left
+        self.engines[self.lobbies[userName]].playerForbidden.append(userName)
 
+        # Add Player to current game
+        self.lobbies[userName] = lobbyName 
+        lobby.current_players += 1
+        lobby.save()
