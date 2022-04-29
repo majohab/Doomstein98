@@ -35,6 +35,8 @@ const justHit_animation       = 'h_a';
 const weapon_change_animation = 'w_a';
 
 let rec_corpses = [];
+let rec_bullets = [];
+let rec_opponents = [];
 
 function socketHandler_init()
 {
@@ -85,35 +87,31 @@ function socketHandler_init()
 
         if (data[type_key] == update_key)
         {
-
             playerX     = data[player_key][userName][x_coordinate_key];
             playerY     = data[player_key][userName][y_coordinate_key];
             playerAngle = data[player_key][userName][direction_key];
             
 
-            initObjects();
+            rec_bullets = data[bullet_key];
 
-            let i = 0;
-            let rec_bullets = data[bullet_key];
-            for (i = 0; i < rec_bullets.length && i < max_objects; i++)
-                objects[i] = [rec_bullets[i][x_coordinate_key], rec_bullets[i][y_coordinate_key], 0, 0];
-            o = rec_bullets.length;
-
-            let rec_users = data[player_key];
-            for (users_name in rec_users)
+            //rec_users = data[player_key];
+            //for (users_name in rec_users)
+            //{
+            //    if (users_name != userName && i < max_objects)
+            //    {
+            //        objects[i] = [rec_users[users_name][x_coordinate_key], rec_users[users_name][y_coordinate_key], 1, 0]
+            //        i++;
+            //    }
+            //}
+            let rec_opponents_tmp = data[player_key]
+            rec_opponents = [];
+            for (users_name in rec_opponents_tmp)
             {
-                if (users_name != userName && i < max_objects)
-                {
-                    objects[i] = [rec_users[users_name][x_coordinate_key], rec_users[users_name][y_coordinate_key], 1, 0]
-                    i++;
-                }
+                if (users_name != userName)
+                    rec_opponents.push(rec_opponents_tmp[users_name]);
             }
 
-            objectCount = i;
-
-
             rec_corpses = data[corpses_key];
-            console.log(rec_corpses);
 
 
             ammo        = data[player_key][userName][ammo_key];
