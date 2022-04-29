@@ -246,8 +246,6 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             else:
                 self.map += 1
                 pass
-        
-        #event[isd]
 
         # send the update information to the client
         await self.send(json.dumps(event))

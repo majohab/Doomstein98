@@ -77,8 +77,19 @@ function socketHandler_init()
 
         let data = JSON.parse(e.data)
 
+        console.log(data);
+
         if (data[type_key] == update_key)
         {
+            if (mapString == null)
+            {
+                if (data[map_key] != null)
+                    onMapReceived(data[map_key]['l'], data[map_key]['m']);
+                else
+                    console.log('Cannot initialize map: Map was not received');
+            }
+
+
             playerX     = data[player_key][userName][x_coordinate_key];
             playerY     = data[player_key][userName][y_coordinate_key];
             playerAngle = data[player_key][userName][direction_key];
@@ -118,15 +129,6 @@ function socketHandler_init()
 
             let new_idx = currWeapon
 
-            // E key
-            // Relativer Index
-            if(keyStates[69] && !(keyState69)){
-                new_idx += 1
-                keyState69 = true
-            }else if(!keyStates[69]){
-                keyState69 = false
-            }
-
             // Mousewheel
             if(mouseWheelDelta > 0){
                 new_idx += 1
@@ -134,6 +136,15 @@ function socketHandler_init()
             }else if(mouseWheelDelta < 0){
                 new_idx -= 1
                 mouseWheelDelta = 0
+            }
+
+            // E key
+            // Relativer Index
+            if(keyStates[69] && !(keyState69)){
+                new_idx += 1
+                keyState69 = true
+            }else if(!keyStates[69]){
+                keyState69 = false
             }
 
             // 1 key
