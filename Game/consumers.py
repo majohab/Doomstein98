@@ -50,7 +50,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     """
 
     @database_sync_to_async
-    def get_lobby(self, lobbyName) -> Lobby:
+    def get_lobby(self, lobbyName) -> Lobby | None:
         """Is an asynchronous function to get lobby information about the recieved lobbyname. If there is no lobby called like 'lobbyname', an exception is raised
 
         Args:
@@ -60,7 +60,8 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             Lobby: information about lobby
         """
 
-        return Lobby.objects.get(name=lobbyName)
+        return Lobby.objects.filter(name=lobbyName).first()
+        #return Lobby.objects.get(name=lobbyName)
 
     @database_sync_to_async
     def get_last_lobby(self) -> list[Lobby]:
@@ -147,19 +148,21 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             msg (dict): contains the user information and the lobby name
         """
 
-        try:
-            #if there is a lobby
-            lobby = await self.get_lobby(msg[lobby_key])
+        #if there is a lobby
+        lobby = await self.get_lobby(msg[lobby_key])
+
+        if(lobby):
             print(F"Join lobby {lobby.name}")
 
             try:
                 self.scope["lobby"]
             except:
+                print("Set default value")
                 #Default value
                 self.scope["lobby"] = ""
 
             # If the max player was reached and the player is not currently in the game
-            if(lobby.current_players >= lobby.max_players and not lobby.name in self.scope["user"]["lobby"]):
+            if(lobby.current_players >= lobby.max_players and not lobby.name in self.scope["lobby"]):
                 print(F"Too many players in Lobby {lobby.name}")
                 await self.close()
             else:
@@ -187,7 +190,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                         lobby_key    : msg[lobby_key], #lobby
                     },
                 )
-        except:
+        else:
             print(F"There is no lobby called >>{msg[lobby_key]}<<. Last is >>{await self.get_last_lobby()}<<")
 
             await self.send(json.dumps(
@@ -346,7 +349,8 @@ class GameConsumer(SyncConsumer):
         userName  : str = event[player_key]
         channelName : str = event[channel_key]
 
-        lobby : Lobby = Lobby.objects.get(name=lobbyName)
+        lobby : Lobby = Lobby.objects.filter(name=lobbyName).first()
+        #lobby : Lobby = Lobby.objects.get(name=lobbyName)
 
         try:
             # if the game exists he is trying to join and is on the forbidden list
@@ -418,7 +422,6 @@ class GameConsumer(SyncConsumer):
             maxPlayers          = lobby.max_players,
             gameMode            = lobby.mode,
             endTime             = lobby.game_runtime * 1/TICK_RATE * 60,
-            #availableWeapons    = lobby.start_weapon
             )
         self.engines[lobby.name].start()
         self.engines[lobby.name].join_game(userName)
@@ -488,7 +491,8 @@ class GameConsumer(SyncConsumer):
         
         print(F"Lobby {lobbyName} has been deleted")
 
-        Lobby.objects.get(name=lobbyName).delete()
+        # Find and delete the lobby
+        Lobby.objects.filter(name=lobbyName).first().delete()
 
         # Stop the thread by ending its tasks
         #self.engines[groupName].running = False
@@ -512,7 +516,8 @@ class GameConsumer(SyncConsumer):
 
 
         # Remove the Player from former game
-        currLobby : Lobby = Lobby.objects.get(name=self.lobbies[userName])
+        #currLobby : Lobby = Lobby.objects.get(name=self.lobbies[userName])
+        currLobby : Lobby = Lobby.objects.filter(name=self.lobbies[userName]).first()
         currLobby.current_players -= 1
         currLobby.save()
 

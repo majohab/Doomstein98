@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=50, unique=True)),
-                ('topology', models.CharField(max_length=500, unique=True)),
+                ('string', models.CharField(max_length=500, unique=True)),
                 ('description', models.CharField(max_length=200)),
             ],
         ),
@@ -42,7 +42,6 @@ class Migration(migrations.Migration):
                 ('current_players', models.SmallIntegerField(default=0)),
                 ('game_runtime', models.IntegerField(default=10)),
                 ('map', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='lobby.map')),
-                #('start_weapon', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='lobby.weapon')),
             ],
         ),
     ]
