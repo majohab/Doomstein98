@@ -19,8 +19,8 @@ class LobbyAdminConfig(admin.ModelAdmin):
     """
     search_fields = ('name', 'current_players')
     list_filter = ('map', 'max_players', 
-                   'current_players', 'game_runtime',
-                   'start_weapon')
+                   'current_players', 'game_runtime')#,
+                   #'start_weapon')
     ordering = ('name', 'current_players')
     list_display = ('name', 'map', 
                     'max_players', 'game_runtime')
@@ -28,7 +28,7 @@ class LobbyAdminConfig(admin.ModelAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('name', 'map', 'max_players', 'current_players', 'game_runtime', 'start_weapon')
+            'fields': ('name', 'map', 'max_players', 'current_players', 'game_runtime')#, 'start_weapon')
         }),
     )
 

@@ -11,7 +11,7 @@ class LobbyForm(ModelForm):
     """
     class Meta():
         model = Lobby
-        fields = ('name', 'map', 'max_players', 'game_runtime', 'start_weapon')
+        fields = ('name', 'map', 'max_players', 'game_runtime')#, 'start_weapon')
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

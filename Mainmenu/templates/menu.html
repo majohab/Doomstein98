@@ -39,27 +39,17 @@
 
         {% for field in form %}
             <div class="field-row-stacked register">
-                {% if field.html_name == "start_weapon" %}
-                    <p {% if field.field.required %} class="required"{% endif %}>{{ field.label }}:</p>
-                    {% for choice in field.field.choices %}
-                        <div class="field-row">
-                            <input type="c" name="{{ field.name }}" id="{{ field.auto_id }}_{{ forloop.counter }}" value="{{ choice.0 }}">
-                            {% choice.0 %}
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    {% if field.html_name == "name" %}
-                        <label class="label"><strong>{{ field.label_tag }}</strong></label>
-                    {% else %}
-                        <label><strong>{{ field.label_tag }}</strong></label>
-                    {% endif %}
+            {% if field.html_name == "name" %}
+                <label class="label"><strong>{{ field.label_tag }}</strong></label>
+            {% else %}
+                <label><strong>{{ field.label_tag }}</strong></label>
+            {% endif %}
 
-                    {{ field }}
-                    
-                    {% if field.help_text %}
-                        <span class="helptext">{{ field.help_text }}</span>
-                    {% endif %}
-                {% endif %}
+            {{ field }}
+            
+            {% if field.help_text %}
+                <span class="helptext">{{ field.help_text }}</span>
+            {% endif %}
             </div>
 
             {% for error in field.errors %}

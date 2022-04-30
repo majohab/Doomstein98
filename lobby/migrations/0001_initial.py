@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ('current_players', models.SmallIntegerField(default=0)),
                 ('game_runtime', models.IntegerField(default=10)),
                 ('map', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='lobby.map')),
-                ('start_weapon', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='lobby.weapon')),
+                #('start_weapon', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='lobby.weapon')),
             ],
         ),
     ]
