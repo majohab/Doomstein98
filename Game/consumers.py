@@ -4,7 +4,7 @@ import json
 
 from asgiref.sync               import  async_to_sync
 from channels.consumer          import SyncConsumer
-from channels.generic.websocket import AsyncWebsocketConsumer, AsyncJsonWebsocketConsumer
+from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers            import get_channel_layer
 from lobby.models               import Lobby
 from channels.db                import database_sync_to_async
@@ -419,6 +419,7 @@ class GameConsumer(SyncConsumer):
 
         self.engines[lobby.name] = GameEngine(
             lobby.name, 
+            lobby.map,
             maxPlayers          = lobby.max_players,
             gameMode            = lobby.mode,
             endTime             = lobby.game_runtime * 1/TICK_RATE * 60,
