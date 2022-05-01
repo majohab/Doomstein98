@@ -23,12 +23,14 @@ let healthTextBounds_startY;
 let healthTextBounds_sizeX;
 let healthTextBounds_sizeY;
 let healthTextBounds_scale;
+let healthTextPaddingConfig;
 
 let ammoTextBounds_startX;
 let ammoTextBounds_startY;
 let ammoTextBounds_sizeX;
 let ammoTextBounds_sizeY;
 let ammoTextBounds_scale;
+let ammoTextPaddingConfig;
 
 let weaponImageBounds;
 
@@ -100,12 +102,6 @@ function drawingHandler_init()
             statusBarSprite_width: statusBarSprite.width,
             statusBarSprite_height: statusBarSprite.height,
 
-            bulletSprite_width: bulletSprite.width,
-            bulletSprite_height: bulletSprite.height,
-
-            playerSprite_width: playerSprite.width,
-            playerSprite_height: playerSprite.height,
-
             weaponFrameSprite_width: weaponFrameSprite.width,
             weaponFrameSprite_height: weaponFrameSprite.height,
 
@@ -126,20 +122,18 @@ function drawingHandler_init()
     gpu_kernel = gpu.createKernel(
         function(playerX, playerY, playerAngle, 
             map_numbers,
-            wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, playerSprite, weaponFrameSprite,
-            objects, objectCount,
+            wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,
             weaponImage, weaponImageBounds,
             healthText, bulletsText,
             weaponFrame_startY,
-            corpses, corpseCount, corpses_startIndezes) {
+            objectArray, objectStartIndezes, objectBounds, objectCount) {
             drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
                 map_numbers,
-                wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, playerSprite, weaponFrameSprite,
-                objects, objectCount,
+                wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,
                 weaponImage, weaponImageBounds,
                 healthText, bulletsText,
                 weaponFrame_startY,
-                corpses, corpseCount, corpses_startIndezes);
+                objectArray, objectStartIndezes, objectBounds, objectCount);
         },
         gpu_kernel_settings
     );
@@ -156,17 +150,20 @@ function drawingHandler_drawCells()
 
 function drawingHandler_draw_gpu()
 {
+
+    //#region UI
+
     let healthText = getHealthText();
-    healthText = padSprite(healthText, healthTextBounds_sizeX, healthTextBounds_sizeY, -1, 0);
+    healthText = padSprite(healthText, healthTextPaddingConfig);
 
     
     let ammoText = getAmmoText();
-    ammoText = padSprite(ammoText, ammoTextBounds_sizeX, ammoTextBounds_sizeY, -1, 0);
+    ammoText = padSprite(ammoText, ammoTextPaddingConfig);
 
 
     let weaponFrame_startY = 2 + currWeapon * 12;
 
-    let weaponToUse = currWeapon == 0 ? handgun : currWeapon == 1 ? machinegun : shotgun;
+    let weaponToUse = currWeapon == 0 ? handgunSprite : currWeapon == 1 ? machinegunSprite : shotgunSprite;
     let weaponImage;
     if (weaponAnimTime == -1)
     {
@@ -179,55 +176,149 @@ function drawingHandler_draw_gpu()
         weaponImage = weaponToUse.getAnimationSprite(t, 'Shoot');
     }
 
-    weaponImage = padSprite(weaponImage, weaponImageBounds[0], weaponImageBounds[1], 0, 1);
+    //#endregion
 
-    let corpses = [];
-    let corpses_startIndezes = [];
+    //weaponImage = padSprite(weaponImage, weaponImagePaddingConfig); Note that all padding for static sprites is now down once within spriteReader
 
-    for (let i = 0; i < max_corpses; i++)
+    let objectArray = [];
+    let objectStartIndezes = [];
+    let objectBounds = [];
+    let objectCount = 0;
+
+    for (let i = 0; i < max_opponents * max_bullets * max_corpses; i++)
     {
-        corpses_startIndezes.push(corpses.length);
-        corpses = corpses.concat(corpseSprite.getSprite('Idle'));
-        //console.log(corpses);
+        objectStartIndezes.push(0);
+        objectBounds.push([0, 0, 0, 0]);
     }
 
-    let corpseCount = corpses_startIndezes.length;
+    function addObjects(maxCount, rec_objects, presentObject_Function, defaultObject)
+    {
+        for (let i = 0; i < maxCount; i++)
+        {
+            let newObject;
 
-    console.log(corpses_startIndezes);
+            if (i < rec_objects.length)
+            {
+                let x = rec_objects[i][x_coordinate_key];
+                let y = rec_objects[i][y_coordinate_key];
 
-    //for (let i = 0; i < rec_corpses.length && i < max_corpses; i++)
-    //{
-    //    let corpse = rec_corpses[i];
-    //    let t = corpse[duration_key];
-    //    console.log(t);
-    //    t -= 500;
-    //    if (t > 0)
-    //    {
-    //        t = t / 100;
-    //        t = 1 - t;
-    //        corpses[i] = corpseSprite.getAnimationSprite(t, 'Shoot');
-    //    }
-    //}
+                newObject = presentObject_Function(rec_objects[i]);
+                
+                objectStartIndezes[objectCount] = objectArray.length;
+                objectBounds[objectCount] = [x, y, newObject[0].length, newObject.length];
+                objectCount++;
+            }
+            else
+            {
+                newObject = defaultObject;
+            }
 
+            objectArray = objectArray.concat(newObject.flat(1));
+        }
+    }
+
+    addObjects(max_opponents, rec_opponents, (object) =>
+    {
+        function getDeltaBetweenAngles(a, b)
+        {
+            let delta = a - b;
+            delta += (delta > PI) ? -(2*PI) : (delta < -PI) ? (2*PI) : 0;
+            return delta
+        }
+
+        const PI = Math.PI;
+
+        let vecX = object[x_coordinate_key] - playerX;
+        let vecY = object[y_coordinate_key] - playerY;
+        let angleToOpponent = Math.atan2(vecX, vecY); // Yeah usually it is (y, x), but it only works like this (maybe there is (x, y) in the backend?)
+
+        // delta is the angle which to opponent looks in relative to the vector between opponent and self
+        let delta = getDeltaBetweenAngles(object[direction_key], angleToOpponent);
+
+        let spriteDir;
+        if (delta > PI * (7 / 8) || delta <= -PI * (7 / 8))
+            spriteDir = 'S';
+        else if (delta > PI * (5 / 8))
+            spriteDir = 'SE';
+        else if (delta > PI * (3 / 8))
+            spriteDir = 'E';
+        else if (delta > PI * (1 / 8))
+            spriteDir = 'NE';
+        else if (delta > -PI * (1 / 8))
+            spriteDir = 'N';
+        else if (delta > -PI * (3 / 8))
+            spriteDir = 'NW';
+        else if (delta > -PI * (5 / 8))
+            spriteDir = 'W'
+        else if (delta > -PI * (7 / 8))
+            spriteDir = 'SW'
+        else
+        {
+            spriteDir = 'S';
+            console.error('Something went wrong');
+        }
+
+        let animationName;
+        let t = object[move_animation_key];
+
+        if (t == -1)
+        {
+            animationName = 'Idle';
+        }
+        else
+        {
+            animationName = 'Walk';
+
+            let animTime = 20;
+            t /= animTime;
+
+            // Check whether opponent moves in opposite direction (angle between movement and looking >90)
+            let movementDelta = getDeltaBetweenAngles(object[direction_key], object[direction_move_key]);
+            if (movementDelta > PI*0.5 || movementDelta < -PI*0.5)
+                t = 1 - t;
+        }
+        
+        return playerSprite.getAnimationSprite(t, animationName + '_' + spriteDir);
+
+    }, playerSprite.getSprite('Idle_N'));
+    addObjects(max_bullets, rec_bullets, () => fireBulletSprite.getSprite('Idle_S'), fireBulletSprite.getSprite('Idle_S'));
+    addObjects(max_corpses, rec_corpses, (object) =>
+    {
+        let corpse;
+        let t = object[duration_key];
+        let totalTime = 600;
+        let animTime = 20;
+        t -= totalTime - animTime;
+        if (t > 0)
+        {
+            t = t / animTime;
+            t = 1 - t;
+            corpse = corpseSprite.getAnimationSprite(t, 'Explode');
+        }
+        else
+        {
+            corpse = corpseSprite.getSprite('Idle');
+        }
+        return corpse;
+        
+    }, corpseSprite.getSprite('Idle'));
 
     buffer = gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
-        wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, bulletSprite.data, playerSprite.data, weaponFrameSprite.data,
-        objects, objectCount,
+        wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
         weaponImage, weaponImageBounds,
         healthText, ammoText,
         weaponFrame_startY,
-        corpses, corpseCount, corpses_startIndezes);
+        objectArray, objectStartIndezes, objectBounds, objectCount);
 }
 
 function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // Coordinates and Angle
     map_numbers,                                                            // Map
-    wallSprite, floorSprite, ceilingSprite, statusBarSprite, bulletSprite, playerSprite, weaponFrameSprite,    // World Sprites
-    objects, objectCount,                                                   // Bullets and Opponents                                                
+    wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,    // World Sprites                                              
     weaponImage, weaponImageBounds,
     healthText, bulletsText,            // Status-Bar-Texts
     weaponFrame_startY,                 // Status-Bar-Weapon-Frame
-    corpses, corpseCount, corpses_startIndezes)                                                     
+    objectArray, objectStartIndezes, objectBounds, objectCount)                                                     
 {
     //#region Init
 
@@ -554,89 +645,15 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
         //#region Objects
 
-        {
-            for (let obj = 0; obj < objectCount; obj++) // First element is 0
-            {
-                let objX = objects[obj][0];
-                let objY = objects[obj][1];
-                let spriteId = objects[obj][2];
-
-                let spriteWidth = spriteId == 0 ? this.constants.bulletSprite_width : this.constants.playerSprite_width;
-                let spriteHeight = spriteId == 0 ? this.constants.bulletSprite_height : this.constants.playerSprite_height;
-
-                let vecX = objX - playerX;
-                let vecY = objY - playerY;
-                let dstFromPlayer = Math.sqrt(vecX*vecX + vecY*vecY);
-
-                let forwardX = Math.sin(playerAngle); let forwardY = Math.cos(playerAngle);
-
-                let objAngle = Math.atan2(forwardY, forwardX) - Math.atan2(vecY, vecX);
-
-                let inFrontOfPlayer = (forwardX * vecX + forwardY * vecY) > 0;
-
-                if (inFrontOfPlayer &&
-                    dstFromPlayer >= this.constants.nearClippingPane &&
-                    dstFromPlayer < depth &&
-                    dstFromPlayer < depthBuffer)
-                {
-                    let objCeiling = (screenHeight * 0.5) - (screenHeight / dstFromPlayer);
-                    let objFloor = screenHeight - objCeiling;
-                    let objHeight = objFloor - objCeiling;
-                    let objRatio = spriteWidth / spriteHeight;
-                    let objWidth = objHeight * objRatio;
-                    let middleOfObject = (0.5 * (objAngle / (fov * 0.5)) + 0.5) * screenWidth;
-
-                    // Absolutely zero idea what the following does and why the f*ck it works... It just works okay?! It just works... for now...
-                    // Also, note that this only seems to work for fov = PI / 3, we probably need to adapt that sh*t calculation for other fovs.
-                    if (middleOfObject < 0 + objWidth * 0.5) middleOfObject += screenWidth * 3;
-                    if (middleOfObject > screenWidth * 3 - objWidth * 0.5) middleOfObject -= screenWidth * 3;
-
-                    let objMinX = middleOfObject - objWidth * 0.5;
-                    let objMaxX = middleOfObject + objWidth * 0.5;
-                    let objMinY = screenHeight * 0.5 - objHeight * 0.5;
-                    let objMaxY = screenHeight * 0.5 + objHeight * 0.5;
-
-                    if (x >= objMinX && x <= objMaxX && y >= objMinY && y <= objMaxY)
-                    {
-                        let pix_x = Math.floor(((x - objMinX) / objWidth) * spriteWidth);
-                        let pix_y = Math.floor(((objMaxY - y) / objHeight) * spriteHeight);
-
-                        if (spriteId == 0)
-                        {
-                            if (bulletSprite[pix_y][pix_x][3] > 0)  // If not transparent
-                            {
-                                r = bulletSprite[pix_y][pix_x][0];
-                                g = bulletSprite[pix_y][pix_x][1];
-                                b = bulletSprite[pix_y][pix_x][2];
-                            
-                                depthBuffer = dstFromPlayer;
-                            }
-                        }
-                        else
-                        {
-                            if (playerSprite[pix_y][pix_x][3] > 0)  // If not transparent
-                            {
-                                r = playerSprite[pix_y][pix_x][0];
-                                g = playerSprite[pix_y][pix_x][1];
-                                b = playerSprite[pix_y][pix_x][2];
-                            
-                                depthBuffer = dstFromPlayer;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         //#endregion
 
         {
-            for (let corpse = 0; corpse < corpseCount; corpse++) // First element is 0
+            for (let object = 0; object < objectCount; object++) // First element is 0
             {
-                let objX = 5 + corpse//corpses[corpses_startIndezes[corpse]][0];
-                let objY = 5 + corpse//corpses[corpses_startIndezes[corpse]][1];
-                let spriteWidth = 53//corpses[corpses_startIndezes[corpse]][2];
-                let spriteHeight = 16//corpses[corpses_startIndezes[corpse]][3];
+                let objX = objectBounds[object][0];//corpses[corpses_startIndezes[corpse]][0];
+                let objY = objectBounds[object][1];//corpses[corpses_startIndezes[corpse]][1];
+                let spriteWidth = objectBounds[object][2];//corpses[corpses_startIndezes[corpse]][2];
+                let spriteHeight = objectBounds[object][3];//corpses[corpses_startIndezes[corpse]][3];
 
                 let vecX = objX - playerX;
                 let vecY = objY - playerY;
@@ -675,13 +692,12 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                         let pix_x = Math.floor(((x - objMinX) / objWidth) * spriteWidth);
                         let pix_y = Math.floor(((objMaxY - y) / objHeight) * spriteHeight);
 
-                        let offset = corpses_startIndezes[corpse];
-                        if (corpses[offset + pix_y][pix_x][3] > 0)  // If not transparent
+                        let offset = objectStartIndezes[object];
+                        if (objectArray[offset + pix_y * spriteWidth + pix_x][3] > 0)  // If not transparent
                         {
-                            r = corpses[offset + pix_y][pix_x][0];
-                            g = corpses[offset + pix_y][pix_x][1];
-                            b = corpses[offset + pix_y][pix_x][2];
-                        
+                            r = objectArray[offset + pix_y * spriteWidth + pix_x][0]; //r = corpses[offset + pix_y][pix_x][0];
+                            g = objectArray[offset + pix_y * spriteWidth + pix_x][1]; //g = corpses[offset + pix_y][pix_x][1];
+                            b = objectArray[offset + pix_y * spriteWidth + pix_x][2]; //b = corpses[offset + pix_y][pix_x][2];
                             depthBuffer = dstFromPlayer;
                         }
                     }
