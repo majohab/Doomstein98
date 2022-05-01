@@ -77,8 +77,6 @@ function socketHandler_init()
 
         let data = JSON.parse(e.data)
 
-        console.log(data);
-
         if (data[type_key] == update_key)
         {
             if (mapString == null)
@@ -208,7 +206,7 @@ function socketHandler_init()
                 shortClicked = false;
             }
         
-            console.log(data);
+            //console.log('Data:', data);
             //console.log(data[player_key][userName][justShot_animation]);
         }else if(data[type_key] == message_key){
             //TODO: Was soll passieren wenn er eine Nachricht erhält: Lobby kann nicht gefunden werden

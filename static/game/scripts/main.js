@@ -2,7 +2,7 @@
 const fov = Math.PI / 3;
 const max_corpses = 5;
 const max_opponents = 5;
-const max_bullets = 100;
+const max_bullets = 10;
 
 // Runtime variables
 let lastFrameTime;
