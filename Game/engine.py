@@ -17,15 +17,15 @@ from copy import deepcopy
 log = logging.getLogger(__name__)
 
 #TODO: fit that for customized fps
-TICK_RATE = 0.016
+TICK_RATE = 1/60
 
 PLAYER_SPEED            = TICK_RATE/0.1
 ROTATION_SPEED          = TICK_RATE/1
-BULLET_SPEED            = TICK_RATE/0.025
+BULLET_SPEED            = TICK_RATE/TICK_RATE
 
 
 # Every Unit is in Seconds
-JUST_SHOT_ANIMATION     = round(1/TICK_RATE)   # 1 Second
+JUST_SHOT_ANIMATION     = 100
 JUST_HIT_ANIMATION      = round(1/TICK_RATE)   # 1 Second
 JUST_DIED_ANIMATION     = round(10/TICK_RATE)
 
@@ -48,13 +48,19 @@ corpses_key             = 'c'
 click_key               = 'c'
 duration_key            = 'd'
 direction_key           = 'd'
+death_key               = 'd'
+group_key               = 'g'
 health_key              = 'h'
 inactive_key            = 'i'
 kills_key               = 'k'
+killDeath_key           = 'kd'
+map_length_key          = 'l'
 map_key                 = 'm'
 mouseDelta_key          = 'm'
+name_key                = 'n'
 player_key              = 'p'
 state_key               = 's'
+time_key                = 't'
 weapon_key              = 'w'
 x_coordinate_key        = 'x'
 y_coordinate_key        = 'y'
@@ -64,64 +70,66 @@ weapon_change_animation = 'w_a'
 
 #Reversed direction
 MAPS = [
-    [
-    "#######################################################################################",
-    "#..E.#................................................................................#",
-    "#....#..........................................................................#######",
-    "#.####................................................................................#",
-    "#.....................................................................................#",
-    "#..###..........................................................................#######",
-    "###########...........................................................................#",
-    "#.....................................................................................#",
-    "#...............................................................................#######",
-    "#.....................................................................................#",
-    "#.....................................................................................#",
-    "#...............................................................................#######",
-    "#.....................................................................................#",
-    "#.....................................................................................#",
-    "#...............................##.##################...........................#######",
-    "#...............................##.#....#.....#.....#.................................#",
-    "#...............................##.#..###.....#..####.................................#",
-    "#...............................##.#................#...........................#######",
-    "#...............................##.########..##.....#.................................#",
-    "#...............................##............#.......................................#",
-    "#...............................####..........#.....#...........................#######",
-    "#..................................###.######.###.###.................................#",
-    "#....................................#.#......#...#...................................#",
-    "#....................................#.#..#...#.#.#.............................#######",
-    "#....................................#.#..#.....#.#...................................#",
-    "#....................................#.#..#######.....................................#",
-    "#...............................................................................#######",
-    "#.....................................................................................#",
-    "#.....................................................................................#",
-    "#...............................................................................#######",
-    "#.....................................................................................#",
-    "#.....................................................................................#",
-    "####..######....................................................................#######",
-    "#......#...#..........................................................................#",
-    "####...#...#..........................................................................#",
-    "#.S#.......#....................................................................#######",
-    "#.. .......#..........................................................................#",
-    "#######################################################################################"
-    ],
-    [
-    "################",
-    "#............W.#",
-    "#........#######",
-    "#............S.#",
-    "#..............#",
-    "#.....##.......#",
-    "#.....##.......#",
-    "#..............#",
-    "#.E............#",
-    "#..............#",
-    "######.........#",
-    "#....#.........#",
-    "#.S..#.........#",
-    "#..........N.###",
-    "#............###",
-    "################"
-    ]
+    {
+        "len" : len("#######################################################################################"),
+        "map" :     "#######################################################################################" +
+                    "#..S.#.............................#..............###.S......####.......####........W.#" +
+                    "#....#............#.E..............#..............###........#................######..#" +
+                    "#.####.....####...######...####..........................#...#..#####.........##......#" +
+                    "#.............#####...........#..E.......................#..........############......#" +
+                    "#..###............#...........###########.....############.#####....#..........#.######" +
+                    "###########...................#.S....#..............#......#........#..##......#......#" +
+                    "#.S.#.............................#.....#...........###....#........#..##.............#" +
+                    "#...#...................#################...........#......#.....####..##..##########.#" +
+                    "#...........................W.#.....................#....N.#........#..##......#......#" +
+                    "#.....####........#...........#................######.######........#..........#......#" +
+                    "#........###......#...........###########...........................#..E.......#.######" +
+                    "#........###...####.....###.........................................########...#......#" +
+                    "######...#....#####.....###....................................................#......#" +
+                    "#.E......#......S.#.....###.....##.##################.........######...........######.#" +
+                    "#........######...#.............##.#.S..#.....#...W.#.........######...........#....S.#" +
+                    "###......######...#.............##.#..###.....#..########.....######...........#......#" +
+                    "#....#..........................##.#................#.............E............###.####" +
+                    "#..###..................#.......##.########..##.....#..........................#......#" +
+                    "#..###..........######..#.......##............#................#######...#######......#" +
+                    "#....#..........#.S.....#.......####.E........#.....#..........#...............#.######" +
+                    "#....####.......#....####.#........###.######.###.#######...####...............#......#" +
+                    "###..#..........#....#....#..........#.#......#...#............#..#########...........#" +
+                    "###..####............#..N.#..........#.#..#...#.#.#............#...............######.#" +
+                    "#....#..........######.####..........#.#..#.N...#.#######......#...............#......#" +
+                    "#..W.#...............#...............#.#..#######..............###.....#########....W.#" +
+                    "#..###...............#..........................#............W.#.......#.......#.######" +
+                    "#..###...............#############.............##.....##########...............#......#" +
+                    "#....#............#........................................#####...............#......#" +
+                    "#....###########..#.########...............................#####.....#####...########.#" +
+                    "#....#............#..E.....#..##...####....###....####...................#............#" +
+                    "#.................#.###....####.......#....###....#......................#...#####....#" +
+                    "####..#############...#...............#....###....#........#.............#.......#..###" +
+                    "#......#...#......#.#.#####...#.......#.........W.#........#.......#######.......#....#" +
+                    "####...#...##.#.###.#.....#...############.....#########...#...#.........#.......#..###" +
+                    "#.S#.......#........#####.#......#.S.....##...##.......#####...#.........#####.#.#....#" +
+                    "#.. .......#.....##.......#..........#............##.........N##...............#....N.#" +
+                    "#######################################################################################",
+    },
+    {
+        "len" : len("################"),
+        "map" : "################" +
+                "#............W.#" +
+                "#........#######" +
+                "#............S.#" +
+                "#..............#" +
+                "#.....##.......#" +
+                "#.....##.......#" +
+                "#..............#" +
+                "#.E............#" +
+                "#..............#" +
+                "######.........#" +
+                "#....#.........#" +
+                "#.S..#.........#" +
+                "#..........N.###" +
+                "#............###" +
+                "################"
+    }
 ]
 
 #Class for handling coordinates
@@ -204,7 +212,7 @@ AVAILABLE_WEAPONS = {
     "P99" : [
         "P99",
         50,             #50 Kugeln in der Waffe
-        round(0.8/TICK_RATE),  #Jede 0.8 Sekunden kann geschossen werden
+        round(0.3/TICK_RATE),  #Jede 0.8 Sekunden kann geschossen werden
         20              # The weapon reduces 20 health per bullet
     ],
     "MP5" : [
@@ -227,13 +235,13 @@ class Map:
     It can read a map from strings array
     '''
 
-    def __init__(self, width : int, height : int, map : pd.DataFrame, strings : list[str], spawns : list[Spawn]):
-        self.width = width
-        self.height = height
-        self.map = map
-        self.mapString = strings
-        self.spawns = spawns
-        self.tick = 0
+    def __init__(self, width : int, height : int, map : list[list[str]], mapString : str, spawns : list[Spawn]):
+        self.width      = width
+        self.height     = height
+        self.map        = map
+        self.mapString  = mapString
+        self.spawns     = spawns
+        self.tick       = 0
     
     #Helper function for from_list()
     def func(spawns, x, y, char) -> str:
@@ -286,60 +294,76 @@ class Map:
     
     # validate the input string of map
     # Static Method
-    def from_list(strings: list):
+    def from_list(mapDict : dict[str]):
 
         spawns = list()
 
+        char_count = len(mapDict["map"])
+
+        width  = mapDict["len"]
+        height = char_count/mapDict["len"]
+
         #TODO: Anpassen an das gewünschte Format
-        map = pd.DataFrame([list(string) for string in strings], dtype='string')
+        #map = pd.DataFrame([list(string) for string in strings], dtype='string')
 
-        inv_map = map[map == np.nan].dropna()
+        #inv_map = map[map == np.nan].dropna()
 
-        if(not inv_map.empty):
-            print(F"Map is invalid: {inv_map}")
+        #if(not inv_map.empty):
+        #    print(F"Map is invalid: {inv_map}")
 
-        inv_map = map.replace(["#", ".", "W", "S", "N", "E"], np.nan).dropna()
+        inv_map = mapDict["map"].replace("#","").replace(".","").replace("W","").replace("S","").replace("N","").replace("E","")
 
-        if(not inv_map.empty):
-            print(F"map contains invalid letters: {inv_map}")
+        mapString = mapDict["map"]
 
-        #print(map)
+        if(len(inv_map) != 0):
+            print(F"map contains invalid letters: >>>{inv_map}<<<<")
 
-        map.apply(lambda x: x.apply(lambda y: Map.func(spawns, x.name, x[x==y].index[0], y)))
-        
-        '''
-        for idx_s, string in enumerate(strings):
-            
-            #if len(string.replace('#','').replace('.','').replace('N','').replace('E','').replace('S','').replace('W','')) != 0:
-            #    print('Map contains invalid values. It only accepts \"#\" or \".\" and spawn fields')
+        # Look for spawns in the map
+        for dir in [('N', math.pi), ('E', math.pi/2), ('S', 0), ('W', -math.pi/2)]:
 
-            #Check if Map fits the format
-            #if len(string) != len(strings[-1]):
-            #    print("Map is invalid")
+            #print(dir)
+            idx = 0
 
-            
+            while idx < char_count:
 
-            #Handling for spawns
-            for idx_c, char in enumerate(string):
+                idx = mapString.find(dir[0])
+                
+                if idx == -1:
+                    break
 
-                #print("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN")
+                mapString = mapString.replace(dir[0], F"{len(spawns)}", 1)
 
-        '''        
-            
+                x = idx % width
+                y = (idx - x)/width
+
+                spawns.append(
+                    Spawn(
+                        Coordinate(
+                            x + 0.5,
+                            y + 0.5,
+                        ),
+                        dir[1]   
+                    )
+                )
+
+        map = []
+
+        [map.append(list(mapDict["map"][sub-width:sub])) for sub in range(width, char_count + width, width) ]
+                         
         if(len(spawns) == 0):
             print("Map contains no spawn fields")
 
         return Map(
-            len(strings[0]),
-            len(strings),
+            width,
+            height,
             map,
-            strings,
+            mapDict["map"],
             spawns,
         )
 
     # Check if Object collides with Map
     # Returns True if Oject collide with wall in any way
-    def check_collision(self, coordinate : Coordinate, object, dir = 0, tolerance : float = 0.25) -> int | None:        
+    def check_collision(self, coordinate : Coordinate, object, dir : float = 0, tolerance : float = 0.25) -> int | None:        
         '''
         Checks collision for bullets.
         '''
@@ -347,10 +371,10 @@ class Map:
         try:
             
             # Find char on next edge
-            e_1 = self.map.iloc[round(coordinate.y - (0.5 + tolerance)), round(coordinate.x - (0.5 + tolerance))]
-            e_2 = self.map.iloc[round(coordinate.y - (0.5 + tolerance)), round(coordinate.x - (0.5 - tolerance))]
-            e_3 = self.map.iloc[round(coordinate.y - (0.5 - tolerance)), round(coordinate.x - (0.5 + tolerance))]
-            e_4 = self.map.iloc[round(coordinate.y - (0.5 - tolerance)), round(coordinate.x - (0.5 - tolerance))] 
+            e_1 = self.map[round(coordinate.y - (0.5 + tolerance))][round(coordinate.x - (0.5 + tolerance))]
+            e_2 = self.map[round(coordinate.y - (0.5 + tolerance))][round(coordinate.x - (0.5 - tolerance))]
+            e_3 = self.map[round(coordinate.y - (0.5 - tolerance))][round(coordinate.x - (0.5 + tolerance))]
+            e_4 = self.map[round(coordinate.y - (0.5 - tolerance))][round(coordinate.x - (0.5 - tolerance))] 
 
             # Check on what edge is a wall
             A = e_1 == "#"
@@ -458,7 +482,10 @@ class Map:
 
     # Return für updating the state     
     def render(self) -> Mapping[str, Any]:
-        return self.mapString
+        return {
+            map_length_key : self.width,
+            map_key        : self.mapString,
+        }
 
 class Player:
     '''
@@ -483,7 +510,7 @@ class Player:
         self.direction = 0
 
         # Counts down from a specific number to zero for every tick, when it got activated
-        self.justShot = 0
+        self.justShot = -1
 
         # Counts down from a specific number to zero for every tick, when it got activated
         self.justHit = 0
@@ -552,7 +579,7 @@ class Player:
             if(spawn.lock_time == 0):
                 
                 flag = True
-                print(F"\nSpawn: x: {spawn.coordinate.x} y: {spawn.coordinate.y}")
+                #print(F"\nSpawn: x: {spawn.coordinate.x} y: {spawn.coordinate.y}")
                 break
 
         # no available Spawn was found?
@@ -580,9 +607,9 @@ class Player:
 
         if weapon.currAmmunition > 0 and weapon.currLatency == 0:
 
-            print(F"{self.name} just shot a bullet!")
+            #print(F"{self.name} just shot a bullet!")
 
-            # The animation of shooting shall go on for 1 seconds
+            # The animation of shooting
             self.justShot = JUST_SHOT_ANIMATION
 
             # Reduce the current ammo of current weapon by one
@@ -850,11 +877,11 @@ class State:
     Class for handling the states of the game
     '''
 
-    def __init__(self, map : Map, playersName : list[str] = [], bullets : list[Bullet] = []):
+    def __init__(self, map : Map):
         self.map     : Map          = map
         self.players : list[Player] = []#[Player(name, ) for name in playersName]
-        self.bullets = bullets
-        self.corpses : list[Player] = []
+        self.bullets : list[Bullet] = []
+        self.corpses : dict[Player] = []
 
 
     def render(self) -> Mapping[str, Any]:
@@ -871,7 +898,7 @@ class GameEngine(threading.Thread):
     '''
 
     # Constructor function for GameEngine
-    def __init__(self, lobbyname, playersName : list[str] = [], mapString = MAPS[1], maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME):
+    def __init__(self, lobbyname, mapString = None, maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME):
         
         # Did the game started?
         self.startFlag = False
@@ -912,14 +939,16 @@ class GameEngine(threading.Thread):
 
         self.playerQueue : list[Player] = []
 
+        #Forbidden Player: Players who were once in the game but then left permanently
+        self.playerForbidden : list[str] = []
+
         #How man players are allowed in the game
         self.maxPlayers = maxPlayers
 
-        mapString = mapString
+        mapString = MAPS[0]
 
         self.state = State(
-            Map.from_list(mapString), 
-            playersName
+            Map.from_list(mapString),
             )
 
     # The main loop for the game engine
@@ -987,52 +1016,69 @@ class GameEngine(threading.Thread):
         
         #print(F"Tick {self.tickNum} for game {self.name}")
 
-        #start = time.time()
+        begin = time.time()
 
         with self.eventLock:
             events = self.eventChanges.copy()
             self.eventChanges.clear()
 
-        #end = time.time()
+        end = time.time()
 
+        eventLock = end - begin
         #print(F"event: {end-start}s\n")
 
         if self.state.players:
             self.process_players(events)
 
-        #start = time.time()
+        start = time.time()
 
         #print(F"players: {start-end}s\n")
+        processPlayers = start-end
 
         if self.state.bullets:
             self.process_bullets()
         
-        #end = time.time()
+        end = time.time()
 
         #print(F"bullets: {end-start}s\n")
+        bullets = end-start
         
         self.process_hits()
 
-        #start = time.time()
+        if self.state.corpses:
+            self.process_corpses()
+        
+        start = time.time()
 
         #print(F"hits: {start-end}s\n")
+        processHits = start - end
         
         self.process_new_players()
 
-        #end = time.time()
+        end = time.time()
 
         #print(F"new players: {end-start}s\n")
+        newPlayer = end - start
 
         self.process_spawns()
 
-        #start = time.time()
+        finish = time.time()
 
+        spawns = finish - end
         #print(F"spawns: {start-end}s\n\n")
+        if(finish-begin >= TICK_RATE):
+            print(F'''
+                eventLock {eventLock}\n
+                processPlayers {processPlayers}\n
+                bullets {bullets}\n
+                processHits {processHits}\n
+                newPlayer {newPlayer}\n
+                spawns {spawns}\n
+            ''')
 
 
     def calculate_distances(self) -> None:
         pass
-
 
     def process_players(self, events) -> None:
         '''
@@ -1082,12 +1128,6 @@ class GameEngine(threading.Thread):
                 # Does the player move in that frame
                 move_flag = False
 
-                if(player.delayedTick > 1):
-                    #print(F"Player {player.name} did not respond for {player.delayedTick} ticks")
-
-                    #reset the delayedTick
-                    player.delayedTick = 0
-
                 event = events[player.name]
 
                 player.change_direction(event[mouseDelta_key])
@@ -1099,6 +1139,13 @@ class GameEngine(threading.Thread):
 
                 weapon = player.currentWeapon
 
+                if(player.delayedTick > 1):
+                    #print(F"Player {player.name} did not respond for {player.delayedTick} ticks")
+
+                    #reset the delayedTick
+                    player.delayedTick = 0
+
+
                 # reduce currLatency counter if needed
                 if(weapon.currLatency > 0):
 
@@ -1108,12 +1155,21 @@ class GameEngine(threading.Thread):
                 # reduce justShot counter if needed
                 if(player.justShot > 0):
 
-                    player.justShot -= 1
+                    player.justShot -= round(JUST_SHOT_ANIMATION/player.currentWeapon.latency)
+
+                    if (player.justShot <= 0):
+                        player.justShot = -1
 
                 # reduce justHit counter if needed  
                 if(player.justHit > 0):
 
                     player.justHit  -= 1
+
+                #if the player is currently changing its weapon
+                if player.changeWeaponDelay > 0:
+
+                    #reduce the delay
+                    player.changeWeaponDelay -= 1
 
                 if(event[x_coordinate_key] != 0 or event[y_coordinate_key] != 0):
                     move_flag = True
@@ -1128,20 +1184,15 @@ class GameEngine(threading.Thread):
             elif(player.alive == 0):
                 #Increase the delayed tick of the player
                 player.delayedTick += 1
-            
-            #if the player is currently changing its weapon
-            if player.changeWeaponDelay > 0:
-
-                #print(player.changeWeaponDelay)
-
-                #reduce the delay
-                player.changeWeaponDelay -= 1
-            
+                        
     def process_hits(self) -> None:
         '''
         Checks if any bullet hits a player
         '''
 
+        [player.get_hit(self.state, bullet, self.gameMode) for player in self.state.players for bullet in self.state.bullets if bullet.currentPosition.get_distance(player.currentPosition) < HIT_BOX or bullet.middlePosition.get_distance(player.currentPosition) < HIT_BOX]
+
+        '''
         for player in self.state.players:
 
             for bullet in self.state.bullets:
@@ -1156,20 +1207,33 @@ class GameEngine(threading.Thread):
 
                     # execute the function
                     player.get_hit(self.state, bullet, self.gameMode)
-
-
-        #[player.get_hit(self, bullet, self.gameMode)  for player in self.state.players for bullet in self.state.bullets if bullet.currentPosition.get_distance(player.currentPosition) < 0.1]
+        '''
 
     def process_bullets(self) -> None:
         '''
         Checks if bullet hits the wall
         '''
+
+        [self.state.bullets.pop(idx) for idx, bullet in enumerate(self.state.bullets) if bullet.update_pos(self.state.map)].clear()
+
         # Make the next move for all bullets
         # if True then it collide with Wall or Player, so remove it
-        for idx, bullet in enumerate(self.state.bullets):
-            if bullet.update_pos(self.state.map):
-                tmp = self.state.bullets.pop(idx)  
-                del tmp
+        #for idx, bullet in enumerate(self.state.bullets):
+        #    if bullet.update_pos(self.state.map):
+        #        tmp = self.state.bullets.pop(idx)  
+        #        del tmp
+
+    def process_corpses(self) -> None : 
+        '''
+        Process the current Corpses on the battlefield
+        '''
+
+        for corpse in self.state.corpses:
+
+            if(corpse[duration_key] == 0):
+                self.state.corpses.remove(corpse)
+
+            corpse[duration_key] -= 1 
 
     def process_spawns(self) -> None:
         '''
@@ -1229,6 +1293,8 @@ class GameEngine(threading.Thread):
         #Where is the pointer 
         idx = 0
 
+        disconnect = 0
+
         for player in self.playerQueue:
 
             # if player is ready to spawn on the battle
@@ -1260,29 +1326,42 @@ class GameEngine(threading.Thread):
 
                 # If the player died in that frame
                 if(player.alive == REVIVE_WAITING_TIME):
-                    self.state.corpses.append({"username" : player.name, x_coordinate_key : player.currentPosition.x, y_coordinate_key : player.currentPosition.y, duration_key : JUST_DIED_ANIMATION}) 
+
+                    print(F"{player.name} was added to the corpses")
+
+                    self.state.corpses.append(
+                        {
+                            player_key       : player.name, 
+                            x_coordinate_key : player.currentPosition.x, 
+                            y_coordinate_key : player.currentPosition.y, 
+                            duration_key     : JUST_DIED_ANIMATION,
+                        }) 
 
                 #reduce wait time of player
                 player.alive -= 1
 
                 #skip Player for pop() method
                 idx += 1
-            else:
+            elif player.alive == -2:
+
+                disconnect += 1
+
                 #skip Player for pop() method
-                idx += 1   
+                idx += 1 
+            else:
+                idx += 1
 
-    def process_corpses(self) -> None : 
-        '''
-        Process the current Corpses on the battlefield
-        '''
+        if(disconnect > 0 and not self.state.players and disconnect == len(self.playerQueue)):
+            print(F"Lobby will be closed since nobody connected in game")
 
-
-        for corpse in self.state.corpses:
-
-            if(corpse["duration"] == 0):
-                self.state.corpses.remove(corpse)
-
-            corpse["duration"] -= 1 
+            # Send the essential information for validate the winner of the game
+            async_to_sync(self.channelLayer.send)(
+                "game_engine", 
+               {
+                "type"    : "close.game",
+                group_key   : self.groupName,
+                }
+            )           
 
     def win(self, winningPlayers : list[Player]) -> None:
 
@@ -1293,22 +1372,24 @@ class GameEngine(threading.Thread):
             "game_engine", 
             {
              "type"    : "win",
-             "time"    : self.tickNum * TICK_RATE,
-             "group"   : self.groupName, 
-             "players" : 
+             time_key    : self.tickNum * TICK_RATE,
+             group_key   : self.groupName, 
+             player_key : 
              [
-                 { "name"       : winningPlayer.name,
-                   "kills"      : winningPlayer.kills,
-                   "deaths"     : winningPlayer.deaths,
-                   "killDeath" : winningPlayer.killDeath,
+                 { 
+                   name_key       : winningPlayer.name,
+                   kills_key      : winningPlayer.kills,
+                   death_key      : winningPlayer.deaths,
+                   killDeath_key  : winningPlayer.killDeath,
                  } 
                    for winningPlayer in winningPlayers]
             }
         )
 
-    # When the time has reached its limit
     def time_limit_reached(self): 
-
+        '''
+            When the time has reached its limit
+        '''
         print("the time limit has been reached")
 
         # if the winner is about the highest kills
@@ -1345,16 +1426,3 @@ class GameEngine(threading.Thread):
             bestPlayers = [player for player in bestPlayers if player.killDeath == highestKillDeath]   
 
             return bestPlayers 
-
-
-
-
-
-
-
-                
-        
-        
-
-
-

@@ -34,6 +34,10 @@ const justShot_animation      = 's_a';
 const justHit_animation       = 'h_a';
 const weapon_change_animation = 'w_a';
 
+let rec_corpses = [];
+let rec_bullets = [];
+let rec_opponents = [];
+
 function socketHandler_init()
 {
     const lobbyName = JSON.parse(document.getElementById('json-lobbyname').textContent);
@@ -59,19 +63,9 @@ function socketHandler_init()
 
     webSocket.onopen = function(){ 
 
-        console.log('Username:', userName)
-
         webSocket.send(
             JSON.stringify({
                 't' : joinLobby_key,
-                'm'  : {
-                    'l'    : lobbyName,
-                }
-            })
-        );
-        webSocket.send(
-            JSON.stringify({
-                't' : joinGame_key,
                 'm'  : {
                     'l'    : lobbyName,
                 }
@@ -83,43 +77,66 @@ function socketHandler_init()
 
         let data = JSON.parse(e.data)
 
+        console.log(data);
+
         if (data[type_key] == update_key)
         {
+            if (mapString == null)
+            {
+                if (data[map_key] != null)
+                    onMapReceived(data[map_key]['l'], data[map_key]['m']);
+                else
+                    console.log('Cannot initialize map: Map was not received');
+            }
+
 
             playerX     = data[player_key][userName][x_coordinate_key];
             playerY     = data[player_key][userName][y_coordinate_key];
             playerAngle = data[player_key][userName][direction_key];
             
 
-            initObjects();
+            rec_bullets = data[bullet_key];
 
-            let i = 0;
-            let rec_bullets = data[bullet_key];
-            for (i = 0; i < rec_bullets.length && i < max_objects; i++)
-                objects[i] = [rec_bullets[i][x_coordinate_key], rec_bullets[i][y_coordinate_key], 0];
-            o = rec_bullets.length;
-
-            let rec_users = data[player_key];
-            for (users_name in rec_users)
+            //rec_users = data[player_key];
+            //for (users_name in rec_users)
+            //{
+            //    if (users_name != userName && i < max_objects)
+            //    {
+            //        objects[i] = [rec_users[users_name][x_coordinate_key], rec_users[users_name][y_coordinate_key], 1, 0]
+            //        i++;
+            //    }
+            //}
+            let rec_opponents_tmp = data[player_key]
+            rec_opponents = [];
+            for (users_name in rec_opponents_tmp)
             {
-                if (users_name != userName && i < max_objects)
-                {
-                    objects[i] = [rec_users[users_name][x_coordinate_key], rec_users[users_name][y_coordinate_key], 1]
-                    i++;
-                }
+                if (users_name != userName)
+                    rec_opponents.push(rec_opponents_tmp[users_name]);
             }
 
-            objectCount = i;
+            rec_corpses = data[corpses_key];
 
 
             ammo        = data[player_key][userName][ammo_key];
             health      = data[player_key][userName][health_key];
             currWeapon  = data[player_key][userName][weapon_key];
+            weaponAnimTime = data[player_key][userName][justShot_animation];
+
+            if (data[corpses_key][userName]) console.log(data[corpses_key][userName][duration_key]);
 
             let mouseDeltaX = lastRecordedMouseX - lastMouseX;
             lastMouseX = lastRecordedMouseX;
 
             let new_idx = currWeapon
+
+            // Mousewheel
+            if(mouseWheelDelta > 0){
+                new_idx += 1
+                mouseWheelDelta = 0
+            }else if(mouseWheelDelta < 0){
+                new_idx -= 1
+                mouseWheelDelta = 0
+            }
 
             // E key
             // Relativer Index
@@ -128,14 +145,6 @@ function socketHandler_init()
                 keyState69 = true
             }else if(!keyStates[69]){
                 keyState69 = false
-            }
-
-            if(mouseWheelDelta > 0){
-                new_idx += 1
-                mouseWheelDelta = 0
-            }else if(mouseWheelDelta < 0){
-                new_idx -= 1
-                mouseWheelDelta = 0
             }
 
             // 1 key
@@ -200,6 +209,17 @@ function socketHandler_init()
             }
         
             //console.log('Data:', data);
+            //console.log(data[player_key][userName][justShot_animation]);
+        }else if(data[type_key] == message_key){
+            //TODO: Was soll passieren wenn er eine Nachricht erhält: Lobby kann nicht gefunden werden
+            console.log(data[message_key])
+            window.location.replace(window.location.href.replace(/game([\s\S]*)$/ ,'menu/'));
+        }else if(data[type_key] == win_key){
+            //TODO: Was soll beim Gewinnen passieren
+            console.log(data)
+        }else if(data[type_key] == loose_key){
+            //TODO: Was soll beim Verlieren getan werden
+            console.log(data)
         }
     };
 

@@ -63,6 +63,7 @@ class Lobby(models.Model):
     game_runtime = models.IntegerField(default=10)
     start_weapon = models.ForeignKey(Weapon, on_delete=models.CASCADE)
 
+
     def __str__(self) -> str:
         """ Prints user data
 
