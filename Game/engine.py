@@ -19,7 +19,7 @@ SETTINGS = 0
 #-------------------------------------------------------------
 
 # Get the current settings
-s : SettingDB = SettingDB.objects.filter(index=0).first()
+s : SettingDB = SettingDB.objects.filter(index=SETTINGS).first()
 
 #TODO: fit that for customized fps
 TICK_RATE = s.tick_rate
