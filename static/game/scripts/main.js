@@ -1,34 +1,20 @@
-// ToDo: Read https://stackoverflow.com/questions/25612452/html5-canvas-game-loop-delta-time-calculations - GameLoop
-
-/*
-Input processing with django:
-Each tick (like 60 times a second) we must send player inputs to the server.
-We would loose some data if we only sent the last key press recorded, for example, if the player manages
-to press multiple keys during one tick. Therefore, and to make things even less transparent on the client side
-(which is a good thing), we just want to record every input and store them in arrays:
-    let mouseX = [100, 100.5, 101]
-    let keyStrokes = [{'s', 'release', 0.001}, {'w', 'press', 0.002}] // key, action, time (either within tick or some other sort) (maybe already too complex...)
-All this will then be processed by the server and send back to the client for the next / in the same (?) tick
-*/
-
 // Config
 const fov = Math.PI / 3;
-const mapHeight = 16;   // 38
-const mapWidth = 16;    // 87
-const max_objects = 100;
-const max_corpses = 2;
+const max_corpses = 5;
+const max_opponents = 5;
+const max_bullets = 10;
 
 // Runtime variables
 let lastFrameTime;
 let mapString;
 let map_numbers;
+let mapWidth;    // 87
+let mapHeight;   // 38
 
 // Received from backend each frame
 let playerX;
 let playerY;
 let playerAngle;
-let objects;
-let objectCount;
 let opponents;
 let currWeapon;
 let health;
@@ -42,8 +28,8 @@ async function init()
     await spriteReader_init();
     
     initRuntimeVariables();
-    // Need to wait for spriteReader_init()
-    initMap(); // To be moved to backend
+
+    await initMap_Numbers();
 
     drawingHandler_init(); // Needs to wait for initRuntimeVariables();
 
@@ -54,33 +40,25 @@ async function init()
 
 function initRuntimeVariables()
 {
-    initObjects();
-
     ammo = 200;
     health = 200;
     currWeapon = 2;
-    objectCount = 0;
+    weaponAnimTime = -1;
 
     //#region Init Textures with their biggest size
     let healthText = getHealthText();
     healthTextBounds_sizeX = healthText[0].length;
     healthTextBounds_sizeY = healthText.length;
+    healthTextPaddingConfig = new PaddingConfig(healthText[0].length, healthText.length, -1, 0)
 
     let ammoText = getAmmoText();
     ammoTextBounds_sizeX = ammoText[0].length;
     ammoTextBounds_sizeY = ammoText.length;
+    ammoTextPaddingConfig = new PaddingConfig(ammoTextBounds_sizeX, ammoTextBounds_sizeY, -1, 0);
 
-    weaponImageBounds = [200, 102];
     //#endregion
 
     lastFrameTime = Date.now();
-}
-
-function initObjects()
-{
-    objects = [];
-    for (let i = 0; i < max_objects; i++)
-        objects.push([-10, -10, -1, -1]); // x, y, spriteIndex, t (from animation)
 }
 
 
@@ -94,74 +72,30 @@ function getAmmoText()
     return font.getTextImg(ammo.toString()/*.padStart(3, '0')*/);
 }
 
-
-function initMap()
+function onMapReceived(width, map)
 {
-    mapString =
-    "################" +
-    "#..............#" +
-    "#........#######" +
-    "#..............#" +
-    "#..............#" +
-    "#.....##.......#" +
-    "#.....##.......#" +
-    "#..............#" +
-    "#..............#" +
-    "#..............#" +
-    "######.........#" +
-    "#....#.........#" +
-    "#....#.........#" +
-    "#............###" +
-    "#............###" +
-    "################";
-    /*
-    mapString =     "#######################################################################################" +
-    "#..E.#................................................................................#" +
-    "#....#..........................................................................#######" +
-    "#.####................................................................................#" +
-    "#.....................................................................................#" +
-    "#..###..........................................................................#######" +
-    "###########...........................................................................#" +
-    "#.....................................................................................#" +
-    "#...............................................................................#######" +
-    "#.....................................................................................#" +
-    "#.....................................................................................#" +
-    "#...............................................................................#######" +
-    "#.....................................................................................#" +
-    "#.....................................................................................#" +
-    "#...............................##.##################...........................#######" +
-    "#...............................##.#....#.....#.....#.................................#" +
-    "#...............................##.#..###.....#..####.................................#" +
-    "#...............................##.#................#...........................#######" +
-    "#...............................##.########..##.....#.................................#" +
-    "#...............................##............#.......................................#" +
-    "#...............................####..........#.....#...........................#######" +
-    "#..................................###.######.###.###.................................#" +
-    "#....................................#.#......#...#...................................#" +
-    "#....................................#.#..#...#.#.#.............................#######" +
-    "#....................................#.#..#.....#.#...................................#" +
-    "#....................................#.#..#######.....................................#" +
-    "#...............................................................................#######" +
-    "#.....................................................................................#" +
-    "#.....................................................................................#" +
-    "#...............................................................................#######" +
-    "#.....................................................................................#" +
-    "#.....................................................................................#" +
-    "####..######....................................................................#######" +
-    "#......#...#..........................................................................#" +
-    "####...#...#..........................................................................#" +
-    "#.S#.......#....................................................................#######" +
-    "#.. .......#..........................................................................#" +
-    "#######################################################################################";
-    */
+    mapString = map;
+
+    mapWidth = width;
+    mapHeight = mapString.length / mapWidth;
+    if (mapHeight % 1 != 0)
+    {
+        console.error("Map format is not correct: map.length / mapWidth is not an integer");
+    }
+}
+
+async function initMap_Numbers()
+{
+    const checkIntervall = 50;
+    while(mapString == null)
+    {
+        await new Promise(resolve => setTimeout(resolve, checkIntervall));
+        console.log('Still waiting for map...');
+    }
+
     map_numbers = new Array(mapString.length);
     for(i = 0; i < map_numbers.length; i++)
         map_numbers[i] = mapString.charCodeAt(i);
-
-    //movingObjects = [
-    //    new MovingObject(8.5, 8.5, bulletSprite),
-    //    new MovingObject(7.5, 7.5, bulletSprite)
-    //]
 }
 
 function gameLoop()
