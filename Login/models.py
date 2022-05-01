@@ -1,5 +1,3 @@
-from statistics import mode
-from xmlrpc.client import TRANSPORT_ERROR
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
