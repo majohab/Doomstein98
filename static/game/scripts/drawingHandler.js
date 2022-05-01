@@ -1,3 +1,5 @@
+
+
 // Config
 const cellSize = 2; // Pixels per side of cell
 const wallHeight = 1.5;
