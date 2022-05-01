@@ -13,7 +13,7 @@ let lastMouseX;
 let shortClicked;
 let longClicked;
 let pointerLockedClick; //The click for initialization of pointerLocked should not shoot
-let keyStates = []; // Maybe not how we want to solve this in the final game
+let keyStates; // Maybe not how we want to solve this in the final game
 let mouseWheelDelta;
 
 function inputHander_init()

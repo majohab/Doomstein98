@@ -39,15 +39,17 @@
 
         {% for field in form %}
             <div class="field-row-stacked register">
-                {% if field.html_name == "name" %}
+            {% if field.html_name == "name" %}
                 <label class="label"><strong>{{ field.label_tag }}</strong></label>
-                {% else %}
+            {% else %}
                 <label><strong>{{ field.label_tag }}</strong></label>
-                {% endif %}
-                {{ field }}
-                {% if field.help_text %}
-                    <span class="helptext">{{ field.help_text }}</span>
-                {% endif %}
+            {% endif %}
+
+            {{ field }}
+            
+            {% if field.help_text %}
+                <span class="helptext">{{ field.help_text }}</span>
+            {% endif %}
             </div>
 
             {% for error in field.errors %}

@@ -91,14 +91,13 @@ class Sprite
 
 class Still
 {
-    constructor(identifier, startX, startY, sizeX, sizeY, padding)
+    constructor(identifier, startX, startY, sizeX, sizeY)
     {
         this.identifier = identifier;
         this.startX = startX;
         this.startY = startY;
         this.sizeX = sizeX;
         this.sizeY = sizeY;
-        this.padding = padding;
     }
 }
 
@@ -113,7 +112,7 @@ class StillSequence
 
 class SpriteSet
 {
-    constructor(img, stills, animations, flipped = false)
+    constructor(img, stills, animations)
     {
         let imgData = new Sprite(img, 1, 1).data;
 
@@ -127,28 +126,16 @@ class SpriteSet
         function getStillData(still)
         {
             let stillData = [];
-
             for (let y = 0; y < still.sizeY; y++)
             {
                 stillData.push([]);
                 for (let x = 0; x < still.sizeX; x++)
                 {
                     stillData[y].push([]);
+
+                    stillData[y][x] = imgData[imgHeight - (still.startY + y) - 1][still.startX + x];
                 }
             }
-
-            for (let y = 0; y < still.sizeY; y++)
-            {
-                for (let x = 0; x < still.sizeX; x++)
-                {
-                    let img_y = imgHeight - (still.startY + y) - 1;
-                    let still_y = flipped ? y : (still.sizeY - y - 1);
-                    stillData[still_y][x] = imgData[img_y][still.startX + x];
-                }
-            }
-
-            if (still.padding != null && typeof still.padding != undefined)
-                stillData = padSprite (stillData, still.padding);
             
             return stillData;
         }
@@ -253,7 +240,7 @@ class Font extends SpriteSet
                 let yMargin = (textHeight - letterHeight) * 0.5;
 
                 if (y < yMargin || y >= textHeight - yMargin)
-                    data[y][x].push([0, 0, 0, 0]); // ToDo: Don't just assume imgData is 32Bits
+                    data[y][x].push([0, 0, 0]); // ToDo: Don't just assume imgData is 24Bits
                 else
                 {
                     data[y][x] = letterData[y - yMargin][x - currWidth + letterWidth];
@@ -265,26 +252,10 @@ class Font extends SpriteSet
     }
 }
 
-class PaddingConfig
-{
-    constructor(destWidth, destHeight, 
+function padSprite(sprite, destWidth, destHeight, 
     pad_x, // -1: left, 0: mid, 1: right
     pad_y) // -1: bottom, 0: mid, 1: top
-    {
-        this.destWidth = destWidth;
-        this.destHeight = destHeight;
-        this.pad_x = pad_x;
-        this.pad_y = pad_y;
-    }
-}
-
-function padSprite(sprite, paddingConfig)
 {
-    let destWidth = paddingConfig.destWidth;
-    let destHeight = paddingConfig.destHeight;
-    let pad_x = paddingConfig.pad_x;
-    let pad_y = paddingConfig.pad_y;
-
     let spriteWidth = sprite[0].length;
     let spriteHeight = sprite.length;
 
@@ -312,7 +283,7 @@ function padSprite(sprite, paddingConfig)
         data.push([]);
         for (let x = 0; x < destWidth; x++)
         {
-            if (x < paddingLeft || x >= destWidth - paddingRight || y < paddingTop || y >= destHeight - paddingBottom)
+            if (x < paddingLeft || x >= destWidth - paddingRight || y < paddingTop || y > destHeight - paddingBottom)
                 data[y].push([0, 0, 0, 0]);
             else
                 data[y].push(sprite[y - paddingTop][x - paddingLeft]);
@@ -344,10 +315,6 @@ let font;
 
 async function spriteReader_init()
 {
-    weaponImageBounds = [200, 102];
-    let weaponImagePaddingConfig = new PaddingConfig(weaponImageBounds[0], weaponImageBounds[1], 0, 1);
-
-
     let inits = 0;
     const initCount = 12;
 
@@ -359,46 +326,33 @@ async function spriteReader_init()
     spriteReader_getSpriteString('WeaponFrame',         (img) => { weaponFrameSprite = new Sprite(img, 1, 1); inits++ });
 
     spriteReader_getSpriteString('Bullet_1',            (img) => { bulletSprite = new Sprite(img, 1, 1); inits++; });
-
-    spriteReader_getSpriteString('DoomGuy_Front', (img) =>
-    {
-        playerSprite = new SpriteSet(img,
-            [
-                new Still('Idle', 0, 0, 36, 56)
-            ],
-            [
-
-            ]
-        );
-        inits++;
-    });
+    spriteReader_getSpriteString('DoomGuy_Front',       (img) => { playerSprite = new Sprite(img, 1, 1); inits++; });
 
     
     spriteReader_getSpriteString('Shotgun', (img) =>
     {
         shotgun = new SpriteSet(img,
             [
-                new Still('Idle', 0, 39, 91, 63, weaponImagePaddingConfig)
+                new Still('Idle', 0, 39, 91, 63)
             ],
             [
                 new StillSequence('Shoot',
                 [
-                    new Still(1, 91, 22, 91, 80, weaponImagePaddingConfig),
-                    new Still(2, 0 + 91 * 2, 6, 91, 96, weaponImagePaddingConfig),
-                    new Still(3, 91 + 91 * 2, 0, 92, 102, weaponImagePaddingConfig),
-                    new Still(4, 183 + 91 * 2, 24, 93, 78, weaponImagePaddingConfig),
-                    new Still(5, 276 + 91 * 2, 74, 200, 28, weaponImagePaddingConfig),
-                    new Still(6, 476 + 91 * 2, 32, 164, 70, weaponImagePaddingConfig),
-                    new Still(7, 640 + 91 * 2, 45, 125, 57, weaponImagePaddingConfig),
-                    new Still(8, 765 + 91 * 2, 68, 87, 34, weaponImagePaddingConfig),
-                    new Still(9, 1034, 24, 93, 78, weaponImagePaddingConfig),
-                    new Still(10, 0, 39, 91, 63, weaponImagePaddingConfig), // First Image
-                    new Still(11, 0, 39, 91, 63, weaponImagePaddingConfig),
-                    new Still(10, 0, 39, 91, 63, weaponImagePaddingConfig),
-                    new Still(10, 0, 39, 91, 63, weaponImagePaddingConfig)
+                    new Still(1, 91, 22, 91, 80),
+                    new Still(2, 0 + 91 * 2, 6, 91, 96),
+                    new Still(3, 91 + 91 * 2, 0, 92, 102),
+                    new Still(4, 183 + 91 * 2, 24, 93, 78),
+                    new Still(5, 276 + 91 * 2, 74, 200, 28),
+                    new Still(6, 476 + 91 * 2, 32, 164, 70),
+                    new Still(7, 640 + 91 * 2, 45, 125, 57),
+                    new Still(8, 765 + 91 * 2, 68, 87, 34),
+                    new Still(9, 1034, 24, 93, 78),
+                    new Still(10, 0, 39, 91, 63), // First Image
+                    new Still(11, 0, 39, 91, 63),
+                    new Still(10, 0, 39, 91, 63),
+                    new Still(10, 0, 39, 91, 63)
                 ])
-            ],
-            true
+            ]
         );
         inits++;
     });
@@ -407,16 +361,15 @@ async function spriteReader_init()
     {
         machinegun = new SpriteSet(img,
             [
-                new Still('Idle', 0, 0, 110, 54, weaponImagePaddingConfig)
+                new Still('Idle', 0, 0, 110, 54)
             ],
             [
                 new StillSequence('Shoot',
                 [
-                    new Still(1, 110, 0, 110, 85, weaponImagePaddingConfig),
-                    new Still(2, 220, 15, 110, 70, weaponImagePaddingConfig)
+                    new Still(1, 110, 0, 110, 85),
+                    new Still(2, 220, 15, 110, 70)
                 ])
-            ],
-            true
+            ]
         );
         inits++;
     });
@@ -425,19 +378,18 @@ async function spriteReader_init()
     {
         handgun = new SpriteSet(img,
             [
-                new Still('Idle', 0, 23, 50, 64, weaponImagePaddingConfig)
+                new Still('Idle', 0, 23, 50, 64)
             ],
             [
                 new StillSequence('Shoot',
                 [
-                    new Still(1, 50, 0, 52, 102, weaponImagePaddingConfig),
-                    new Still(2, 102, 7, 50, 80, weaponImagePaddingConfig),
-                    new Still(3, 152, 3, 51, 84, weaponImagePaddingConfig),
-                    new Still(4, 203, 0, 51, 87, weaponImagePaddingConfig),
-                    new Still(5, 0, 23, 50, 64, weaponImagePaddingConfig) // First Image
+                    new Still(1, 50, 0, 52, 102),
+                    new Still(2, 102, 7, 50, 80),
+                    new Still(3, 152, 3, 51, 84),
+                    new Still(4, 203, 0, 51, 87),
+                    new Still(5, 0, 23, 50, 64) // First Image
                 ])
-            ],
-            true
+            ]
         );
         inits++;
     });
@@ -445,26 +397,23 @@ async function spriteReader_init()
     
     spriteReader_getSpriteString('Corpse', (img) =>
     {
-        let paddingConfig = new PaddingConfig(53, 56, 0, -1);
         corpseSprite = new SpriteSet(img,
             [
-                new Still('Idle', 373, 0, 53, 16, paddingConfig) // Last Sprite of Animation
+                new Still('Idle', 335, 0, 53, 16) // Last Sprite of Animation
             ],
             [
                 new StillSequence('Explode',
                 [
-                    //new Still(0, 0, 0, 38, 56, paddingConfig),
-                    new Still(1, 38, 0, 41, 53, paddingConfig),
-                    new Still(2, 79, 0, 44, 49, paddingConfig),
-                    new Still(3, 123, 0, 46, 45, paddingConfig),
-                    new Still(4, 169, 0, 49, 39, paddingConfig),
-                    new Still(5, 218, 0, 49, 35, paddingConfig),
-                    new Still(6, 267, 0, 53, 27, paddingConfig),
-                    new Still(7, 310, 0, 53, 16, paddingConfig),
-                    new Still(8, 373, 0, 53, 16, paddingConfig)
+                    new Still(0, 0, 0, 41, 53),
+                    new Still(0, 41, 0, 44, 49),
+                    new Still(0, 85, 0, 46, 45),
+                    new Still(0, 131, 0, 49, 39),
+                    new Still(0, 180, 0, 49, 35),
+                    new Still(0, 229, 0, 53, 27),
+                    new Still(0, 282, 0, 53, 16),
+                    new Still(0, 335, 0, 53, 16)
                 ])
-            ],
-            false
+            ]
         );
         inits++;
     })
@@ -487,9 +436,7 @@ async function spriteReader_init()
                 new Still('8', 107, 17, 12, 15),
                 new Still('9', 120, 17, 13, 15)
                 //new Subsprite(''),
-            ],
-            [],
-            true
+            ]
         );
         inits++;
     });
