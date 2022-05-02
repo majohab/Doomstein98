@@ -632,16 +632,21 @@ class Player:
         #----------------Statistics----------------------
         
         # Represents score for kill and deaths
-        self.kills  : int = 0
-        self.deaths : int = 0
+        self.kills                  : int = 0
+        self.deaths                 : int = 0
 
         # kill/death rate
-        self.killDeath : float = 0
+        self.killDeath              : float = 0
 
-        self.shot_bullets : int = 0
-        self.refilled : int = 0
+        self.shotBullets            : int   = 0
+        self.refilledAmmo           : int   = 0
 
-        
+
+        self.healthReduction        : int   = 0
+        self.selfHealthReduction    : int   = 0
+
+        self.gotHitTimes            : int   = 0
+        self.hitTimes               : int   = 0
 
         #------------------------------------------------
 
@@ -715,6 +720,8 @@ class Player:
 
             #print(F"{self.name} just shot a bullet!")
 
+            selfB += 1
+
             # The animation of shooting
             self.justShot = JUST_SHOT_ANIMATION
 
@@ -775,7 +782,13 @@ class Player:
         if(self.cond()):
             self.health -= round(bullet.weapon.damage/10)
         else:
-            self.health -= bullet.weapon.damage
+            self.selfHealthReduction     += bullet.weapon.damage
+            self.health                  -= bullet.weapon.damage
+            self.gotHitTimes             += 1
+
+
+            bullet.player.healthReduction += bullet.weapon.damage
+            bullet.player.hitTimes       += 1
         
         if(self.health < 1):
             
@@ -984,7 +997,7 @@ class Bullet:
         #---------------------------------
         # Statistics
         self.refilled     : int = 0 
-        self.shot_bullets : int = 0
+        selfB : int = 0
 
         # One Movement per frame
         self.speed : float = BULLET_SPEED
@@ -1064,7 +1077,7 @@ class AmmunitionPack:
         weapon      : {self.weapon}
         ''')
 
-    def collected(self, player)                         -> None:
+    def collected(self, player : Player)                         -> None:
         """Called when a player collects a munition package
 
         Args:
@@ -1086,6 +1099,9 @@ class AmmunitionPack:
 
         # increase the ammunition of the player's weapon
         p_weapon.currAmmunition += self.ammo
+        
+        # update the ammunition statistic
+        player.refilledAmmo += self.ammo
 
         # if the currAmmunition is too high then reduce it to the max
         if(p_weapon.currAmmunition > p_weapon.maxAmmunition):

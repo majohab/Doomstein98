@@ -83,6 +83,7 @@ class Statistic(models.Model):
     players         = models.SmallIntegerField          (default=0)
     
     won             = models.BooleanField               ()
+    forbbiden_list  = models.BooleanField               ()
 
     kills           = models.SmallIntegerField          (default=0)
     # kills with weapons
@@ -95,8 +96,10 @@ class Statistic(models.Model):
     finished_game   = models.BooleanField               ()
     disconnected    = models.BooleanField               ()
 
-    shot_bullet     = models.SmallIntegerField          (default=0)
+    shot_bullets    = models.SmallIntegerField          (default=0)
     health_reduction= models.SmallIntegerField          (default=0)
+
+    # How many bullets were refilled
     refilled_ammo   = models.SmallIntegerField          (default=0)
 
     got_hit         = models.SmallIntegerField          (default=0)
