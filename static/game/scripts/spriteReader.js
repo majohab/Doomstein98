@@ -191,7 +191,7 @@ class SpriteSet
             console.error('No animation for given animationIdentifier: ' + animationIdentifier);
         }
 
-        if (!Array.isArray(this.dict[animationIdentifier][0][0][0])) // Still
+        if (!this.getIsAnimation(this.dict[animationIdentifier])) // Still
         {
             return this.getSprite(animationIdentifier);
         }
@@ -203,12 +203,50 @@ class SpriteSet
             // [0.5, 0.75): Index 2
             // [0.75, 1):   Index 3
             // 1        :   Index 0
-            console.log(t)
             let index = Math.floor(t * this.dict[animationIdentifier].length) % this.dict[animationIdentifier].length;
             return this.dict[animationIdentifier][index];
         }
+    }
 
-        
+    /**
+     * Returns the highest width and height found in any sprite of the SpriteSet as an array [width, height]
+     */
+    getBiggestBounds()
+    {
+        console.log(this.dict);
+        let width = getHighestValue(this.dict, this.getIsAnimation, (sprite) => sprite[0].length);
+        let height = getHighestValue(this.dict, this.getIsAnimation, (sprite) => sprite.length);
+
+        function getHighestValue(dict, getIsAnimation, valueFunction)
+        {
+            let a = -1;
+            for (let key in dict)
+            {
+                let content = dict[key];
+                console.log(key);
+                if (getIsAnimation(content))   // content is animation
+                    for (let sprite of content)
+                        checkA (sprite);
+                else                                // content is sprite
+                    checkA (content);
+            }
+
+            function checkA(sprite)
+            {
+                let potentialValue = valueFunction(sprite);
+                if (potentialValue > a)
+                    a = potentialValue;
+            }
+
+            return a;
+        }
+
+        return [width, height];
+    }
+
+    getIsAnimation(entry) // ToMaybeDo: Store this value (Animation or still) and the actual data in separate values of the json
+    {
+        return Array.isArray(entry[0][0][0]);
     }
 }
 
@@ -337,13 +375,11 @@ let weaponFrameSprite;
 
 let fireBulletSprite;
 let playerSprite;
+let corpseSprite;
 
 let handgunSprite;
 let shotgunSprite;
 let machinegunSprite;
-
-let opponentSprite;
-let corpseSprite;
 
 let font;
 
@@ -464,7 +500,7 @@ async function spriteReader_init()
                 ]),
                 new StillSequence('Walk_NW',
                 [
-                    new Still(0, 168, 29, 55),
+                    new Still(0, 0, 168, 29, 55),
                     new Still(0, 29, 168, 37, 56),
                     new Still(0, 66, 168, 29, 56),
                     new Still(0, 95, 167, 37, 56)

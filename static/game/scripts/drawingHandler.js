@@ -141,14 +141,70 @@ function drawingHandler_init()
     
 }
 
-function drawingHandler_drawCells()
+function drawingHandler_initKernel()
 {
-    drawingHandler_draw_gpu();
+    function createEmpty3DArray(width, height, unit)
+    {
+        let a = [];
+        for (let y = 0; y < height; y++)
+        {
+            a.push([]);
+            for (let x = 0; x < width; x++)
+                a[y].push(unit);
+        }
+        return a;
+    }
+
+
+    let FourBitUnit = [0, 0, 0, 0];
+
+    let weaponImageBounds = shotgunSprite.getBiggestBounds();
+    let weaponImage = createEmpty3DArray(weaponImageBounds[0], weaponImageBounds[1], FourBitUnit);
+
+    let healthText = createEmpty3DArray(healthTextBounds_sizeX, healthTextBounds_sizeY, FourBitUnit);
+    let ammoText = createEmpty3DArray(ammoTextBounds_sizeX, ammoTextBounds_sizeY, FourBitUnit);
+
+
+    let objectStartIndezes = [];
+    let objectBounds = [];
+
+    for (let i = 0; i < max_opponents * max_bullets * max_corpses; i++)
+    {
+        objectStartIndezes.push(0);
+        objectBounds.push([0, 0, 0, 0]);
+    }
+
+    let objectArray = [];
+    pushObjects(fireBulletSprite, max_bullets);
+    pushObjects(corpseSprite, max_corpses);
+    pushObjects(playerSprite, max_opponents);
+    function pushObjects(spriteSet, max)
+    {
+        let spriteBounds = spriteSet.getBiggestBounds();
+        let spriteImage = createEmpty3DArray(spriteBounds[0], spriteBounds[1], FourBitUnit)
+        for (let i = 0; i < max; i++)
+            objectArray.push(spriteImage);
+    }
+
+    objectArray = objectArray.flat(2);
+
+
+    // Not important (no arrays)
+    let weaponFrame_startY = 0;
+    let objectCount = 0;
+
+    buffer = gpu_kernel(playerX, playerY, playerAngle,
+        map_numbers,
+        wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
+        weaponImage, weaponImageBounds,
+        healthText, ammoText,
+        weaponFrame_startY,
+        objectArray, objectStartIndezes, objectBounds, objectCount);
 }
 
 //#region  GPU
 
-function drawingHandler_draw_gpu()
+function drawingHandler_draw()
 {
 
     //#region UI

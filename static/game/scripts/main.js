@@ -32,6 +32,7 @@ async function init()
     await initMap_Numbers();
 
     drawingHandler_init(); // Needs to wait for initRuntimeVariables();
+    drawingHandler_initKernel();
 
     inputHander_init(); // Needs to wait for drawingHandler_init()
 
@@ -96,6 +97,8 @@ async function initMap_Numbers()
     map_numbers = new Array(mapString.length);
     for(i = 0; i < map_numbers.length; i++)
         map_numbers[i] = mapString.charCodeAt(i);
+    
+    console.log('Received map');
 }
 
 function gameLoop()
@@ -109,7 +112,7 @@ function gameLoop()
     
     //inputHandler_updateInput(deltaTime);
 
-    drawingHandler_drawCells();
+    drawingHandler_draw();
     
     //console.log("forwardX: " + Math.sin(playerAngle) + ", forwardY: " + Math.cos(playerAngle)); 
 }

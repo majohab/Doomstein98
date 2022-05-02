@@ -81,8 +81,6 @@ function socketHandler_init()
 
         if (data[type_key] == update_key)
         {
-            console.log(data[player_key][userName][move_animation_key]);
-
             if (mapString == null)
             {
                 if (data[map_key] != null)
