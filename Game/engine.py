@@ -239,6 +239,8 @@ class Coordinate:
         self.x += speed * np.sin(dir)
         self.y += speed * np.cos(dir)
 
+    
+    
     def get_distance(self, sec_cod) -> float:
         """Returns the distance between two coordinates
 
@@ -1082,6 +1084,8 @@ class AmmunitionPack:
 
         # if the ammunitionPack has to wait
         if(self.curr_delay > 0):
+
+            print(F"{self.weapon[1]} munition was spawnd at x: {self.coordinate.x} y: {self.coordinate.y} with {self.ammo} bullets")
 
             # if the spawn is going to appear again, choose a new weapon with new amount of ammunition
             if(self.curr_delay == 1):
