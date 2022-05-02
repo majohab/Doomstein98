@@ -1,13 +1,15 @@
 import math
 from operator import attrgetter
 import random
+from telnetlib import WONT
 import threading
 import time
 import uuid
 import numpy as np
 from typing import Any, Mapping
+import datetime
 
-from lobby.models import Map as MapDB, Weapon as WeaponDB, Setting as SettingDB
+from lobby.models import Map as MapDB, Statistic as StatisticDB, Weapon as WeaponDB, Setting as SettingDB
  
 
 from asgiref.sync import async_to_sync
@@ -50,7 +52,7 @@ CHANGE_WEAPON_DELAY             = round(s.change_weapon_delay/TICK_RATE)
 SPAWN_LOCK_TIME                 = round(s.spawn_lock_time/TICK_RATE) 
 REVIVE_WAITING_TIME             = round(s.revive_waiting_time/TICK_RATE)
 PLAYER_DELAY_TOLERANCE          = round(s.player_delay_tolerance/TICK_RATE)
-PLAYER__NOT_RESPONDING_TIME     = round(s.player_not_responding_time/TICK_RATE)
+PLAYER_NOT_RESPONDING_TIME      = round(s.player_not_responding_time/TICK_RATE)
 PLAYER_OCCUPIED_SPAWN_TIME      = round(s.player_occupied_spawn_time/TICK_RATE)
 
 DEFAULT_MAX_ENDTIME             = (s.default_max_endtime*60)/TICK_RATE
@@ -95,6 +97,7 @@ justShot_animation      = 's_a'
 justHit_animation       = 'h_a'
 move_animation_key      = 'm_a'
 weapon_change_animation = 'w_a'
+win_key                 = 'w'
 
 # List of default map
 """
@@ -338,6 +341,7 @@ class Map:
     """
 
     def __init__        (self, 
+                        name        : str,
                         width       : int, 
                         height      : int, 
                         map         : list[list[str]], 
@@ -354,13 +358,12 @@ class Map:
             munitions (list[Munition]): list of munition objects, the map contains
         """
         
+        self.name       : str               = name
         self.width      : int               = width
         self.height     : int               = height
         self.map        : list[list[str]]   = map
         self.mapString  : str               = mapString
         self.spawns     : dict[Spawn]       = spawns
-
-        self.tick       = 0
     
     def func            (spawns, x, y, char) -> str:
         """helper function for handling the from list function
@@ -650,6 +653,8 @@ class Player:
         self.gotHitTimes            : int   = 0
         self.hitTimes               : int   = 0
 
+        self.win                    : bool  = False
+
         #------------------------------------------------
 
         '''
@@ -722,7 +727,7 @@ class Player:
 
             #print(F"{self.name} just shot a bullet!")
 
-            selfB += 1
+            self.shotBullets += 1
 
             # The animation of shooting
             self.justShot = JUST_SHOT_ANIMATION
@@ -890,7 +895,6 @@ class Player:
 
         self.dirView = dir
         
-
     def update(self) -> None:
         """
         Reduce all latencies of the player by one if needed
@@ -919,7 +923,6 @@ class Player:
 
             #reduce the waiting time
             self.alive -= 1
-
 
     def die(self) -> None:
         """
@@ -978,6 +981,36 @@ class Player:
             state_key : self.alive
         }
 
+    def save_statistic(self, engine)     -> None:
+        """
+        Saves the statistic of the player in the database
+        with a timestamp
+
+        Args:
+            engine (Engine): the game itself
+        """
+        player = StatisticDB.objects.create(
+            username        = self.name,
+            lobby_name      = engine.lobbyName,
+            game_mode       = engine.gameMode,
+            map             = engine.state.map.name,
+            players_count   = len(engine.playerQueue) + len(engine.state.players),
+            won             = self.win,
+            forbidden       = self.name in engine.playerForbidden,
+            kills           = self.kills,
+            deaths          = self.deaths,
+            duration        = engine.tickNum * TICK_RATE,
+            finished        = engine.finished,
+            disconnected    = self.alive == -2,
+            shot_bullets    = self.shotBullets,
+            hit_times       = self.hitTimes,
+            health_reduction= self.healthReduction,
+            refilled_ammo   = self.refilledAmmo,
+            got_hit         = self.gotHitTimes,
+            self_health_red = self.selfHealthReduction,
+        )
+        player.save()
+
 class Bullet:
     """
     Creating and handling Bullets, inlcuding moving and rendering
@@ -999,7 +1032,6 @@ class Bullet:
         #---------------------------------
         # Statistics
         self.refilled     : int = 0 
-        selfB : int = 0
 
         # One Movement per frame
         self.speed : float = BULLET_SPEED
@@ -1117,10 +1149,10 @@ class AmmunitionPack:
         # if the ammunitionPack has to wait
         if(self.curr_delay > 0):
 
-            print(F"{self.weapon[1]} munition was spawnd at x: {self.coordinate.x} y: {self.coordinate.y} with {self.ammo} bullets")
-
             # if the spawn is going to appear again, choose a new weapon with new amount of ammunition
             if(self.curr_delay == 1):
+
+                print(F"{self.weapon[1]} munition was spawnd at x: {self.coordinate.x} y: {self.coordinate.y} with {self.ammo} bullets")
 
                 self.weapon = random.choice(AVAILABLE_WEAPONS)
                 self.ammo   = int(random.randrange(int(self.weapon[1]*MIN_MUNITION), int(self.weapon[1]*MAX_MUNITION), int(self.weapon[1]*STEP_MUNITION)))
@@ -1263,6 +1295,7 @@ class State:
         #print(mapString)
 
         self.map = Map(
+            mapDB.name,
             width,
             height,
             map,
@@ -1329,6 +1362,9 @@ class GameEngine(threading.Thread):
         # 1: Last man standing, no reviving at all
         self.gameMode = gameMode
 
+        # Has the game finished till the time stopped or somebody finished the condition
+        self.finished : bool = False
+
         #print(F"Initializing GameEngine: {lobbyname} with players: {playersName}")
         
         # give the available weapons as a restriction
@@ -1343,8 +1379,8 @@ class GameEngine(threading.Thread):
         # random ID for the game
         self.name = uuid.uuid4()
 
-        # groupName for communication
-        self.groupName = lobbyname
+        # lobbyName for communication
+        self.lobbyName = lobbyname
 
         # how many kills are necessary to win the game
         self.winScore = winScore
@@ -1403,6 +1439,10 @@ class GameEngine(threading.Thread):
 
             elif(self.stopFlag):
                 # if the worker wants to stop the thread
+                # save all player's statistic 
+                for player in self.playerQueue + self.state.players :
+                    player.save_statistic(self)
+
                 break
 
     def broadcast_state             (self)                                      -> None: 
@@ -1419,7 +1459,7 @@ class GameEngine(threading.Thread):
 
         # Synchronize the channel's information and send them to all participants
         async_to_sync(self.channelLayer.group_send)(
-            self.groupName, 
+            self.lobbyName, 
             {
              "type": "game.update",
              state_key   : stateJson
@@ -1437,7 +1477,7 @@ class GameEngine(threading.Thread):
         # if time limit was reached
         if(self.tickNum >= self.endTime):
             
-            self.time_limit_reached()
+            self.finish_game()
 
         begin = time.time()
 
@@ -1513,9 +1553,13 @@ class GameEngine(threading.Thread):
         # if game is about last man standing and only one Player remained
         if self.gameMode == 1 and len(self.state.players) == 1:
 
-            print("Last Man Standing was won because only one player left")
+            print(F"Last Man Standing was won because only one player {self.state.players[0].name} left")
+            
+            # Declare the winner
+            self.state.players[0].win = True
+            
             # Declare it as a win
-            self.win(self.state.players)
+            self.win()
 
         for idx, player in enumerate(self.state.players):
 
@@ -1671,7 +1715,7 @@ class GameEngine(threading.Thread):
             # if the Player is disconnected and rejoined the game
             else:
                 print(F"\n\nPlayer {playerName} is rejoining the game!\n")
-                stateQ.alive = PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
+                stateQ.alive = PLAYER_NOT_RESPONDING_TIME
         except:
             #print(F"\n\nPlayer {playerName} is joining as new player the game!\n")
             # if the Player joins the game for the first time
@@ -1705,7 +1749,7 @@ class GameEngine(threading.Thread):
                     print("No spawn was found yet")
 
                     #Wait for specific time if player could not spawn
-                    player.alive = PLAYER_WAITING_TIME_OCCUPIED_SPAWN 
+                    player.alive = PLAYER_OCCUPIED_SPAWN_TIME
 
                 #set his health back to 100
                 player.health = 100
@@ -1761,7 +1805,7 @@ class GameEngine(threading.Thread):
                 "game_engine", 
                {
                 "type"    : "close.game",
-                group_key   : self.groupName,
+                group_key   : self.lobbyName,
                 }
             ) 
 
@@ -1772,7 +1816,7 @@ class GameEngine(threading.Thread):
         
         [ammunitionPack.update(self) for ammunitionPack in self.state.ammunitionPacks.values()]
                 
-    def win                         (self, winningPlayers : list[Player])       -> None:
+    def win                         (self)       -> None:
         """
         Is called if the game is finished.
 
@@ -1780,7 +1824,8 @@ class GameEngine(threading.Thread):
             winningPlayers (list[Player]): list of winning player
         """
 
-        print(F"{winningPlayers} wins the game")
+        # the game finished completely
+        self.finished = True
 
         # Stop doing something
         self.startFlag = False
@@ -1791,20 +1836,29 @@ class GameEngine(threading.Thread):
             {
              "type"    : "win",
              time_key    : self.tickNum * TICK_RATE,
-             group_key   : self.groupName, 
+             group_key   : self.lobbyName, 
              player_key : 
              [
                  { 
-                   name_key       : winningPlayer.name,
-                   kills_key      : winningPlayer.kills,
-                   death_key      : winningPlayer.deaths,
-                   killDeath_key  : winningPlayer.killDeath,
+                   name_key       : p.name,
+                   kills_key      : p.kills,
+                   death_key      : p.deaths,
+                   killDeath_key  : p.killDeath,
+                   win_key        : p.win
                  } 
-                   for winningPlayer in winningPlayers]
+                   for p in self.state.players] +
+             [   { 
+                   name_key       : p.name,
+                   kills_key      : p.kills,
+                   death_key      : p.deaths,
+                   killDeath_key  : p.killDeath,
+                   win_key        : p.win
+                 } 
+                   for p in self.playerQueue]
             }
         )
 
-    def time_limit_reached          (self)                                      -> None: 
+    def finish_game                 (self)                                      -> None: 
         '''
             When the time has reached its limit
         '''
@@ -1814,14 +1868,18 @@ class GameEngine(threading.Thread):
         if self.gameMode == 0:
 
             # Get the best players out of all players and broadcast them
-            self.win(self.look_for_best_players(self.state.players + self.playerQueue))
+            self.look_for_best_players(self.state.players + self.playerQueue)
+            
+            # Broadcast the finished state
+            self.win()
         
         elif self.gameMode == 1:
 
             # Get the best players out of still alive players and broadcast them
-            self.win(self.look_for_best_players(self.state.players))
+            self.look_for_best_players(self.state.players)
+            self.win()
 
-    def look_for_best_players       (self, players : list[Player])              -> list[Player]:
+    def look_for_best_players       (self, players : list[Player])              -> None:
         
 
         # Look for the highest kills in queue and in current game
@@ -1834,7 +1892,7 @@ class GameEngine(threading.Thread):
         if len(bestPlayers) == 1:
 
             # return instantly because there is already an unambigous best player
-            return bestPlayers
+            bestPlayers[0].win = True
 
         else:
 
@@ -1842,6 +1900,6 @@ class GameEngine(threading.Thread):
             highestKillDeath = max(bestPlayers, key=attrgetter('killDeath')).killDeath
 
             # Look for all Players with highest kills
-            bestPlayers = [player for player in bestPlayers if player.killDeath == highestKillDeath]   
-
-            return bestPlayers 
+            for player in bestPlayers:
+                if player.killDeath == highestKillDeath:
+                    player.win = True   

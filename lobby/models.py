@@ -80,23 +80,24 @@ class Statistic(models.Model):
     lobby_name      = models.CharField                  (max_length=50)
     game_mode       = models.SmallIntegerField          (default=0)
     map             = models.CharField                  (max_length=50)
-    players         = models.SmallIntegerField          (default=0)
+    players_count   = models.SmallIntegerField          (default=0)
     
     won             = models.BooleanField               ()
-    forbbiden_list  = models.BooleanField               ()
+    forbidden       = models.BooleanField               ()
 
     kills           = models.SmallIntegerField          (default=0)
     # kills with weapons
     deaths          = models.SmallIntegerField          (default=0)
     # died by weapon
     
-    duration        = models.DurationField              (default=0)
-    time            = models.DateField                  ()
+    duration        = models.SmallIntegerField          (default=0)
+    time            = models.DateTimeField              (unique=True, auto_now_add=True)
 
-    finished_game   = models.BooleanField               ()
+    finished        = models.BooleanField               ()
     disconnected    = models.BooleanField               ()
 
     shot_bullets    = models.SmallIntegerField          (default=0)
+    hit_times       = models.SmallIntegerField          (default=0)
     health_reduction= models.SmallIntegerField          (default=0)
 
     # How many bullets were refilled
