@@ -620,13 +620,6 @@ class Player:
         # how many ticks does the player have to wait till he can shoot again
         self.changeWeaponDelay : int = 0
 
-        # Represents score for kill and deaths
-        self.kills  : int = 0
-        self.deaths : int = 0
-
-        # kill/death rate
-        self.killDeath : float = 0
-
         '''
         Float describes how fast the Player is moving
         '''
@@ -634,6 +627,23 @@ class Player:
 
         '''Float describes how fast the Player is rotating'''
         self.rotation_speed : float = rotation_speed
+
+        #------------------------------------------------
+        #----------------Statistics----------------------
+        
+        # Represents score for kill and deaths
+        self.kills  : int = 0
+        self.deaths : int = 0
+
+        # kill/death rate
+        self.killDeath : float = 0
+
+        self.shot_bullets : int = 0
+        self.refilled : int = 0
+
+        
+
+        #------------------------------------------------
 
         '''
         Integer how long player has to wait
@@ -971,6 +981,11 @@ class Bullet:
         self.moveAnim         : int        = JUST_MOVE_ANIMATION_BULLET
         self.dirMove          : float      = direction
 
+        #---------------------------------
+        # Statistics
+        self.refilled     : int = 0 
+        self.shot_bullets : int = 0
+
         # One Movement per frame
         self.speed : float = BULLET_SPEED
 
@@ -1066,9 +1081,10 @@ class AmmunitionPack:
         # Deactivate the the ammunition reset the delay
         self.curr_delay = self.max_delay
 
+        # find the weapon
         p_weapon = [weapon for weapon in player.weapons.values() if weapon.name == self.weapon[0]][0]
 
-        #increase the ammunition of the player's weapon
+        # increase the ammunition of the player's weapon
         p_weapon.currAmmunition += self.ammo
 
         # if the currAmmunition is too high then reduce it to the max

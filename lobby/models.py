@@ -74,7 +74,46 @@ class Lobby(models.Model):
         """
         return self.name
 
+class Statistic(models.Model):
+    
+    username        = models.CharField                  (max_length=50)
+    lobby_name      = models.CharField                  (max_length=50)
+    game_mode       = models.SmallIntegerField          (default=0)
+    map             = models.CharField                  (max_length=50)
+    players         = models.SmallIntegerField          (default=0)
+    
+    won             = models.BooleanField               ()
+
+    kills           = models.SmallIntegerField          (default=0)
+    # kills with weapons
+    deaths          = models.SmallIntegerField          (default=0)
+    # died by weapon
+    
+    duration        = models.DurationField              (default=0)
+    time            = models.DateField                  ()
+
+    finished_game   = models.BooleanField               ()
+    disconnected    = models.BooleanField               ()
+
+    shot_bullet     = models.SmallIntegerField          (default=0)
+    health_reduction= models.SmallIntegerField          (default=0)
+    refilled_ammo   = models.SmallIntegerField          (default=0)
+
+    got_hit         = models.SmallIntegerField          (default=0)
+    self_health_red = models.SmallIntegerField          (default=0)
+
+
+
+
+
+
 class Setting(models.Model):
+    """
+    Settings for the constants, which are configurations for the game
+
+    Args:
+        models (_type_): _description_
+    """
 
     index                           = models.SmallIntegerField(default=0, unique=True)
     
