@@ -75,7 +75,14 @@ class Lobby(models.Model):
         return self.name
 
 class Statistic(models.Model):
-    
+    """
+    Contains every important statistic concerning the user
+
+    Args:
+        models (_type_): _description_
+    """
+    time            = models.DateTimeField              (unique=True, auto_now_add=True)
+
     username        = models.CharField                  (max_length=50)
     lobby_name      = models.CharField                  (max_length=50)
     game_mode       = models.SmallIntegerField          (default=0)
@@ -91,7 +98,6 @@ class Statistic(models.Model):
     # died by weapon
     
     duration        = models.SmallIntegerField          (default=0)
-    time            = models.DateTimeField              (unique=True, auto_now_add=True)
 
     finished        = models.BooleanField               ()
     disconnected    = models.BooleanField               ()
@@ -106,10 +112,22 @@ class Statistic(models.Model):
     got_hit         = models.SmallIntegerField          (default=0)
     self_health_red = models.SmallIntegerField          (default=0)
 
+class WeaponStatistic(models.Model):
+    """
+    Contains statistic to the weapon related to the user
 
+    Args:
+        models (_type_): _description_
+    """
+    time            = models.DateTimeField              (auto_now_add=True)
 
-
-
+    name            = models.CharField                  (max_length=255)
+    player          = models.ForeignKey                 (Statistic, on_delete=models.CASCADE)
+    shot_bullets    = models.SmallIntegerField          (default=0)
+    hit_times       = models.SmallIntegerField          (default=0)
+    kills           = models.SmallIntegerField          (default=0)
+    health_reduction= models.SmallIntegerField          (default=0)
+    refilled_ammo   = models.SmallIntegerField          (default=0)
 
 class Setting(models.Model):
     """
@@ -159,6 +177,9 @@ class Setting(models.Model):
     default_winscore                = models.SmallIntegerField(default=20, help_text="How many kills till game ends")  
     default_max_endtime             = models.SmallIntegerField(default=30, help_text="How many minutes till the game ends")
 
+
+    #Bullets
+    start_position_bullet           = models.FloatField       (default=.5, help_text="How many blocks from the player should a bullet start")
     accuracy_reduction              = models.FloatField       (default=.11,help_text="The radians plus minus range for random calculation")
     hit_box                         = models.FloatField       (default=.4, help_text="How many blocks away from the realy players location")
 

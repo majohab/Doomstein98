@@ -1,16 +1,18 @@
 import math
 from operator import attrgetter
 import random
-from telnetlib import WONT
 import threading
 import time
 import uuid
 import numpy as np
 from typing import Any, Mapping
-import datetime
 
-from lobby.models import Map as MapDB, Statistic as StatisticDB, Weapon as WeaponDB, Setting as SettingDB
- 
+from lobby.models import (Map       as MapDB, 
+                          Statistic as StatisticDB,
+                          WeaponStatistic, 
+                          Weapon    as WeaponDB, 
+                          Setting   as SettingDB
+)
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -297,6 +299,167 @@ class Spawn:
         if(self.lock_time > 0):
             self.lock_time -= 1
 
+class Bullet:
+    """
+    Creating and handling Bullets, inlcuding moving and rendering
+    """
+
+    def __init__    (self, originPlayer, x : float, y : float, direction : float):
+
+        #print("A bullet has been created")
+
+        self.player           : Player     = originPlayer
+        self.weapon                        = originPlayer.currentWeapon
+        self.priorPosition    : Coordinate = Coordinate(x,y)
+        self.middlePosition   : Coordinate = Coordinate(x,y)
+        self.currentPosition  : Coordinate = Coordinate(x,y)
+
+        self.moveAnim         : int        = JUST_MOVE_ANIMATION_BULLET
+        self.dirMove          : float      = direction
+
+        # One Movement per frame
+        self.speed : float = BULLET_SPEED
+
+    def update_pos  (self, map)   -> bool:
+        """
+        Updates the position of every bullet
+
+        Args:
+            map (Map): The map object to check collision
+
+        Returns:
+            bool: If bullet should be deleted because of collision
+        """
+
+        tmp = deepcopy(self.currentPosition)
+
+        #print(self.currentPosition.x, "\n")
+
+        tmp.cod_move(self.speed, self.dirMove)
+
+        #print(self.currentPosition.x, "\n")
+
+        # Check collision with Wall
+        if map.check_collision(tmp, self, tolerance = WALL_HIT_BOX_BULLET_TOLERANCE):
+            return True
+        else:
+
+            #if Bullet did not collide with wall
+            self.priorPosition = deepcopy(self.currentPosition)
+
+            self.currentPosition = deepcopy(tmp)
+
+            self.middlePosition.x = (self.priorPosition.x + self.currentPosition.x)/2
+            self.middlePosition.y = (self.priorPosition.y + self.currentPosition.y)/2
+
+            self.moveAnim = (self.moveAnim + 1) % JUST_MOVE_ANIMATION_BULLET # increase the value by one if he moves
+
+            return False
+
+    def render      (self)              -> Mapping[str, Any]:
+        """
+        Returns all relevant information for the client to render the bullet
+
+        Returns:
+            Mapping[str, Any]: contains all relevant information for the client
+        """
+
+        return {
+            x_coordinate_key   : self.currentPosition.x,
+            y_coordinate_key   : self.currentPosition.y,
+            direction_key      : self.dirMove,
+            move_animation_key : self.moveAnim,
+        }
+
+class AmmunitionPack:
+    """
+    Class for munition packs on the battlefield which can be collected
+    """
+
+    def __init__(self, coordinate : Coordinate, state):
+        """Creates a munition object
+
+        Args:
+            coordinate (Coordinate): position of the munition pack
+        """
+
+        self.coordinate : Coordinate    = coordinate
+        self.weapon     : dict[int:str] = random.choice(AVAILABLE_WEAPONS)
+        self.ammo       : int           = int(random.randrange(int(self.weapon[1]*MIN_MUNITION), int(self.weapon[1]*MAX_MUNITION), int(self.weapon[1]*STEP_MUNITION)))
+        self.max_delay  : int           = state.ammunitionDelay
+        self.curr_delay : int           = state.ammunitionDelay
+
+        print(F'''
+        coordinate  : {self.coordinate.x} {self.coordinate.y}
+        ammo        : {self.ammo}
+        weapon      : {self.weapon}
+        ''')
+
+    def collected(self, player)                         -> None:
+        """Called when a player collects a munition package
+
+        Args:
+            player (Player): the player who collects the ammunition
+        """
+
+        # If the ammunition is not active yet, go back
+        if(self.curr_delay > 0):
+            return
+
+
+        print("Munition is collected")
+
+        # Deactivate the the ammunition reset the delay
+        self.curr_delay = self.max_delay
+
+        # find the weapon
+        pWeapon : Weapon = [weapon for weapon in player.weapons.values() if weapon.name == self.weapon[0]][0]
+
+        # increase the ammunition of the player's weapon
+        pWeapon.currAmmunition += self.ammo
+        
+        # update the ammunition statistic
+        pWeapon.refilledAmmo += self.ammo
+
+        # if the currAmmunition is too high then reduce it to the max
+        if(pWeapon.currAmmunition > pWeapon.maxAmmunition):
+            pWeapon.currAmmunition = pWeapon.maxAmmunition 
+
+    def update(self, state)                             -> None:
+        """
+        Update the the waiting time for spawning again
+        """
+
+        # if the ammunitionPack has to wait
+        if(self.curr_delay > 0):
+
+            # if the spawn is going to appear again, choose a new weapon with new amount of ammunition
+            if(self.curr_delay == 1):
+
+                print(F"{self.weapon[1]} munition was spawnd at x: {self.coordinate.x} y: {self.coordinate.y} with {self.ammo} bullets")
+
+                self.weapon = random.choice(AVAILABLE_WEAPONS)
+                self.ammo   = int(random.randrange(int(self.weapon[1]*MIN_MUNITION), int(self.weapon[1]*MAX_MUNITION), int(self.weapon[1]*STEP_MUNITION)))
+
+            #reduce it by one
+            self.curr_delay -= 1
+
+    def render(self)                                    -> Mapping[str, Any]:
+        """
+        Returns the relevant informatione about AmmunitionPack
+
+        Returns:
+            Mapping[str, Any]: Contains the information
+        """
+        #print(self.curr_delay)
+
+        return {
+            name_key         : self.weapon[0],
+            ammo_key         : self.ammo,
+            x_coordinate_key : self.coordinate.x,
+            y_coordinate_key : self.coordinate.y,
+        }
+
 class Weapon:
     """
     Class of the weapon for the players
@@ -326,6 +489,14 @@ class Weapon:
 
         #How much damage does the Weapon cause
         self.damage         : int = dmg           if activated else 0 # safety reasons
+
+        #---------------------------------
+        # Statistics
+        self.shotBullets    : int = 0
+        self.hitTimes       : int = 0
+        self.healthReduction: int = 0
+        self.refilledAmmo   : int = 0
+        self.kills          : int = 0
 
     def update(self):
         # reduce currLatency counter if needed
@@ -642,16 +813,8 @@ class Player:
 
         # kill/death rate
         self.killDeath              : float = 0
-
-        self.shotBullets            : int   = 0
-        self.refilledAmmo           : int   = 0
-
-
-        self.healthReduction        : int   = 0
         self.selfHealthReduction    : int   = 0
-
         self.gotHitTimes            : int   = 0
-        self.hitTimes               : int   = 0
 
         self.win                    : bool  = False
 
@@ -727,7 +890,7 @@ class Player:
 
             #print(F"{self.name} just shot a bullet!")
 
-            self.shotBullets += 1
+            weapon.shotBullets += 1
 
             # The animation of shooting
             self.justShot = JUST_SHOT_ANIMATION
@@ -753,8 +916,8 @@ class Player:
                     # From whom was a bullet shot?
                     self,
                     #0.5 Blöcke vom Spieler entfernt entstehen die Bullets
-                    self.currentPosition.x + 1 * np.sin(self.dirView),
-                    self.currentPosition.y + 1 * np.cos(self.dirView),
+                    self.currentPosition.x + s.start_position_bullet * np.sin(self.dirView),
+                    self.currentPosition.y + s.start_position_bullet * np.cos(self.dirView),
                     #Shot in direction of player itself
                     dir
                 )
@@ -778,8 +941,12 @@ class Player:
         # Wait 1 seconds to be able to shoot again
         self.changeWeaponDelay = CHANGE_WEAPON_DELAY
         
+        # Reset the animation for bugs
+        #TODO: HÄNGER
+        #self.justShot          = 0
+        
     #Describes the function to be called when the player is hit
-    def get_hit(self, state, bullet, mode : int) -> None:
+    def get_hit(self, state, bullet : Bullet, mode : int) -> None:
 
         # The animation of getting hit shall go on for 1 second
         self.justHit = JUST_HIT_ANIMATION
@@ -794,21 +961,22 @@ class Player:
             self.gotHitTimes             += 1
 
 
-            bullet.player.healthReduction += bullet.weapon.damage
-            bullet.player.hitTimes       += 1
+            bullet.player.currentWeapon.healthReduction += bullet.weapon.damage
+            bullet.player.currentWeapon.hitTimes        += 1
         
         if(self.health < 1):
+
+            # increase score of player
+            bullet.player.kills +=1
+            bullet.player.currentWeapon.kills +=1
+
+            # Update the kill/death rate
+            try:
+                bullet.player.killDeath = bullet.player.kills/bullet.player.deaths
+            except ZeroDivisionError:
+                bullet.player.killDeath = bullet.player.kills/1
             
             if(mode == 0):
-
-                # increase score of player
-                bullet.player.kills +=1
-
-                # Update the kill/death rate
-                try:
-                    bullet.player.killDeath = bullet.player.kills/bullet.player.deaths
-                except ZeroDivisionError:
-                    bullet.player.killDeath = bullet.player.kills/1
 
                 # Player is not alive anymore and waits till he respawns
                 self.die()
@@ -989,7 +1157,7 @@ class Player:
         Args:
             engine (Engine): the game itself
         """
-        player = StatisticDB.objects.create(
+        playerDB : StatisticDB = StatisticDB.objects.create(
             username        = self.name,
             lobby_name      = engine.lobbyName,
             game_mode       = engine.gameMode,
@@ -1002,179 +1170,28 @@ class Player:
             duration        = engine.tickNum * TICK_RATE,
             finished        = engine.finished,
             disconnected    = self.alive == -2,
-            shot_bullets    = self.shotBullets,
-            hit_times       = self.hitTimes,
-            health_reduction= self.healthReduction,
-            refilled_ammo   = self.refilledAmmo,
+            shot_bullets    = sum([weapon.shotBullets       for weapon in self.weapons.values()]),
+            hit_times       = sum([weapon.hitTimes          for weapon in self.weapons.values()]),
+            health_reduction= sum([weapon.healthReduction   for weapon in self.weapons.values()]),
+            refilled_ammo   = sum([weapon.refilledAmmo      for weapon in self.weapons.values()]),
             got_hit         = self.gotHitTimes,
             self_health_red = self.selfHealthReduction,
         )
-        player.save()
 
-class Bullet:
-    """
-    Creating and handling Bullets, inlcuding moving and rendering
-    """
+        playerDB.save()
 
-    def __init__    (self, originPlayer : Player, x : float, y : float, direction : float):
+        for weapon in self.weapons.values():
+            # Save the statistic about the weapon usage of the player
 
-        #print("A bullet has been created")
-
-        self.player           : Player     = originPlayer
-        self.weapon                        = originPlayer.currentWeapon
-        self.priorPosition    : Coordinate = Coordinate(x,y)
-        self.middlePosition   : Coordinate = Coordinate(x,y)
-        self.currentPosition  : Coordinate = Coordinate(x,y)
-
-        self.moveAnim         : int        = JUST_MOVE_ANIMATION_BULLET
-        self.dirMove          : float      = direction
-
-        #---------------------------------
-        # Statistics
-        self.refilled     : int = 0 
-
-        # One Movement per frame
-        self.speed : float = BULLET_SPEED
-
-    def update_pos  (self, map : Map)   -> bool:
-        """
-        Updates the position of every bullet
-
-        Args:
-            map (Map): The map object to check collision
-
-        Returns:
-            bool: If bullet should be deleted because of collision
-        """
-
-        tmp = deepcopy(self.currentPosition)
-
-        #print(self.currentPosition.x, "\n")
-
-        tmp.cod_move(self.speed, self.dirMove)
-
-        #print(self.currentPosition.x, "\n")
-
-        # Check collision with Wall
-        if map.check_collision(tmp, self, tolerance = WALL_HIT_BOX_BULLET_TOLERANCE):
-            return True
-        else:
-
-            #if Bullet did not collide with wall
-            self.priorPosition = deepcopy(self.currentPosition)
-
-            self.currentPosition = deepcopy(tmp)
-
-            self.middlePosition.x = (self.priorPosition.x + self.currentPosition.x)/2
-            self.middlePosition.y = (self.priorPosition.y + self.currentPosition.y)/2
-
-            self.moveAnim = (self.moveAnim + 1) % JUST_MOVE_ANIMATION_BULLET # increase the value by one if he moves
-
-            return False
-
-    def render      (self)              -> Mapping[str, Any]:
-        """
-        Returns all relevant information for the client to render the bullet
-
-        Returns:
-            Mapping[str, Any]: contains all relevant information for the client
-        """
-
-        return {
-            x_coordinate_key   : self.currentPosition.x,
-            y_coordinate_key   : self.currentPosition.y,
-            direction_key      : self.dirMove,
-            move_animation_key : self.moveAnim,
-        }
-
-class AmmunitionPack:
-    """
-    Class for munition packs on the battlefield which can be collected
-    """
-
-    def __init__(self, coordinate : Coordinate, state):
-        """Creates a munition object
-
-        Args:
-            coordinate (Coordinate): position of the munition pack
-        """
-
-        self.coordinate : Coordinate    = coordinate
-        self.weapon     : dict[int:str] = random.choice(AVAILABLE_WEAPONS)
-        self.ammo       : int           = int(random.randrange(int(self.weapon[1]*MIN_MUNITION), int(self.weapon[1]*MAX_MUNITION), int(self.weapon[1]*STEP_MUNITION)))
-        self.max_delay  : int           = state.ammunitionDelay
-        self.curr_delay : int           = state.ammunitionDelay
-
-        print(F'''
-        coordinate  : {self.coordinate.x} {self.coordinate.y}
-        ammo        : {self.ammo}
-        weapon      : {self.weapon}
-        ''')
-
-    def collected(self, player : Player)                         -> None:
-        """Called when a player collects a munition package
-
-        Args:
-            player (Player): the player who collects the ammunition
-        """
-
-        # If the ammunition is not active yet, go back
-        if(self.curr_delay > 0):
-            return
-
-
-        print("Munition is collected")
-
-        # Deactivate the the ammunition reset the delay
-        self.curr_delay = self.max_delay
-
-        # find the weapon
-        p_weapon = [weapon for weapon in player.weapons.values() if weapon.name == self.weapon[0]][0]
-
-        # increase the ammunition of the player's weapon
-        p_weapon.currAmmunition += self.ammo
-        
-        # update the ammunition statistic
-        player.refilledAmmo += self.ammo
-
-        # if the currAmmunition is too high then reduce it to the max
-        if(p_weapon.currAmmunition > p_weapon.maxAmmunition):
-            p_weapon.currAmmunition = p_weapon.maxAmmunition 
-
-    def update(self, state)                             -> None:
-        """
-        Update the the waiting time for spawning again
-        """
-
-        # if the ammunitionPack has to wait
-        if(self.curr_delay > 0):
-
-            # if the spawn is going to appear again, choose a new weapon with new amount of ammunition
-            if(self.curr_delay == 1):
-
-                print(F"{self.weapon[1]} munition was spawnd at x: {self.coordinate.x} y: {self.coordinate.y} with {self.ammo} bullets")
-
-                self.weapon = random.choice(AVAILABLE_WEAPONS)
-                self.ammo   = int(random.randrange(int(self.weapon[1]*MIN_MUNITION), int(self.weapon[1]*MAX_MUNITION), int(self.weapon[1]*STEP_MUNITION)))
-
-            #reduce it by one
-            self.curr_delay -= 1
-
-    def render(self)                                    -> Mapping[str, Any]:
-        """
-        Returns the relevant informatione about AmmunitionPack
-
-        Returns:
-            Mapping[str, Any]: Contains the information
-        """
-        #print(self.curr_delay)
-
-        return {
-            name_key         : self.weapon[0],
-            ammo_key         : self.ammo,
-            x_coordinate_key : self.coordinate.x,
-            y_coordinate_key : self.coordinate.y,
-        }
+            weaponDB : WeaponStatistic = WeaponStatistic.objects.create(
+                name            = weapon.name,
+                player          = playerDB,
+                shot_bullets    = weapon.shotBullets,
+                hit_times       = weapon.hitTimes,
+                health_reduction= weapon.healthReduction,
+                refilled_ammo   = weapon.refilledAmmo,
+            )
+            weaponDB.save()
 
 class State:
     """
