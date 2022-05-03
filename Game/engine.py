@@ -1,4 +1,4 @@
-import logging
+import math
 from operator import attrgetter
 import random
 import threading
@@ -7,47 +7,69 @@ import uuid
 import numpy as np
 from typing import Any, Mapping
 
-import math
+from lobby.models import (Map       as MapDB, 
+                          Statistic as StatisticDB,
+                          WeaponStatistic, 
+                          Weapon    as WeaponDB, 
+                          Setting   as SettingDB
+)
+
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from copy import deepcopy
 
-log = logging.getLogger(__name__)
+#-------------------------------------------------------------
+SETTINGS = 0
+#-------------------------------------------------------------
+
+# Get the current settings
+s : SettingDB = SettingDB.objects.filter(index=SETTINGS).first()
 
 #TODO: fit that for customized fps
-TICK_RATE = 1/60
+TICK_RATE = s.tick_rate
+
+#region Constant Variables
 
 # Velocity of different objects
-PLAYER_SPEED            = TICK_RATE/0.1
-ROTATION_SPEED          = TICK_RATE/1
-BULLET_SPEED            = TICK_RATE/TICK_RATE
+PLAYER_SPEED                    = TICK_RATE/s.player_speed
+ROTATION_SPEED                  = TICK_RATE/s.rotation_speed
+BULLET_SPEED                    = TICK_RATE/s.bullet_speed
 
-SPAWN_INDEX             = 50
+SPAWN_INDEX                     = s.spawn_index
 
 # The minimum/maximum range of ammunition in a munition package in percentage of max ammunition of a weapon
-MIN_MUNITION            = 0.2
-MAX_MUNITION            = 1
-STEP_MUNITION           = 0.2
-AMMUNITION_DELAY        = 0.01
+MIN_MUNITION                    = s.min_munition
+MAX_MUNITION                    = s.max_munition
+STEP_MUNITION                   = s.step_munition
+DEFAULT_AMMUNITION_DELAY        = s.default_ammunition_delay
 
 # Every Unit is in Seconds
-JUST_SHOT_ANIMATION     = 100
-JUST_HIT_ANIMATION      = round(1/TICK_RATE)   # 1 Second
-JUST_DIED_ANIMATION     = round(10/TICK_RATE)
-JUST_MOVE_ANIMATION_PLAYER     = 100
-JUST_MOVE_ANIMATION_BULLET     = 100
+JUST_SHOT_ANIMATION             = s.shot_animation_modulo
+JUST_HIT_ANIMATION              = round(s.hit_animation_duration/TICK_RATE)
+JUST_DIED_ANIMATION             = round(s.died_animation_duration/TICK_RATE)
+JUST_MOVE_ANIMATION_PLAYER      = s.move_animation_player_modulo
+JUST_MOVE_ANIMATION_BULLET      = s.move_animation_bullet_modulo
 
-CHANGE_WEAPON_DELAY     = round(1/TICK_RATE)   # 1 Second
-SPAWN_LOCK_TIME         = round(10/TICK_RATE)  # 10 Seconds
-REVIVE_WAITING_TIME     = round(10/TICK_RATE)  # 10 Seconds
-PLAYER_DELAY_TOLERANCE  = round(3/TICK_RATE)
-PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING = round(10/TICK_RATE)
-PLAYER_WAITING_TIME_OCCUPIED_SPAWN = round(0.1/TICK_RATE)
+CHANGE_WEAPON_DELAY             = round(s.change_weapon_delay/TICK_RATE) 
+SPAWN_LOCK_TIME                 = round(s.spawn_lock_time/TICK_RATE) 
+REVIVE_WAITING_TIME             = round(s.revive_waiting_time/TICK_RATE)
+PLAYER_DELAY_TOLERANCE          = round(s.player_delay_tolerance/TICK_RATE)
+PLAYER_NOT_RESPONDING_TIME      = round(s.player_not_responding_time/TICK_RATE)
+PLAYER_OCCUPIED_SPAWN_TIME      = round(s.player_occupied_spawn_time/TICK_RATE)
 
-MAX_ENDTIME            = (30*60)/TICK_RATE # for 30 Min
+DEFAULT_MAX_ENDTIME             = (s.default_max_endtime*60)/TICK_RATE
+DEFAULT_MAX_PLAYERS             = s.default_max_players
+DEFAULT_WINSCORE                = s.default_winscore
+DEFAULT_GAMEMODE                = s.default_gamemode
 
-ACCURACY_REDUCTION      = 0.11
-HIT_BOX                 = 0.40
+
+ACCURACY_REDUCTION              = s.accuracy_reduction
+HIT_BOX                         = s.hit_box
+
+WALL_HIT_BOX                    = s.wall_hit_box
+WALL_HIT_BOX_PLAYER_TOLERANCE   = s.wall_hit_box_player_tolerance
+WALL_HIT_BOX_BULLET_TOLERANCE   = s.wall_hit_box_bullet_tolerance
+
 
 #key constants
 ammo_key                = 'a'
@@ -77,8 +99,10 @@ justShot_animation      = 's_a'
 justHit_animation       = 'h_a'
 move_animation_key      = 'm_a'
 weapon_change_animation = 'w_a'
+win_key                 = 'w'
 
 # List of default map
+"""
 MAPS = [
     {
         "len" : len("#######################################################################################"),
@@ -141,10 +165,18 @@ MAPS = [
                 "################"
     }
 ]
+"""
 
-print(MAPS)
+MAP = [
+   {
+       "len" : map.len,
+       "map" : map.string,
+    }
+    for map in MapDB.objects.all()
+]
 
 # List for all available weapons
+"""
 AVAILABLE_WEAPONS = {
     0 : [
         "Pistol",
@@ -168,6 +200,18 @@ AVAILABLE_WEAPONS = {
         True
     ],
 }
+"""
+
+AVAILABLE_WEAPONS = {
+    weapon.index: [
+        weapon.name,
+        weapon.ammunition,
+        round(weapon.latency/TICK_RATE),
+        weapon.damage,
+        True, #TODO: Activated
+] for weapon in WeaponDB.objects.all()}
+
+#endregion
 
 class Coordinate:
     """
@@ -200,6 +244,8 @@ class Coordinate:
         self.x += speed * np.sin(dir)
         self.y += speed * np.cos(dir)
 
+    
+    
     def get_distance(self, sec_cod) -> float:
         """Returns the distance between two coordinates
 
@@ -235,7 +281,7 @@ class Spawn:
         Is called when a spawn is occupied by the player
         """
         
-        print(F"Spawn at x: {self.coordinate.x} y: {self.coordinate.y} is occupied")
+        #print(F"Spawn at x: {self.coordinate.x} y: {self.coordinate.y} is occupied")
 
         # The Spawn is occupied for 5 Seconds
         self.lock_time = SPAWN_LOCK_TIME
@@ -252,6 +298,167 @@ class Spawn:
 
         if(self.lock_time > 0):
             self.lock_time -= 1
+
+class Bullet:
+    """
+    Creating and handling Bullets, inlcuding moving and rendering
+    """
+
+    def __init__    (self, originPlayer, x : float, y : float, direction : float):
+
+        #print("A bullet has been created")
+
+        self.player           : Player     = originPlayer
+        self.weapon                        = originPlayer.currentWeapon
+        self.priorPosition    : Coordinate = Coordinate(x,y)
+        self.middlePosition   : Coordinate = Coordinate(x,y)
+        self.currentPosition  : Coordinate = Coordinate(x,y)
+
+        self.moveAnim         : int        = JUST_MOVE_ANIMATION_BULLET
+        self.dirMove          : float      = direction
+
+        # One Movement per frame
+        self.speed : float = BULLET_SPEED
+
+    def update_pos  (self, map)   -> bool:
+        """
+        Updates the position of every bullet
+
+        Args:
+            map (Map): The map object to check collision
+
+        Returns:
+            bool: If bullet should be deleted because of collision
+        """
+
+        tmp = deepcopy(self.currentPosition)
+
+        #print(self.currentPosition.x, "\n")
+
+        tmp.cod_move(self.speed, self.dirMove)
+
+        #print(self.currentPosition.x, "\n")
+
+        # Check collision with Wall
+        if map.check_collision(tmp, self, tolerance = WALL_HIT_BOX_BULLET_TOLERANCE):
+            return True
+        else:
+
+            #if Bullet did not collide with wall
+            self.priorPosition = deepcopy(self.currentPosition)
+
+            self.currentPosition = deepcopy(tmp)
+
+            self.middlePosition.x = (self.priorPosition.x + self.currentPosition.x)/2
+            self.middlePosition.y = (self.priorPosition.y + self.currentPosition.y)/2
+
+            self.moveAnim = (self.moveAnim + 1) % JUST_MOVE_ANIMATION_BULLET # increase the value by one if he moves
+
+            return False
+
+    def render      (self)              -> Mapping[str, Any]:
+        """
+        Returns all relevant information for the client to render the bullet
+
+        Returns:
+            Mapping[str, Any]: contains all relevant information for the client
+        """
+
+        return {
+            x_coordinate_key   : self.currentPosition.x,
+            y_coordinate_key   : self.currentPosition.y,
+            direction_key      : self.dirMove,
+            move_animation_key : self.moveAnim,
+        }
+
+class AmmunitionPack:
+    """
+    Class for munition packs on the battlefield which can be collected
+    """
+
+    def __init__(self, coordinate : Coordinate, state):
+        """Creates a munition object
+
+        Args:
+            coordinate (Coordinate): position of the munition pack
+        """
+
+        self.coordinate : Coordinate    = coordinate
+        self.weapon     : dict[int:str] = random.choice(AVAILABLE_WEAPONS)
+        self.ammo       : int           = int(random.randrange(int(self.weapon[1]*MIN_MUNITION), int(self.weapon[1]*MAX_MUNITION), int(self.weapon[1]*STEP_MUNITION)))
+        self.max_delay  : int           = state.ammunitionDelay
+        self.curr_delay : int           = state.ammunitionDelay
+
+        print(F'''
+        coordinate  : {self.coordinate.x} {self.coordinate.y}
+        ammo        : {self.ammo}
+        weapon      : {self.weapon}
+        ''')
+
+    def collected(self, player)                         -> None:
+        """Called when a player collects a munition package
+
+        Args:
+            player (Player): the player who collects the ammunition
+        """
+
+        # If the ammunition is not active yet, go back
+        if(self.curr_delay > 0):
+            return
+
+
+        print("Munition is collected")
+
+        # Deactivate the the ammunition reset the delay
+        self.curr_delay = self.max_delay
+
+        # find the weapon
+        pWeapon : Weapon = [weapon for weapon in player.weapons.values() if weapon.name == self.weapon[0]][0]
+
+        # increase the ammunition of the player's weapon
+        pWeapon.currAmmunition += self.ammo
+        
+        # update the ammunition statistic
+        pWeapon.refilledAmmo += self.ammo
+
+        # if the currAmmunition is too high then reduce it to the max
+        if(pWeapon.currAmmunition > pWeapon.maxAmmunition):
+            pWeapon.currAmmunition = pWeapon.maxAmmunition 
+
+    def update(self, state)                             -> None:
+        """
+        Update the the waiting time for spawning again
+        """
+
+        # if the ammunitionPack has to wait
+        if(self.curr_delay > 0):
+
+            # if the spawn is going to appear again, choose a new weapon with new amount of ammunition
+            if(self.curr_delay == 1):
+
+                print(F"{self.weapon[1]} munition was spawnd at x: {self.coordinate.x} y: {self.coordinate.y} with {self.ammo} bullets")
+
+                self.weapon = random.choice(AVAILABLE_WEAPONS)
+                self.ammo   = int(random.randrange(int(self.weapon[1]*MIN_MUNITION), int(self.weapon[1]*MAX_MUNITION), int(self.weapon[1]*STEP_MUNITION)))
+
+            #reduce it by one
+            self.curr_delay -= 1
+
+    def render(self)                                    -> Mapping[str, Any]:
+        """
+        Returns the relevant informatione about AmmunitionPack
+
+        Returns:
+            Mapping[str, Any]: Contains the information
+        """
+        #print(self.curr_delay)
+
+        return {
+            name_key         : self.weapon[0],
+            ammo_key         : self.ammo,
+            x_coordinate_key : self.coordinate.x,
+            y_coordinate_key : self.coordinate.y,
+        }
 
 class Weapon:
     """
@@ -283,6 +490,14 @@ class Weapon:
         #How much damage does the Weapon cause
         self.damage         : int = dmg           if activated else 0 # safety reasons
 
+        #---------------------------------
+        # Statistics
+        self.shotBullets    : int = 0
+        self.hitTimes       : int = 0
+        self.healthReduction: int = 0
+        self.refilledAmmo   : int = 0
+        self.kills          : int = 0
+
     def update(self):
         # reduce currLatency counter if needed
         if(self.currLatency > 0):
@@ -296,7 +511,13 @@ class Map:
     It can read a map from strings array
     """
 
-    def __init__(self, width : int, height : int, map : list[list[str]], mapString : str, spawns : dict[Spawn]):
+    def __init__        (self, 
+                        name        : str,
+                        width       : int, 
+                        height      : int, 
+                        map         : list[list[str]], 
+                        mapString   : str, 
+                        spawns      : dict[str:Spawn]):
         """Constructor for building a map.
 
         Args:
@@ -308,15 +529,14 @@ class Map:
             munitions (list[Munition]): list of munition objects, the map contains
         """
         
+        self.name       : str               = name
         self.width      : int               = width
         self.height     : int               = height
         self.map        : list[list[str]]   = map
         self.mapString  : str               = mapString
         self.spawns     : dict[Spawn]       = spawns
-
-        self.tick       = 0
     
-    def func(spawns, x, y, char) -> str:
+    def func            (spawns, x, y, char) -> str:
         """helper function for handling the from list function
 
         Args:
@@ -374,7 +594,11 @@ class Map:
 
         return char
     
-    def check_collision(self, coordinate : Coordinate, object, state = None, tolerance : float = 0.25) -> bool:        
+    def check_collision (self, 
+                        coordinate  : Coordinate, 
+                        object, 
+                        state               = None, 
+                        tolerance   : float = 0) -> bool:        
         """Check if object collide with wall or munition. Algorithm is quite complicated (took a long time to evaluate). Checks in each direction if x or y is movable.
             If the next to a player is a spawn, lock the spawn
             if player collides with munition, increase the munition
@@ -392,10 +616,10 @@ class Map:
         try:
             
             # Find char on next edge
-            e_1 = self.map[round(coordinate.y - (0.5 + tolerance))][round(coordinate.x - (0.5 + tolerance))]
-            e_2 = self.map[round(coordinate.y - (0.5 + tolerance))][round(coordinate.x - (0.5 - tolerance))]
-            e_3 = self.map[round(coordinate.y - (0.5 - tolerance))][round(coordinate.x - (0.5 + tolerance))]
-            e_4 = self.map[round(coordinate.y - (0.5 - tolerance))][round(coordinate.x - (0.5 - tolerance))] 
+            e_1 = self.map[round(coordinate.y - (WALL_HIT_BOX + tolerance))][round(coordinate.x - (WALL_HIT_BOX + tolerance))]
+            e_2 = self.map[round(coordinate.y - (WALL_HIT_BOX + tolerance))][round(coordinate.x - (WALL_HIT_BOX - tolerance))]
+            e_3 = self.map[round(coordinate.y - (WALL_HIT_BOX - tolerance))][round(coordinate.x - (WALL_HIT_BOX + tolerance))]
+            e_4 = self.map[round(coordinate.y - (WALL_HIT_BOX - tolerance))][round(coordinate.x - (WALL_HIT_BOX - tolerance))] 
 
             # Check on what edge is a wall
             A = e_1 == "#"
@@ -513,7 +737,7 @@ class Map:
                 object.currentPosition = Coordinate(3.5,3.5)
                 return True
     
-    def render(self) -> Mapping[str, Any]:
+    def render          (self) -> Mapping[str, Any]:
         """
         Returns relevant information about the map for the players
 
@@ -572,13 +796,6 @@ class Player:
         # how many ticks does the player have to wait till he can shoot again
         self.changeWeaponDelay : int = 0
 
-        # Represents score for kill and deaths
-        self.kills  : int = 0
-        self.deaths : int = 0
-
-        # kill/death rate
-        self.killDeath : float = 0
-
         '''
         Float describes how fast the Player is moving
         '''
@@ -586,6 +803,22 @@ class Player:
 
         '''Float describes how fast the Player is rotating'''
         self.rotation_speed : float = rotation_speed
+
+        #------------------------------------------------
+        #----------------Statistics----------------------
+        
+        # Represents score for kill and deaths
+        self.kills                  : int = 0
+        self.deaths                 : int = 0
+
+        # kill/death rate
+        self.killDeath              : float = 0
+        self.selfHealthReduction    : int   = 0
+        self.gotHitTimes            : int   = 0
+
+        self.win                    : bool  = False
+
+        #------------------------------------------------
 
         '''
         Integer how long player has to wait
@@ -607,7 +840,7 @@ class Player:
         #Did the Player find Spawn?
         flag = False
 
-        print(map.spawns)
+        #print(map.spawns)
 
         mapLen = len(map.spawns)
 
@@ -657,6 +890,8 @@ class Player:
 
             #print(F"{self.name} just shot a bullet!")
 
+            weapon.shotBullets += 1
+
             # The animation of shooting
             self.justShot = JUST_SHOT_ANIMATION
 
@@ -681,8 +916,8 @@ class Player:
                     # From whom was a bullet shot?
                     self,
                     #0.5 Blöcke vom Spieler entfernt entstehen die Bullets
-                    self.currentPosition.x + 1 * np.sin(self.dirView),
-                    self.currentPosition.y + 1 * np.cos(self.dirView),
+                    self.currentPosition.x + s.start_position_bullet * np.sin(self.dirView),
+                    self.currentPosition.y + s.start_position_bullet * np.cos(self.dirView),
                     #Shot in direction of player itself
                     dir
                 )
@@ -706,8 +941,12 @@ class Player:
         # Wait 1 seconds to be able to shoot again
         self.changeWeaponDelay = CHANGE_WEAPON_DELAY
         
+        # Reset the animation for bugs
+        #TODO: HÄNGER
+        #self.justShot          = 0
+        
     #Describes the function to be called when the player is hit
-    def get_hit(self, state, bullet, mode : int) -> None:
+    def get_hit(self, state, bullet : Bullet, mode : int) -> None:
 
         # The animation of getting hit shall go on for 1 second
         self.justHit = JUST_HIT_ANIMATION
@@ -717,20 +956,27 @@ class Player:
         if(self.cond()):
             self.health -= round(bullet.weapon.damage/10)
         else:
-            self.health -= bullet.weapon.damage
+            self.selfHealthReduction     += bullet.weapon.damage
+            self.health                  -= bullet.weapon.damage
+            self.gotHitTimes             += 1
+
+
+            bullet.player.currentWeapon.healthReduction += bullet.weapon.damage
+            bullet.player.currentWeapon.hitTimes        += 1
         
         if(self.health < 1):
+
+            # increase score of player
+            bullet.player.kills +=1
+            bullet.player.currentWeapon.kills +=1
+
+            # Update the kill/death rate
+            try:
+                bullet.player.killDeath = bullet.player.kills/bullet.player.deaths
+            except ZeroDivisionError:
+                bullet.player.killDeath = bullet.player.kills/1
             
             if(mode == 0):
-
-                # increase score of player
-                bullet.player.kills +=1
-
-                # Update the kill/death rate
-                try:
-                    bullet.player.killDeath = bullet.player.kills/bullet.player.deaths
-                except ZeroDivisionError:
-                    bullet.player.killDeath = bullet.player.kills/1
 
                 # Player is not alive anymore and waits till he respawns
                 self.die()
@@ -794,7 +1040,7 @@ class Player:
 
         # if player is not too close to an object
         if(not too_close):
-            state.map.check_collision(tmp, self, state=state)
+            state.map.check_collision(tmp, self, state=state, tolerance = WALL_HIT_BOX_PLAYER_TOLERANCE)
             self.moveAnim = (self.moveAnim + 1) % JUST_MOVE_ANIMATION_PLAYER # increase the value by one if he moves
         else:
             self.moveAnim = -1 # State for no movement
@@ -817,7 +1063,6 @@ class Player:
 
         self.dirView = dir
         
-
     def update(self) -> None:
         """
         Reduce all latencies of the player by one if needed
@@ -846,7 +1091,6 @@ class Player:
 
             #reduce the waiting time
             self.alive -= 1
-
 
     def die(self) -> None:
         """
@@ -905,160 +1149,49 @@ class Player:
             state_key : self.alive
         }
 
-class Bullet:
-    """
-    Creating and handling Bullets, inlcuding moving and rendering
-    """
-
-    def __init__(self, originPlayer : Player, x : float, y : float, direction : float):
-
-        #print("A bullet has been created")
-
-        self.player           : Player     = originPlayer
-        self.weapon                        = originPlayer.currentWeapon
-        self.priorPosition    : Coordinate = Coordinate(x,y)
-        self.middlePosition   : Coordinate = Coordinate(x,y)
-        self.currentPosition  : Coordinate = Coordinate(x,y)
-
-        self.moveAnim         : int        = JUST_MOVE_ANIMATION_BULLET
-        self.dirMove          : float      = direction
-
-        # One Movement per frame
-        self.speed : float = BULLET_SPEED
-
-    def update_pos(self, map : Map) -> bool:
+    def save_statistic(self, engine)     -> None:
         """
-        Updates the position of every bullet
+        Saves the statistic of the player in the database
+        with a timestamp
 
         Args:
-            map (Map): The map object to check collision
-
-        Returns:
-            bool: If bullet should be deleted because of collision
+            engine (Engine): the game itself
         """
+        playerDB : StatisticDB = StatisticDB.objects.create(
+            username        = self.name,
+            lobby_name      = engine.lobbyName,
+            game_mode       = engine.gameMode,
+            map             = engine.state.map.name,
+            players_count   = len(engine.playerQueue) + len(engine.state.players),
+            won             = self.win,
+            forbidden       = self.name in engine.playerForbidden,
+            kills           = self.kills,
+            deaths          = self.deaths,
+            duration        = engine.tickNum * TICK_RATE,
+            finished        = engine.finished,
+            disconnected    = self.alive == -2,
+            shot_bullets    = sum([weapon.shotBullets       for weapon in self.weapons.values()]),
+            hit_times       = sum([weapon.hitTimes          for weapon in self.weapons.values()]),
+            health_reduction= sum([weapon.healthReduction   for weapon in self.weapons.values()]),
+            refilled_ammo   = sum([weapon.refilledAmmo      for weapon in self.weapons.values()]),
+            got_hit         = self.gotHitTimes,
+            self_health_red = self.selfHealthReduction,
+        )
 
-        tmp = deepcopy(self.currentPosition)
+        playerDB.save()
 
-        #print(self.currentPosition.x, "\n")
+        for weapon in self.weapons.values():
+            # Save the statistic about the weapon usage of the player
 
-        tmp.cod_move(self.speed, self.dirMove)
-
-        #print(self.currentPosition.x, "\n")
-
-        # Check collision with Wall
-        if map.check_collision(tmp, self, tolerance = 0.15):
-            return True
-        else:
-
-            #if Bullet did not collide with wall
-            self.priorPosition = deepcopy(self.currentPosition)
-
-            self.currentPosition = deepcopy(tmp)
-
-            self.middlePosition.x = (self.priorPosition.x + self.currentPosition.x)/2
-            self.middlePosition.y = (self.priorPosition.y + self.currentPosition.y)/2
-
-            self.moveAnim = (self.moveAnim + 1) % JUST_MOVE_ANIMATION_BULLET # increase the value by one if he moves
-
-            return False
-
-    def render(self) -> Mapping[str, Any]:
-        """
-        Returns all relevant information for the client to render the bullet
-
-        Returns:
-            Mapping[str, Any]: contains all relevant information for the client
-        """
-
-        return {
-            x_coordinate_key   : self.currentPosition.x,
-            y_coordinate_key   : self.currentPosition.y,
-            direction_key      : self.dirMove,
-            move_animation_key : self.moveAnim,
-        }
-
-class AmmunitionPack:
-    """
-    Class for munition packs on the battlefield which can be collected
-    """
-
-    def __init__(self, coordinate : Coordinate, state):
-        """Creates a munition object
-
-        Args:
-            coordinate (Coordinate): position of the munition pack
-        """
-
-        self.coordinate : Coordinate    = coordinate
-        self.weapon     : dict[int:str] = random.choice(AVAILABLE_WEAPONS)
-        self.ammo       : int           = int(random.randrange(int(self.weapon[1]*MIN_MUNITION), int(self.weapon[1]*MAX_MUNITION), int(self.weapon[1]*STEP_MUNITION)))
-        self.max_delay  : int           = state.ammunitionDelay
-        self.curr_delay : int           = state.ammunitionDelay
-
-        print(F'''
-        coordinate  : {self.coordinate.x} {self.coordinate.y}
-        ammo        : {self.ammo}
-        weapon      : {self.weapon}
-        ''')
-
-    def collected(self, player)                         -> None:
-        """Called when a player collects a munition package
-
-        Args:
-            player (Player): the player who collects the ammunition
-        """
-
-        # If the ammunition is not active yet, go back
-        if(self.curr_delay > 0):
-            return
-
-
-        print("Munition is collected")
-
-        # Deactivate the the ammunition reset the delay
-        self.curr_delay = self.max_delay
-
-        p_weapon = [weapon for weapon in player.weapons.values() if weapon.name == self.weapon[0]][0]
-
-        #increase the ammunition of the player's weapon
-        p_weapon.currAmmunition += self.ammo
-
-        # if the currAmmunition is too high then reduce it to the max
-        if(p_weapon.currAmmunition > p_weapon.maxAmmunition):
-            p_weapon.currAmmunition = p_weapon.maxAmmunition 
-
-    def update(self, state)                             -> None:
-        """
-        Update the the waiting time for spawning again
-        """
-
-        # if the ammunitionPack has to wait
-        if(self.curr_delay > 0):
-
-            # if the spawn is going to appear again, choose a new weapon with new amount of ammunition
-            if(self.curr_delay == 1):
-
-                self.weapon = random.choice(AVAILABLE_WEAPONS)
-                self.ammo   = int(random.randrange(int(self.weapon[1]*MIN_MUNITION), int(self.weapon[1]*MAX_MUNITION), int(self.weapon[1]*STEP_MUNITION)))
-
-            #reduce it by one
-            self.curr_delay -= 1
-
-    def render(self)                                    -> Mapping[str, Any]:
-        """
-        Returns the relevant informatione about AmmunitionPack
-
-        Returns:
-            Mapping[str, Any]: Contains the information
-        """
-        #print(self.curr_delay)
-
-        return {
-            name_key         : self.weapon[0],
-            ammo_key         : self.ammo,
-            x_coordinate_key : self.coordinate.x,
-            y_coordinate_key : self.coordinate.y,
-        }
+            weaponDB : WeaponStatistic = WeaponStatistic.objects.create(
+                name            = weapon.name,
+                player          = playerDB,
+                shot_bullets    = weapon.shotBullets,
+                hit_times       = weapon.hitTimes,
+                health_reduction= weapon.healthReduction,
+                refilled_ammo   = weapon.refilledAmmo,
+            )
+            weaponDB.save()
 
 class State:
     """
@@ -1073,7 +1206,7 @@ class State:
         self.ammunitionPacks : dict[str:AmmunitionPack] = None
         self.ammunitionDelay : int                      = ammunitionDelay
 
-    def create_map  (self, mapDict : dict[str])     -> None:
+    def create_map  (self, mapDB : MapDB)           -> None:
         """Validates the input string to initialize an map object with list of spawns
 
         Args:
@@ -1089,14 +1222,14 @@ class State:
         # saves all munition packs on the map as munition object
         ammunitionPacks : dict = {}
 
-        char_count  : int = len(mapDict["map"])
+        char_count  : int = len(mapDB.string)
 
-        width       : int = mapDict["len"]
-        height      : int = char_count/mapDict["len"]
+        width       : int = mapDB.len
+        height      : int = char_count/mapDB.len
 
-        inv_map     : str = mapDict["map"].replace("#","").replace(".","").replace("W","").replace("S","").replace("N","").replace("E","").replace("M","")
+        inv_map     : str = mapDB.string.replace("#","").replace(".","").replace("W","").replace("S","").replace("N","").replace("E","").replace("M","")
 
-        mapString   : str = mapDict["map"]
+        mapString   : str = mapDB.string
 
         if(len(inv_map) != 0):
             print(F"map contains invalid letters: >>>{inv_map}<<<<")
@@ -1170,7 +1303,7 @@ class State:
         # Create as list of list for the map
         map = [list(mapString[sub-width:sub]) for sub in range(width, char_count + width, width) ]
 
-        [print(m) for m in map] 
+        #[print(m) for m in map] 
 
         # if there are no spawns on the map          
         if(len(spawns) == 0):
@@ -1179,10 +1312,11 @@ class State:
         #print(mapString)
 
         self.map = Map(
+            mapDB.name,
             width,
             height,
             map,
-            mapDict["map"],
+            mapDB.string,
             spawns,
         )
 
@@ -1204,13 +1338,23 @@ class State:
         }
 
 class GameEngine(threading.Thread):
-    """Thread for handling a game, in which the game loop runs
+    """
+    Thread for handling a game, in which the game loop runs
 
     Inherits:
         Class: threading.Thread
     """
 
-    def __init__(self, lobbyname : str, mapString : str | None = None, maxPlayers : int = 6, gameMode : int = 0, winScore : int = 20, endTime : int = MAX_ENDTIME, availableWeapons : dict[int : list] = AVAILABLE_WEAPONS, ammunitionDelay : int = AMMUNITION_DELAY):
+    def __init__                    (self, 
+                                     lobbyname          : str, 
+                                     map                : MapDB, 
+                                     maxPlayers         : int = DEFAULT_MAX_PLAYERS,
+                                     gameMode           : int = DEFAULT_GAMEMODE, 
+                                     winScore           : int = DEFAULT_WINSCORE, 
+                                     endTime            : int = DEFAULT_MAX_ENDTIME,
+                                     availableWeapons   : dict[int : list] = AVAILABLE_WEAPONS, 
+                                     ammunitionDelay    : int = DEFAULT_AMMUNITION_DELAY
+                                     ):
         """Defines the engine of the game. How the configuration is defined.
 
         Args:
@@ -1235,6 +1379,9 @@ class GameEngine(threading.Thread):
         # 1: Last man standing, no reviving at all
         self.gameMode = gameMode
 
+        # Has the game finished till the time stopped or somebody finished the condition
+        self.finished : bool = False
+
         #print(F"Initializing GameEngine: {lobbyname} with players: {playersName}")
         
         # give the available weapons as a restriction
@@ -1249,8 +1396,8 @@ class GameEngine(threading.Thread):
         # random ID for the game
         self.name = uuid.uuid4()
 
-        # groupName for communication
-        self.groupName = lobbyname
+        # lobbyName for communication
+        self.lobbyName = lobbyname
 
         # how many kills are necessary to win the game
         self.winScore = winScore
@@ -1273,15 +1420,12 @@ class GameEngine(threading.Thread):
         #How man players are allowed in the game
         self.maxPlayers = maxPlayers
 
-        # TODO: Just for Testing
-        mapString = MAPS[1]
-
         # defines the state of the game
         self.state = State(
             ammunitionDelay=int((ammunitionDelay * 60)/TICK_RATE)
             )
 
-        self.state.create_map(mapString)
+        self.state.create_map(map)
 
     def run                         (self)                                      -> None:
         """
@@ -1312,6 +1456,10 @@ class GameEngine(threading.Thread):
 
             elif(self.stopFlag):
                 # if the worker wants to stop the thread
+                # save all player's statistic 
+                for player in self.playerQueue + self.state.players :
+                    player.save_statistic(self)
+
                 break
 
     def broadcast_state             (self)                                      -> None: 
@@ -1328,7 +1476,7 @@ class GameEngine(threading.Thread):
 
         # Synchronize the channel's information and send them to all participants
         async_to_sync(self.channelLayer.group_send)(
-            self.groupName, 
+            self.lobbyName, 
             {
              "type": "game.update",
              state_key   : stateJson
@@ -1346,7 +1494,7 @@ class GameEngine(threading.Thread):
         # if time limit was reached
         if(self.tickNum >= self.endTime):
             
-            self.time_limit_reached()
+            self.finish_game()
 
         begin = time.time()
 
@@ -1422,9 +1570,13 @@ class GameEngine(threading.Thread):
         # if game is about last man standing and only one Player remained
         if self.gameMode == 1 and len(self.state.players) == 1:
 
-            print("Last Man Standing was won because only one player left")
+            print(F"Last Man Standing was won because only one player {self.state.players[0].name} left")
+            
+            # Declare the winner
+            self.state.players[0].win = True
+            
             # Declare it as a win
-            self.win(self.state.players)
+            self.win()
 
         for idx, player in enumerate(self.state.players):
 
@@ -1580,7 +1732,7 @@ class GameEngine(threading.Thread):
             # if the Player is disconnected and rejoined the game
             else:
                 print(F"\n\nPlayer {playerName} is rejoining the game!\n")
-                stateQ.alive = PLAYER_WAITING_TIME_AFTER_NOT_RESPONDING
+                stateQ.alive = PLAYER_NOT_RESPONDING_TIME
         except:
             #print(F"\n\nPlayer {playerName} is joining as new player the game!\n")
             # if the Player joins the game for the first time
@@ -1614,7 +1766,7 @@ class GameEngine(threading.Thread):
                     print("No spawn was found yet")
 
                     #Wait for specific time if player could not spawn
-                    player.alive = PLAYER_WAITING_TIME_OCCUPIED_SPAWN 
+                    player.alive = PLAYER_OCCUPIED_SPAWN_TIME
 
                 #set his health back to 100
                 player.health = 100
@@ -1670,7 +1822,7 @@ class GameEngine(threading.Thread):
                 "game_engine", 
                {
                 "type"    : "close.game",
-                group_key   : self.groupName,
+                group_key   : self.lobbyName,
                 }
             ) 
 
@@ -1679,9 +1831,9 @@ class GameEngine(threading.Thread):
         Process the ammunitionPacks current 
         """
         
-        [ammunitionPack.update() for ammunitionPack in self.state.ammunitionPacks.values()]
+        [ammunitionPack.update(self) for ammunitionPack in self.state.ammunitionPacks.values()]
                 
-    def win                         (self, winningPlayers : list[Player])       -> None:
+    def win                         (self)       -> None:
         """
         Is called if the game is finished.
 
@@ -1689,7 +1841,8 @@ class GameEngine(threading.Thread):
             winningPlayers (list[Player]): list of winning player
         """
 
-        print(F"{winningPlayers} wins the game")
+        # the game finished completely
+        self.finished = True
 
         # Stop doing something
         self.startFlag = False
@@ -1700,20 +1853,29 @@ class GameEngine(threading.Thread):
             {
              "type"    : "win",
              time_key    : self.tickNum * TICK_RATE,
-             group_key   : self.groupName, 
+             group_key   : self.lobbyName, 
              player_key : 
              [
                  { 
-                   name_key       : winningPlayer.name,
-                   kills_key      : winningPlayer.kills,
-                   death_key      : winningPlayer.deaths,
-                   killDeath_key  : winningPlayer.killDeath,
+                   name_key       : p.name,
+                   kills_key      : p.kills,
+                   death_key      : p.deaths,
+                   killDeath_key  : p.killDeath,
+                   win_key        : p.win
                  } 
-                   for winningPlayer in winningPlayers]
+                   for p in self.state.players] +
+             [   { 
+                   name_key       : p.name,
+                   kills_key      : p.kills,
+                   death_key      : p.deaths,
+                   killDeath_key  : p.killDeath,
+                   win_key        : p.win
+                 } 
+                   for p in self.playerQueue]
             }
         )
 
-    def time_limit_reached          (self)                                      -> None: 
+    def finish_game                 (self)                                      -> None: 
         '''
             When the time has reached its limit
         '''
@@ -1723,14 +1885,18 @@ class GameEngine(threading.Thread):
         if self.gameMode == 0:
 
             # Get the best players out of all players and broadcast them
-            self.win(self.look_for_best_players(self.state.players + self.playerQueue))
+            self.look_for_best_players(self.state.players + self.playerQueue)
+            
+            # Broadcast the finished state
+            self.win()
         
         elif self.gameMode == 1:
 
             # Get the best players out of still alive players and broadcast them
-            self.win(self.look_for_best_players(self.state.players))
+            self.look_for_best_players(self.state.players)
+            self.win()
 
-    def look_for_best_players       (self, players : list[Player])              -> list[Player]:
+    def look_for_best_players       (self, players : list[Player])              -> None:
         
 
         # Look for the highest kills in queue and in current game
@@ -1743,7 +1909,7 @@ class GameEngine(threading.Thread):
         if len(bestPlayers) == 1:
 
             # return instantly because there is already an unambigous best player
-            return bestPlayers
+            bestPlayers[0].win = True
 
         else:
 
@@ -1751,6 +1917,6 @@ class GameEngine(threading.Thread):
             highestKillDeath = max(bestPlayers, key=attrgetter('killDeath')).killDeath
 
             # Look for all Players with highest kills
-            bestPlayers = [player for player in bestPlayers if player.killDeath == highestKillDeath]   
-
-            return bestPlayers 
+            for player in bestPlayers:
+                if player.killDeath == highestKillDeath:
+                    player.win = True   
