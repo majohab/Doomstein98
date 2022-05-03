@@ -1,7 +1,5 @@
 .vscode/launch.json
 .env
-.coverage
-.htmlcov/*
-.temp/*
-db.sqlite3
-db.sqlite3
+.tmp*
+ssl_cert/*
+ssl_cert

@@ -1,8 +1,0 @@
-Problem:
-    Can't start redis-server as the port is already in use.
-
-Resolution:
-    1. Open a terminal
-    2. Type
-            wsl -t debian
-        to kill the currently running debian subsystem
