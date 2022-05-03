@@ -1,0 +1,15 @@
+groups:
+  - doomslayers
+
+users:
+  - default
+  - name: lasse
+    gecos: Lasse Henrich
+    shell: /bin/bash
+    primary_group: doomslayers
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin, docker
+    passwd : lasseswarm
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ssh-rsa
