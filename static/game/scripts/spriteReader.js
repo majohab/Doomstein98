@@ -213,7 +213,6 @@ class SpriteSet
      */
     getBiggestBounds()
     {
-        console.log(this.dict);
         let width = getHighestValue(this.dict, this.getIsAnimation, (sprite) => sprite[0].length);
         let height = getHighestValue(this.dict, this.getIsAnimation, (sprite) => sprite.length);
 
@@ -223,7 +222,6 @@ class SpriteSet
             for (let key in dict)
             {
                 let content = dict[key];
-                console.log(key);
                 if (getIsAnimation(content))   // content is animation
                     for (let sprite of content)
                         checkA (sprite);
@@ -386,10 +384,6 @@ let font;
 
 async function spriteReader_init()
 {
-    weaponImageBounds = [200, 102];
-    let weaponImagePaddingConfig = new PaddingConfig(weaponImageBounds[0], weaponImageBounds[1], 0, 1);
-
-
     let inits = 0;
     const initCount = 12;
 
@@ -463,18 +457,16 @@ async function spriteReader_init()
 
     spriteReader_getSpriteString('DoomGuy', (img) =>
     {
-        // ToDo: Remove paddingConfig, should not be needed
-        let paddingConfig = new PaddingConfig(41, 56, 0, 1);
         playerSprite = new SpriteSet(img,
             [
-                new Still('Idle_S', 0, 0, 36, 56, paddingConfig),
-                new Still('Idle_SW', 0, 56, 26, 56, paddingConfig),
-                new Still('Idle_W', 0, 112, 29, 56, paddingConfig),
-                new Still('Idle_NW', 0, 168, 29, 55, paddingConfig),
-                new Still('Idle_N', 0, 224, 38, 56, paddingConfig),
-                new Still('Idle_NE', 0, 280, 29, 55, paddingConfig),
-                new Still('Idle_E', 0, 336, 29, 56, paddingConfig),
-                new Still('Idle_SE', 0, 392, 26, 56, paddingConfig)
+                new Still('Idle_S', 0, 0, 36, 56),
+                new Still('Idle_SW', 0, 56, 26, 56),
+                new Still('Idle_W', 0, 112, 29, 56),
+                new Still('Idle_NW', 0, 168, 29, 55),
+                new Still('Idle_N', 0, 224, 38, 56),
+                new Still('Idle_NE', 0, 280, 29, 55),
+                new Still('Idle_E', 0, 336, 29, 56),
+                new Still('Idle_SE', 0, 392, 26, 56)
             ],
             [
                 new StillSequence('Walk_S',
@@ -544,24 +536,24 @@ async function spriteReader_init()
     {
         shotgunSprite = new SpriteSet(img,
             [
-                new Still('Idle', 0, 39, 91, 63, weaponImagePaddingConfig)
+                new Still('Idle', 0, 39, 91, 63)
             ],
             [
                 new StillSequence('Shoot',
                 [
-                    new Still(1, 91, 22, 91, 80, weaponImagePaddingConfig),
-                    new Still(2, 0 + 91 * 2, 6, 91, 96, weaponImagePaddingConfig),
-                    new Still(3, 91 + 91 * 2, 0, 92, 102, weaponImagePaddingConfig),
-                    new Still(4, 183 + 91 * 2, 24, 93, 78, weaponImagePaddingConfig),
-                    new Still(5, 276 + 91 * 2, 74, 200, 28, weaponImagePaddingConfig),
-                    new Still(6, 476 + 91 * 2, 32, 164, 70, weaponImagePaddingConfig),
-                    new Still(7, 640 + 91 * 2, 45, 125, 57, weaponImagePaddingConfig),
-                    new Still(8, 765 + 91 * 2, 68, 87, 34, weaponImagePaddingConfig),
-                    new Still(9, 1034, 24, 93, 78, weaponImagePaddingConfig),
-                    new Still(10, 0, 39, 91, 63, weaponImagePaddingConfig), // First Image
-                    new Still(11, 0, 39, 91, 63, weaponImagePaddingConfig),
-                    new Still(10, 0, 39, 91, 63, weaponImagePaddingConfig),
-                    new Still(10, 0, 39, 91, 63, weaponImagePaddingConfig)
+                    new Still(1, 91, 22, 91, 80),
+                    new Still(2, 0 + 91 * 2, 6, 91, 96),
+                    new Still(3, 91 + 91 * 2, 0, 92, 102),
+                    new Still(4, 183 + 91 * 2, 24, 93, 78),
+                    new Still(5, 276 + 91 * 2, 74, 200, 28),
+                    new Still(6, 476 + 91 * 2, 32, 164, 70),
+                    new Still(7, 640 + 91 * 2, 45, 125, 57),
+                    new Still(8, 765 + 91 * 2, 68, 87, 34),
+                    new Still(9, 1034, 24, 93, 78),
+                    new Still(10, 0, 39, 91, 63), // First Image
+                    new Still(11, 0, 39, 91, 63),
+                    new Still(10, 0, 39, 91, 63),
+                    new Still(10, 0, 39, 91, 63)
                 ])
             ],
             true
@@ -573,13 +565,13 @@ async function spriteReader_init()
     {
         machinegunSprite = new SpriteSet(img,
             [
-                new Still('Idle', 0, 0, 110, 54, weaponImagePaddingConfig)
+                new Still('Idle', 0, 0, 110, 54)
             ],
             [
                 new StillSequence('Shoot',
                 [
-                    new Still(1, 110, 0, 110, 85, weaponImagePaddingConfig),
-                    new Still(2, 220, 15, 110, 70, weaponImagePaddingConfig)
+                    new Still(1, 110, 0, 110, 85),
+                    new Still(2, 220, 15, 110, 70)
                 ])
             ],
             true
@@ -591,16 +583,16 @@ async function spriteReader_init()
     {
         handgunSprite = new SpriteSet(img,
             [
-                new Still('Idle', 0, 23, 50, 64, weaponImagePaddingConfig)
+                new Still('Idle', 0, 23, 50, 64)
             ],
             [
                 new StillSequence('Shoot',
                 [
-                    new Still(1, 50, 0, 52, 102, weaponImagePaddingConfig),
-                    new Still(2, 102, 7, 50, 80, weaponImagePaddingConfig),
-                    new Still(3, 152, 3, 51, 84, weaponImagePaddingConfig),
-                    new Still(4, 203, 0, 51, 87, weaponImagePaddingConfig),
-                    new Still(5, 0, 23, 50, 64, weaponImagePaddingConfig) // First Image
+                    new Still(1, 50, 0, 52, 102),
+                    new Still(2, 102, 7, 50, 80),
+                    new Still(3, 152, 3, 51, 84),
+                    new Still(4, 203, 0, 51, 87),
+                    new Still(5, 0, 23, 50, 64) // First Image
                 ])
             ],
             true
@@ -611,23 +603,22 @@ async function spriteReader_init()
     
     spriteReader_getSpriteString('Corpse', (img) =>
     {
-        let paddingConfig = new PaddingConfig(53, 56, 0, -1);
         corpseSprite = new SpriteSet(img,
             [
-                new Still('Idle', 373, 0, 53, 16, paddingConfig) // Last Sprite of Animation
+                new Still('Idle', 373, 0, 53, 16) // Last Sprite of Animation
             ],
             [
                 new StillSequence('Explode',
                 [
                     //new Still(0, 0, 0, 38, 56, paddingConfig),
-                    new Still(1, 38, 0, 41, 53, paddingConfig),
-                    new Still(2, 79, 0, 44, 49, paddingConfig),
-                    new Still(3, 123, 0, 46, 45, paddingConfig),
-                    new Still(4, 169, 0, 49, 39, paddingConfig),
-                    new Still(5, 218, 0, 49, 35, paddingConfig),
-                    new Still(6, 267, 0, 53, 27, paddingConfig),
-                    new Still(7, 310, 0, 53, 16, paddingConfig),
-                    new Still(8, 373, 0, 53, 16, paddingConfig)
+                    new Still(1, 38, 0, 41, 53),
+                    new Still(2, 79, 0, 44, 49),
+                    new Still(3, 123, 0, 46, 45),
+                    new Still(4, 169, 0, 49, 39),
+                    new Still(5, 218, 0, 49, 35),
+                    new Still(6, 267, 0, 53, 27),
+                    new Still(7, 310, 0, 53, 16),
+                    new Still(8, 373, 0, 53, 16)
                 ])
             ],
             false

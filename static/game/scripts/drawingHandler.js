@@ -32,8 +32,6 @@ let ammoTextBounds_sizeY;
 let ammoTextBounds_scale;
 let ammoTextPaddingConfig;
 
-let weaponImageBounds;
-
 function drawingHandler_init()
 {
     screenWidth = 1000;
@@ -71,7 +69,7 @@ function drawingHandler_init()
             cellSize: cellSize,
             statusBar_Height: screenHeight * 0.15,
             weaponFrame_startX: (screenWidth / statusBarSprite.width) * 213,
-            gun_Height: screenHeight / 3,   // ToDo: Usually each weapon should store its own separate reference height additionally, but for now it works fine without.
+            gun_SizeMultiplier: screenHeight / 250,   // ToDo: Usually each weapon should store its own separate reference height additionally, but for now it works fine without.
 
             fov: fov,
             depth: depth_gpu,
@@ -193,7 +191,16 @@ function drawingHandler_initKernel()
     let weaponFrame_startY = 0;
     let objectCount = 0;
 
-    buffer = gpu_kernel(playerX, playerY, playerAngle,
+
+    console.log(playerX, playerY, playerAngle,
+        map_numbers,
+        wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
+        weaponImage, weaponImageBounds,
+        healthText, ammoText,
+        weaponFrame_startY,
+        objectArray, objectStartIndezes, objectBounds, objectCount);
+
+    gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
         weaponImage, weaponImageBounds,
@@ -231,6 +238,8 @@ function drawingHandler_draw()
         t = 1 - t; // [0, 1): Animation; 1: Still
         weaponImage = weaponToUse.getAnimationSprite(t, 'Shoot');
     }
+    let weaponImageBounds = [weaponImage[0].length, weaponImage.length];
+    weaponImage = weaponImage.flat(1);
 
     //#endregion
 
@@ -241,13 +250,7 @@ function drawingHandler_draw()
     let objectBounds = [];
     let objectCount = 0;
 
-    for (let i = 0; i < max_opponents * max_bullets * max_corpses; i++)
-    {
-        objectStartIndezes.push(0);
-        objectBounds.push([0, 0, 0, 0]);
-    }
-
-    function addObjects(maxCount, rec_objects, presentObject_Function, defaultObject)
+    function addObjects(maxCount, rec_objects, presentObject_Function)
     {
         for (let i = 0; i < maxCount; i++)
         {
@@ -260,16 +263,11 @@ function drawingHandler_draw()
 
                 newObject = presentObject_Function(rec_objects[i]);
                 
-                objectStartIndezes[objectCount] = objectArray.length;
-                objectBounds[objectCount] = [x, y, newObject[0].length, newObject.length];
+                objectStartIndezes.push(objectArray.length);
+                objectBounds.push([x, y, newObject[0].length, newObject.length]);
+                objectArray = objectArray.concat(newObject.flat(1));
                 objectCount++;
             }
-            else
-            {
-                newObject = defaultObject;
-            }
-
-            objectArray = objectArray.concat(newObject.flat(1));
         }
     }
 
@@ -336,8 +334,8 @@ function drawingHandler_draw()
         
         return playerSprite.getAnimationSprite(t, animationName + '_' + spriteDir);
 
-    }, playerSprite.getSprite('Idle_N'));
-    addObjects(max_bullets, rec_bullets, () => fireBulletSprite.getSprite('Idle_S'), fireBulletSprite.getSprite('Idle_S'));
+    });
+    addObjects(max_bullets, rec_bullets, () => fireBulletSprite.getSprite('Idle_S'));
     addObjects(max_corpses, rec_corpses, (object) =>
     {
         let corpse;
@@ -357,7 +355,15 @@ function drawingHandler_draw()
         }
         return corpse;
         
-    }, corpseSprite.getSprite('Idle'));
+    });
+
+    if (objectCount == 0)
+    {
+        objectArray.push(0);
+        objectStartIndezes.push(0);
+        objectBounds.push(0);
+    }
+
 
     buffer = gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
@@ -519,7 +525,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
         let spriteWidth = weaponImageBounds[0], spriteHeight = weaponImageBounds[1];
         let gun_spriteRatio = spriteWidth / spriteHeight;
 
-        let gun_ImgHeight = this.constants.gun_Height;
+        let gun_ImgHeight = spriteHeight * this.constants.gun_SizeMultiplier;
         let gun_ImgWidth = gun_ImgHeight * gun_spriteRatio;
         let gun_yMin = gameWindowHeight - gun_ImgHeight;
         let gun_xMin = (screenWidth - gun_ImgWidth) * 0.5;
@@ -528,12 +534,13 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
         {
             let pix_x = Math.floor(((x - gun_xMin) / gun_ImgWidth) * spriteWidth);
             let pix_y = Math.floor(((y - gun_yMin) / gun_ImgHeight) * spriteHeight);
-            
-            if (weaponImage[pix_y][pix_x][3] > 0)
+            let pixelIndex = pix_y * spriteWidth + pix_x;
+
+            if (weaponImage[pixelIndex][3] > 0)
             {
-                r = weaponImage[pix_y][pix_x][0]
-                g = weaponImage[pix_y][pix_x][1]
-                b = weaponImage[pix_y][pix_x][2]
+                r = weaponImage[pixelIndex][0]
+                g = weaponImage[pixelIndex][1]
+                b = weaponImage[pixelIndex][2]
 
                 depthBuffer = 0;
             }
@@ -749,11 +756,13 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                         let pix_y = Math.floor(((objMaxY - y) / objHeight) * spriteHeight);
 
                         let offset = objectStartIndezes[object];
-                        if (objectArray[offset + pix_y * spriteWidth + pix_x][3] > 0)  // If not transparent
+                        let pixelIndex = offset + pix_y * spriteWidth + pix_x;
+
+                        if (objectArray[pixelIndex][3] > 0)  // If not transparent
                         {
-                            r = objectArray[offset + pix_y * spriteWidth + pix_x][0]; //r = corpses[offset + pix_y][pix_x][0];
-                            g = objectArray[offset + pix_y * spriteWidth + pix_x][1]; //g = corpses[offset + pix_y][pix_x][1];
-                            b = objectArray[offset + pix_y * spriteWidth + pix_x][2]; //b = corpses[offset + pix_y][pix_x][2];
+                            r = objectArray[pixelIndex][0]; //r = corpses[offset + pix_y][pix_x][0];
+                            g = objectArray[pixelIndex][1]; //g = corpses[offset + pix_y][pix_x][1];
+                            b = objectArray[pixelIndex][2]; //b = corpses[offset + pix_y][pix_x][2];
                             depthBuffer = dstFromPlayer;
                         }
                     }

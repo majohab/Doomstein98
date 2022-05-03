@@ -45,6 +45,7 @@ function initRuntimeVariables()
     health = 200;
     currWeapon = 2;
     weaponAnimTime = -1;
+    playerX = playerY = playerAngle = 0;
 
     //#region Init Textures with their biggest size
     let healthText = getHealthText();
