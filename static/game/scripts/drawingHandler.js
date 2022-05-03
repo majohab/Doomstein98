@@ -195,7 +195,7 @@ function drawingHandler_initKernel()
     console.log(playerX, playerY, playerAngle,
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
-        weaponImage, weaponImageBounds,
+        imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
         healthText, ammoText,
         weaponFrame_startY,
         objectArray, objectStartIndezes, objectBounds, objectCount);
@@ -203,7 +203,7 @@ function drawingHandler_initKernel()
     gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
-        weaponImage, weaponImageBounds,
+        imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
         healthText, ammoText,
         weaponFrame_startY,
         objectArray, objectStartIndezes, objectBounds, objectCount);
@@ -214,10 +214,18 @@ function drawingHandler_initKernel()
 function drawingHandler_draw()
 {
 
-    //#region UI
+    //#region UI Images
+
+    let imageArray = [];
+    let imageStartIndezes = [];
+    let imageBounds = [];
+    let imageCount = 0;
 
     let healthText = getHealthText();
-    healthText = padSprite(healthText, healthTextPaddingConfig);
+    imageStartIndezes.push(imageArray.length);
+    imageBounds.push([healthTextBounds_startX, healthTextBounds_startY, healthTextBounds_sizeX, healthTextBounds_sizeY]);
+    imageArray = imageArray.concat(healthText.flat(1));
+    imageCount++;
 
     
     let ammoText = getAmmoText();
@@ -243,7 +251,7 @@ function drawingHandler_draw()
 
     //#endregion
 
-    //weaponImage = padSprite(weaponImage, weaponImagePaddingConfig); Note that all padding for static sprites is now down once within spriteReader
+    //#region 3D Objects
 
     let objectArray = [];
     let objectStartIndezes = [];
@@ -364,11 +372,12 @@ function drawingHandler_draw()
         objectBounds.push(0);
     }
 
+    //#endregion
 
     buffer = gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
-        weaponImage, weaponImageBounds,
+        imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
         healthText, ammoText,
         weaponFrame_startY,
         objectArray, objectStartIndezes, objectBounds, objectCount);
@@ -377,7 +386,7 @@ function drawingHandler_draw()
 function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // Coordinates and Angle
     map_numbers,                                                            // Map
     wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,    // World Sprites                                              
-    weaponImage, weaponImageBounds,
+    imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
     healthText, bulletsText,            // Status-Bar-Texts
     weaponFrame_startY,                 // Status-Bar-Weapon-Frame
     objectArray, objectStartIndezes, objectBounds, objectCount)                                                     
@@ -415,28 +424,36 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
     //#region Health-Text
     {
-        let startX = this.constants.healthTextBounds_startX;
-        let startY = this.constants.healthTextBounds_startY;
-        let textSizeX = this.constants.healthTextBounds_sizeX;
-        let textSizeY = this.constants.healthTextBounds_sizeY;
-        let scale = this.constants.healthTextBounds_scale;
-        let endX = startX + (textSizeX * scale);
-        let endY = startY + (textSizeY * scale);
-
-        if (x >= startX && x < endX && y >= startY && y < endY)
+        for (let image = 0; image < imageCount; image++)
         {
-            let pix_x = Math.floor((x - startX) / scale);
-            let pix_y = Math.floor((y - startY) / scale);
+            let startX = imageBounds[image][0];
+            let startY = imageBounds[image][1];
+            let imgSizeX = imageBounds[image][2];
+            let imgSizeY = imageBounds[image][3];
 
-            if (healthText[pix_y][pix_x][3] > 0)
+            let scale = this.constants.healthTextBounds_scale;
+            let endX = startX + (imgSizeX * scale);
+            let endY = startY + (imgSizeY * scale);
+
+            
+            if (x >= startX && x < endX && y >= startY && y < endY)
             {
-                r = healthText[pix_y][pix_x][0]
-                g = healthText[pix_y][pix_x][1]
-                b = healthText[pix_y][pix_x][2]
+                let pix_x = Math.floor((x - startX) / scale);
+                let pix_y = Math.floor((y - startY) / scale);
 
-                depthBuffer = 0;
-            }
-        }        
+                let offset = imageStartIndezes[image];
+                let pixelIndex = offset + pix_y * width + pix_x;
+
+                if (imageArray[pixelIndex][3] > 0)
+                {
+                    r = imageArray[pixelIndex][0]
+                    g = imageArray[pixelIndex][1]
+                    b = imageArray[pixelIndex][2]
+                
+                    depthBuffer = 0;
+                }
+            }   
+        }     
     }
     //#endregion
 
