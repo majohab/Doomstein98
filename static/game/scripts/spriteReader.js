@@ -91,14 +91,13 @@ class Sprite
 
 class Still
 {
-    constructor(identifier, startX, startY, sizeX, sizeY, padding)
+    constructor(identifier, startX, startY, sizeX, sizeY)
     {
         this.identifier = identifier;
         this.startX = startX;
         this.startY = startY;
         this.sizeX = sizeX;
         this.sizeY = sizeY;
-        this.padding = padding;
     }
 }
 
@@ -146,9 +145,6 @@ class SpriteSet
                     stillData[still_y][x] = imgData[img_y][still.startX + x];
                 }
             }
-
-            if (still.padding != null && typeof still.padding != undefined)
-                stillData = padSprite (stillData, still.padding);
             
             return stillData;
         }
@@ -307,63 +303,6 @@ class Font extends SpriteSet
     }
 }
 
-class PaddingConfig
-{
-    constructor(destWidth, destHeight, // -1: Don't pad, use current value instead
-    pad_x, // -1: left, 0: mid, 1: right
-    pad_y) // -1: bottom, 0: mid, 1: top
-    {
-        this.destWidth = destWidth;
-        this.destHeight = destHeight;
-        this.pad_x = pad_x;
-        this.pad_y = pad_y;
-    }
-}
-
-function padSprite(sprite, paddingConfig)
-{
-    let spriteWidth = sprite[0].length;
-    let spriteHeight = sprite.length;
-
-    let destWidth = paddingConfig.destWidth != -1 ? paddingConfig.destWidth : spriteWidth;
-    let destHeight = paddingConfig.destHeight != -1 ? paddingConfig.destHeight : spriteHeight;
-    let pad_x = paddingConfig.pad_x;
-    let pad_y = paddingConfig.pad_y;
-
-    if (spriteWidth > destWidth || spriteHeight > destHeight && destHeight != -1)
-    {
-        console.log("ERROR: destSize is smaller than current size");
-        return sprite;
-    }
-
-    let data = [];
-
-    let totalXpadding = destWidth - spriteWidth;
-    let totalYpadding = destHeight - spriteHeight;
-
-    let paddingRight_01 = pad_x + 0.5 - pad_x * 0.5; // 0, 0.5, 1
-    let paddingTop_01 = pad_y + 0.5 - pad_y * 0.5; // 0, 0.5, 1
-
-    let paddingRight = Math.round(paddingRight_01 * totalXpadding);
-    let paddingTop = Math.round(paddingTop_01 * totalYpadding);
-    let paddingLeft = totalXpadding - paddingRight;
-    let paddingBottom = totalYpadding - paddingTop;
-
-    for (let y = 0; y < destHeight; y++)
-    {
-        data.push([]);
-        for (let x = 0; x < destWidth; x++)
-        {
-            if (x < paddingLeft || x >= destWidth - paddingRight || y < paddingTop || y >= destHeight - paddingBottom)
-                data[y].push([0, 0, 0, 0]);
-            else
-                data[y].push(sprite[y - paddingTop][x - paddingLeft]);
-        }
-    }
-    
-    return data;
-}
-
 let wallSprite;
 let floorSprite;
 let ceilingSprite;
@@ -396,58 +335,57 @@ async function spriteReader_init()
 
     spriteReader_getSpriteString('FireBullet',            (img) =>
     {
-        let paddingConfig = new PaddingConfig(-1, 120, 0, -0.2);
         fireBulletSprite = new SpriteSet(img,
             [
-                new Still('Idle_S', 0, 0, 34, 33, paddingConfig),
-                new Still('Idle_SW', 0, 34, 56, 28, paddingConfig),
-                new Still('Idle_W', 0, 62, 67, 25, paddingConfig),
-                new Still('Idle_NW', 0, 89, 54, 26, paddingConfig),
-                new Still('Idle_N', 0, 115, 28, 30, paddingConfig),
-                new Still('Idle_NE', 0, 145, 54, 26, paddingConfig),
-                new Still('Idle_E', 0, 171, 67, 25, paddingConfig),
-                new Still('Idle_SE', 0, 198, 56, 28, paddingConfig)
+                new Still('Idle_S', 0, 0, 34, 33),
+                new Still('Idle_SW', 0, 34, 56, 28),
+                new Still('Idle_W', 0, 62, 67, 25),
+                new Still('Idle_NW', 0, 89, 54, 26),
+                new Still('Idle_N', 0, 115, 28, 30),
+                new Still('Idle_NE', 0, 145, 54, 26),
+                new Still('Idle_E', 0, 171, 67, 25),
+                new Still('Idle_SE', 0, 198, 56, 28)
             ],
             [
                 new StillSequence('Fly_S',
                 [
-                    new Still(0, 0, 0, 34, 33, paddingConfig),
-                    new Still(0, 34, 0, 33, 33, paddingConfig)
+                    new Still(0, 0, 0, 34, 33),
+                    new Still(0, 34, 0, 33, 33)
                 ]),
                 new StillSequence('Fly_SW',
                 [
-                    new Still(0, 0, 34, 56, 28, paddingConfig),
-                    new Still(0, 56, 34, 51, 28, paddingConfig)
+                    new Still(0, 0, 34, 56, 28),
+                    new Still(0, 56, 34, 51, 28)
                 ]),
                 new StillSequence('Fly_W',
                 [
-                    new Still(0, 0, 62, 67, 25, paddingConfig),
-                    new Still(0, 67, 62, 62, 27, paddingConfig)
+                    new Still(0, 0, 62, 67, 25),
+                    new Still(0, 67, 62, 62, 27)
                 ]),
                 new StillSequence('Fly_NW',
                 [
-                    new Still(0, 0, 89, 54, 26, paddingConfig),
-                    new Still(0, 54, 89, 46, 26, paddingConfig)
+                    new Still(0, 0, 89, 54, 26),
+                    new Still(0, 54, 89, 46, 26)
                 ]),
                 new StillSequence('Fly_N',
                 [
-                    new Still(0, 0, 115, 28, 30, paddingConfig),
-                    new Still(0, 28, 115, 25, 27, paddingConfig)
+                    new Still(0, 0, 115, 28, 30),
+                    new Still(0, 28, 115, 25, 27)
                 ]),
                 new StillSequence('Fly_NE',
                 [
-                    new Still(0, 0, 145, 54, 26, paddingConfig),
-                    new Still(0, 54, 145, 46, 27, paddingConfig)
+                    new Still(0, 0, 145, 54, 26),
+                    new Still(0, 54, 145, 46, 27)
                 ]),
                 new StillSequence('Fly_E',
                 [
-                    new Still(0, 0, 171, 67, 25, paddingConfig),
-                    new Still(0, 67, 171, 62, 27, paddingConfig)
+                    new Still(0, 0, 171, 67, 25),
+                    new Still(0, 67, 171, 62, 27)
                 ]),
                 new StillSequence('Fly_SE',
                 [
-                    new Still(0, 0, 198, 56, 28, paddingConfig),
-                    new Still(0, 56, 198, 51, 28, paddingConfig)
+                    new Still(0, 0, 198, 56, 28),
+                    new Still(0, 56, 198, 51, 28)
                 ])
             ],
             false

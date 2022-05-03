@@ -18,7 +18,7 @@ let playerAngle;
 let opponents;
 let currWeapon;
 let health;
-let ammo;               // ToRefactor: Merge a padded sprite and its bounds into a new class
+let ammo;
 let weaponAnimTime;
 
 async function init()
@@ -46,19 +46,6 @@ function initRuntimeVariables()
     currWeapon = 2;
     weaponAnimTime = -1;
     playerX = playerY = playerAngle = 0;
-
-    //#region Init Textures with their biggest size
-    let healthText = getHealthText();
-    healthTextBounds_sizeX = healthText[0].length;
-    healthTextBounds_sizeY = healthText.length;
-    healthTextPaddingConfig = new PaddingConfig(healthText[0].length, healthText.length, -1, 0)
-
-    let ammoText = getAmmoText();
-    ammoTextBounds_sizeX = ammoText[0].length;
-    ammoTextBounds_sizeY = ammoText.length;
-    ammoTextPaddingConfig = new PaddingConfig(ammoTextBounds_sizeX, ammoTextBounds_sizeY, -1, 0);
-
-    //#endregion
 
     lastFrameTime = Date.now();
 }

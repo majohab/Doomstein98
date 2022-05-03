@@ -18,32 +18,52 @@ let gpu;
 let gpu_kernel;
 let gpu_kernel_settings;
 
-let healthTextBounds_startX;
-let healthTextBounds_startY;
-let healthTextBounds_sizeX;
-let healthTextBounds_sizeY;
-let healthTextBounds_scale;
-let healthTextPaddingConfig;
+let statusBar_Height;
 
-let ammoTextBounds_startX;
-let ammoTextBounds_startY;
-let ammoTextBounds_sizeX;
-let ammoTextBounds_sizeY;
-let ammoTextBounds_scale;
-let ammoTextPaddingConfig;
+let weapon_startX;
+let weapon_startY;
+let weapon_pivotX;
+let weapon_pivotY;
+let weapon_scale;
+
+let healthText_startX;
+let healthText_startY;
+let healthText_pivotX;
+let healthText_pivotY;
+let healthText_scale;
+
+let ammoText_startX;
+let ammoText_startY;
+let ammoText_pivotX;
+let ammoText_pivotY;
+let ammoText_scale;
+
+gameWindowHeight = () => screenHeight - statusBar_Height;
 
 function drawingHandler_init()
 {
     screenWidth = 1000;
     screenHeight = 750; // ToDo: Calculate dynamically
 
-    healthTextBounds_startX = screenWidth * (285 / 1200);
-    healthTextBounds_startY = screenHeight - screenHeight * (115 / 900);
-    healthTextBounds_scale = screenWidth / 280;
+    statusBar_Height = screenHeight * 0.15;
 
-    ammoTextBounds_startX = screenWidth * (645 / 1200);
-    ammoTextBounds_startY = screenHeight - screenHeight * (120 / 900);
-    ammoTextBounds_scale = screenWidth / 240;
+    weapon_startX = screenWidth * 0.5;
+    weapon_startY = gameWindowHeight();
+    weapon_pivotX = 0.5;
+    weapon_pivotY = 1;
+    weapon_scale = screenHeight / 250;
+
+    healthText_startX = screenWidth * 0.43;
+    healthText_startY = screenHeight * 0.94;
+    healthText_pivotX = 1;
+    healthText_pivotY = 1;
+    healthText_scale = screenWidth / 280;
+
+    ammoText_startX = screenWidth * 0.706;
+    ammoText_startY = screenHeight * 0.95;
+    ammoText_pivotX = 1;
+    ammoText_pivotY = 1;
+    ammoText_scale = screenWidth / 250;
 
     canvas = document.createElement('canvas');
     canvas.setAttribute('width', screenWidth);
@@ -67,7 +87,7 @@ function drawingHandler_init()
             screenHeight: screenHeight,
             screenWidth: screenWidth,
             cellSize: cellSize,
-            statusBar_Height: screenHeight * 0.15,
+            statusBar_Height: statusBar_Height,
             weaponFrame_startX: (screenWidth / statusBarSprite.width) * 213,
             gun_SizeMultiplier: screenHeight / 250,   // ToDo: Usually each weapon should store its own separate reference height additionally, but for now it works fine without.
 
@@ -101,33 +121,20 @@ function drawingHandler_init()
             statusBarSprite_height: statusBarSprite.height,
 
             weaponFrameSprite_width: weaponFrameSprite.width,
-            weaponFrameSprite_height: weaponFrameSprite.height,
-
-
-            healthTextBounds_startX: healthTextBounds_startX,
-            healthTextBounds_startY: healthTextBounds_startY,
-            healthTextBounds_sizeX: healthTextBounds_sizeX,
-            healthTextBounds_sizeY: healthTextBounds_sizeY,
-            healthTextBounds_scale: healthTextBounds_scale,
-
-            ammoTextBounds_startX: ammoTextBounds_startX,
-            ammoTextBounds_startY: ammoTextBounds_startY,
-            ammoTextBounds_sizeX: ammoTextBounds_sizeX,
-            ammoTextBounds_sizeY: ammoTextBounds_sizeY,
-            ammoTextBounds_scale: ammoTextBounds_scale
+            weaponFrameSprite_height: weaponFrameSprite.height
         }
     };
     gpu_kernel = gpu.createKernel(
         function(playerX, playerY, playerAngle, 
             map_numbers,
             wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,
-            imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
+            imageArray, imageStartIndezes, imageBounds, imageCount,
             weaponFrame_startY,
             objectArray, objectStartIndezes, objectBounds, objectCount) {
             drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
                 map_numbers,
                 wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,
-                imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
+                imageArray, imageStartIndezes, imageBounds, imageCount,
                 weaponFrame_startY,
                 objectArray, objectStartIndezes, objectBounds, objectCount);
         },
@@ -140,6 +147,7 @@ function drawingHandler_init()
 function drawingHandler_initKernel()
 {
     let FourBitUnit = [0, 0, 0, 0];
+    let SevenBitUnit = [0, 0, 0, 0, 0, 0, 0];
 
     function createEmpty3DArray(width, height, unit)
     {
@@ -159,18 +167,11 @@ function drawingHandler_initKernel()
     let imageBounds = [];
     let imageCount = 0;
 
-    imageArray = createEmpty3DArray(100, 100, FourBitUnit).flat(1);
+    imageArray = createEmpty3DArray(200, 100, FourBitUnit).flat(1);
     imageStartIndezes = createEmpty3DArray(1, 4, FourBitUnit).flat(1);
-    imageBounds = createEmpty3DArray(1, 4, FourBitUnit).flat(1);
+    imageBounds = createEmpty3DArray(1, 4, SevenBitUnit).flat(1);
 
     //#region 3D Objects
-
-    let weaponImageBounds = shotgunSprite.getBiggestBounds();
-    let weaponImage = createEmpty3DArray(weaponImageBounds[0], weaponImageBounds[1], FourBitUnit);
-
-    let healthText = createEmpty3DArray(healthTextBounds_sizeX, healthTextBounds_sizeY, FourBitUnit);
-    let ammoText = createEmpty3DArray(ammoTextBounds_sizeX, ammoTextBounds_sizeY, FourBitUnit);
-
 
     let objectStartIndezes = [];
     let objectBounds = [];
@@ -204,7 +205,7 @@ function drawingHandler_initKernel()
     gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
-        imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
+        imageArray, imageStartIndezes, imageBounds, imageCount,
         weaponFrame_startY,
         objectArray, objectStartIndezes, objectBounds, objectCount);
 }
@@ -221,16 +222,16 @@ function drawingHandler_draw()
     let imageBounds = [];
     let imageCount = 0;
 
-    function addImage(newImg, startX, startY)
+    function addImage(newImg, startX, startY, pivotX, pivotY, scale)
     {
         imageStartIndezes.push(imageArray.length);
-        imageBounds.push([startX, startY, newImg[0].length, newImg.length]);
-        imageArray = imageArray.concat(newImg.flat(1));
+        imageBounds.push([startX, startY, newImg[0].length, newImg.length, pivotX, pivotY, scale]);
+        imageArray = imageArray.concat(newImg.flat(1)); // Need to flat all sub-objects / -images already at this point, in order to correctly calculate imageStartIndezes
         imageCount++;
     }
 
-    addImage(getHealthText(), healthTextBounds_startX, healthTextBounds_startY);
-    addImage(getAmmoText(), ammoTextBounds_startX, ammoTextBounds_startY);
+    addImage(getHealthText(), healthText_startX, healthText_startY, healthText_pivotX, healthText_pivotY, healthText_scale);
+    addImage(getAmmoText(), ammoText_startX, ammoText_startY, ammoText_pivotX, ammoText_pivotY, ammoText_scale);
 
 
     let weaponFrame_startY = 2 + currWeapon * 12;
@@ -247,8 +248,8 @@ function drawingHandler_draw()
         t = 1 - t; // [0, 1): Animation; 1: Still
         weaponImage = weaponToUse.getAnimationSprite(t, 'Shoot');
     }
-    let weaponImageBounds = [weaponImage[0].length, weaponImage.length];
-    weaponImage = weaponImage.flat(1);
+
+    addImage(weaponImage, weapon_startX, weapon_startY, weapon_pivotX, weapon_pivotY, weapon_scale)
 
     //#endregion
 
@@ -378,7 +379,7 @@ function drawingHandler_draw()
     buffer = gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
-        imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
+        imageArray, imageStartIndezes, imageBounds, imageCount,
         weaponFrame_startY,
         objectArray, objectStartIndezes, objectBounds, objectCount);
 }
@@ -386,7 +387,7 @@ function drawingHandler_draw()
 function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // Coordinates and Angle
     map_numbers,                                                            // Map
     wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,    // World Sprites                                              
-    imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
+    imageArray, imageStartIndezes, imageBounds, imageCount,
     weaponFrame_startY,                 // Status-Bar-Weapon-Frame
     objectArray, objectStartIndezes, objectBounds, objectCount)                                                     
 {
@@ -421,18 +422,22 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
     //#endregion
 
-    //#region Health-Text
+    //#region UI-Elements
     {
         for (let image = 0; image < imageCount; image++)
         {
-            let startX = imageBounds[image][0];
-            let startY = imageBounds[image][1];
-            let imgSizeX = imageBounds[image][2];
-            let imgSizeY = imageBounds[image][3];
+            let posX = imageBounds[image][0];
+            let posY = imageBounds[image][1];
+            let width = imageBounds[image][2];
+            let height = imageBounds[image][3];
+            let pivotX = imageBounds[image][4]; // [0, 1]: from left to right
+            let pivotY = imageBounds[image][5]; // [0, 1]: from top to bottom
+            let scale = imageBounds[image][6];
 
-            let scale = this.constants.healthTextBounds_scale;
-            let endX = startX + (imgSizeX * scale);
-            let endY = startY + (imgSizeY * scale);
+            let startX = posX - pivotX * width * scale;
+            let startY = posY - pivotY * height * scale;
+            let endX = startX + (width * scale);
+            let endY = startY + (height * scale);
 
             
             if (x >= startX && x < endX && y >= startY && y < endY)
@@ -441,7 +446,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                 let pix_y = Math.floor((y - startY) / scale);
 
                 let offset = imageStartIndezes[image];
-                let pixelIndex = offset + pix_y * imgSizeX + pix_x;
+                let pixelIndex = offset + pix_y * width + pix_x;
 
                 if (imageArray[pixelIndex][3] > 0)
                 {
@@ -506,36 +511,6 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
         //#endregion
         
     }
-    //#endregion
-
-    //#region Gun-Img
-    if (depthBuffer > 0)
-    {
-        let spriteWidth = weaponImageBounds[0], spriteHeight = weaponImageBounds[1];
-        let gun_spriteRatio = spriteWidth / spriteHeight;
-
-        let gun_ImgHeight = spriteHeight * this.constants.gun_SizeMultiplier;
-        let gun_ImgWidth = gun_ImgHeight * gun_spriteRatio;
-        let gun_yMin = gameWindowHeight - gun_ImgHeight;
-        let gun_xMin = (screenWidth - gun_ImgWidth) * 0.5;
-        let gun_xMax = screenWidth - gun_xMin;
-        if (y >= gun_yMin && x >= gun_xMin && x <= gun_xMax)
-        {
-            let pix_x = Math.floor(((x - gun_xMin) / gun_ImgWidth) * spriteWidth);
-            let pix_y = Math.floor(((y - gun_yMin) / gun_ImgHeight) * spriteHeight);
-            let pixelIndex = pix_y * spriteWidth + pix_x;
-
-            if (weaponImage[pixelIndex][3] > 0)
-            {
-                r = weaponImage[pixelIndex][0]
-                g = weaponImage[pixelIndex][1]
-                b = weaponImage[pixelIndex][2]
-
-                depthBuffer = 0;
-            }
-        }
-    }
-        
     //#endregion
 
     //#region 3D Ray-Casting
