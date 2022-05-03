@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Lobby, Map, Weapon, Setting
+from .models import Lobby, Map, Weapon, Setting, Statistic, WeaponStatistic
 from django.contrib.auth.models import Group
 
 # config
@@ -10,6 +10,8 @@ admin.site.register(Lobby)
 admin.site.register(Map)
 admin.site.register(Weapon)
 admin.site.register(Setting)
+admin.site.register(Statistic)
+admin.site.register(WeaponStatistic)
 admin.site.unregister(Group)
 
 class LobbyAdminConfig(admin.ModelAdmin):
@@ -78,6 +80,40 @@ class WeaponAdminConfig(admin.ModelAdmin):
 
 admin.site.unregister(Weapon)
 admin.site.register(Weapon, WeaponAdminConfig)
+
+class StatisticAdminConfig(admin.ModelAdmin):
+    """Configuration for map table
+
+    Args:
+        UserAdmin (Class): Admin config
+    """
+    ordering = ('username', 'time')  
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username')
+        }),
+    )
+
+admin.site.unregister(Statistic)
+admin.site.register(Statistic, StatisticAdminConfig)
+
+class WeaponStatisticAdminConfig(admin.ModelAdmin):
+    """Configuration for map table
+
+    Args:
+        UserAdmin (Class): Admin config
+    """
+    ordering = ('name', 'time')  
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('name')
+        }),
+    )
+
+admin.site.unregister(WeaponStatistic)
+admin.site.register(WeaponStatistic, WeaponStatisticAdminConfig)
 
 class SettingAdminConfig(admin.ModelAdmin):
     """Configuration for map table
