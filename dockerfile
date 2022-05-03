@@ -14,9 +14,9 @@ RUN pipenv install
 RUN pipenv install --system
 
 # Copy app
-RUN mkdir /DOOMSTEIN98
-COPY ./DOOMSTEIN98 /DOOMSTEIN98
-WORKDIR /DOOMSTEIN98
+RUN mkdir /App
+COPY ./App /App
+WORKDIR /App
 
 # Copy scripts
 COPY ./scripts /scripts
@@ -33,7 +33,7 @@ RUN set -x ; \
 # Restrict permissions
 RUN chown -R www-data:www-data /vol
 RUN chmod -R 755 /vol/web
-RUN chown -R www-data:www-data /DOOMSTEIN98
+RUN chown -R www-data:www-data /App
 
 # Switch to user
 USER www-data

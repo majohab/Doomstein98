@@ -6,7 +6,7 @@ services:
       context: .
     volumes:
       - static_data:/vol/web
-      - ./DOOMSTEIN98/db.sqlite3:/DOOMSTEIN98/db.sqlite3
+      - ./App/db.sqlite3:/App/db.sqlite3
     env_file:
       - .env
     ports:

@@ -1,0 +1,12 @@
+Problem:
+    The Redis-server fails to save his changes, which causes him to crash.
+
+Resolution:
+    1. While the Redis-server is running, open a separate WSL-window.
+    2. Type in:
+            redis-cli
+    3. Type in:
+            CONFIG SET dir '/mnt/c/Users/lasse/downloads'
+            CONFIG SET dbfilename temp.rdb
+            BGSAVE
+        where 'lasse' is to be replaced with your username
