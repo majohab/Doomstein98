@@ -121,15 +121,13 @@ function drawingHandler_init()
         function(playerX, playerY, playerAngle, 
             map_numbers,
             wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,
-            weaponImage, weaponImageBounds,
-            healthText, bulletsText,
+            imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
             weaponFrame_startY,
             objectArray, objectStartIndezes, objectBounds, objectCount) {
             drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
                 map_numbers,
                 wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,
-                weaponImage, weaponImageBounds,
-                healthText, bulletsText,
+                imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
                 weaponFrame_startY,
                 objectArray, objectStartIndezes, objectBounds, objectCount);
         },
@@ -141,6 +139,8 @@ function drawingHandler_init()
 
 function drawingHandler_initKernel()
 {
+    let FourBitUnit = [0, 0, 0, 0];
+
     function createEmpty3DArray(width, height, unit)
     {
         let a = [];
@@ -154,7 +154,16 @@ function drawingHandler_initKernel()
     }
 
 
-    let FourBitUnit = [0, 0, 0, 0];
+    let imageArray = [];
+    let imageStartIndezes = [];
+    let imageBounds = [];
+    let imageCount = 0;
+
+    imageArray = createEmpty3DArray(100, 100, FourBitUnit).flat(1);
+    imageStartIndezes = createEmpty3DArray(1, 4, FourBitUnit).flat(1);
+    imageBounds = createEmpty3DArray(1, 4, FourBitUnit).flat(1);
+
+    //#region 3D Objects
 
     let weaponImageBounds = shotgunSprite.getBiggestBounds();
     let weaponImage = createEmpty3DArray(weaponImageBounds[0], weaponImageBounds[1], FourBitUnit);
@@ -186,25 +195,16 @@ function drawingHandler_initKernel()
 
     objectArray = objectArray.flat(2);
 
+    //#endregion
 
     // Not important (no arrays)
     let weaponFrame_startY = 0;
     let objectCount = 0;
 
-
-    console.log(playerX, playerY, playerAngle,
-        map_numbers,
-        wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
-        imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
-        healthText, ammoText,
-        weaponFrame_startY,
-        objectArray, objectStartIndezes, objectBounds, objectCount);
-
     gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
         imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
-        healthText, ammoText,
         weaponFrame_startY,
         objectArray, objectStartIndezes, objectBounds, objectCount);
 }
@@ -221,15 +221,16 @@ function drawingHandler_draw()
     let imageBounds = [];
     let imageCount = 0;
 
-    let healthText = getHealthText();
-    imageStartIndezes.push(imageArray.length);
-    imageBounds.push([healthTextBounds_startX, healthTextBounds_startY, healthTextBounds_sizeX, healthTextBounds_sizeY]);
-    imageArray = imageArray.concat(healthText.flat(1));
-    imageCount++;
+    function addImage(newImg, startX, startY)
+    {
+        imageStartIndezes.push(imageArray.length);
+        imageBounds.push([startX, startY, newImg[0].length, newImg.length]);
+        imageArray = imageArray.concat(newImg.flat(1));
+        imageCount++;
+    }
 
-    
-    let ammoText = getAmmoText();
-    ammoText = padSprite(ammoText, ammoTextPaddingConfig);
+    addImage(getHealthText(), healthTextBounds_startX, healthTextBounds_startY);
+    addImage(getAmmoText(), ammoTextBounds_startX, ammoTextBounds_startY);
 
 
     let weaponFrame_startY = 2 + currWeapon * 12;
@@ -378,7 +379,6 @@ function drawingHandler_draw()
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
         imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
-        healthText, ammoText,
         weaponFrame_startY,
         objectArray, objectStartIndezes, objectBounds, objectCount);
 }
@@ -387,7 +387,6 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
     map_numbers,                                                            // Map
     wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,    // World Sprites                                              
     imageArray, imageStartIndezes, imageBounds, imageCount, weaponImage, weaponImageBounds,
-    healthText, bulletsText,            // Status-Bar-Texts
     weaponFrame_startY,                 // Status-Bar-Weapon-Frame
     objectArray, objectStartIndezes, objectBounds, objectCount)                                                     
 {
@@ -442,7 +441,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                 let pix_y = Math.floor((y - startY) / scale);
 
                 let offset = imageStartIndezes[image];
-                let pixelIndex = offset + pix_y * width + pix_x;
+                let pixelIndex = offset + pix_y * imgSizeX + pix_x;
 
                 if (imageArray[pixelIndex][3] > 0)
                 {
@@ -454,33 +453,6 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                 }
             }   
         }     
-    }
-    //#endregion
-
-    //#region Bullets-Text
-    {
-        let startX = this.constants.ammoTextBounds_startX;
-        let startY = this.constants.ammoTextBounds_startY;
-        let textSizeX = this.constants.ammoTextBounds_sizeX;
-        let textSizeY = this.constants.ammoTextBounds_sizeY;
-        let scale = this.constants.ammoTextBounds_scale;
-        let endX = startX + (textSizeX * scale);
-        let endY = startY + (textSizeY * scale);
-    
-        if (x >= startX && x < endX && y >= startY && y < endY)
-        {
-            let pix_x = Math.floor((x - startX) / scale);
-            let pix_y = Math.floor((y - startY) / scale);
-    
-            if (bulletsText[pix_y][pix_x][3] > 0)
-            {
-                r = bulletsText[pix_y][pix_x][0]
-                g = bulletsText[pix_y][pix_x][1]
-                b = bulletsText[pix_y][pix_x][2]
-    
-                depthBuffer = 0;
-            }
-        }
     }
     //#endregion
 
