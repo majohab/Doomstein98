@@ -81,8 +81,6 @@ function socketHandler_init()
 
         if (data[type_key] == update_key)
         {
-            console.log(data[player_key][userName][move_animation_key]);
-
             if (mapString == null)
             {
                 if (data[map_key] != null)
@@ -117,6 +115,7 @@ function socketHandler_init()
             }
 
             rec_corpses = data[corpses_key];
+            console.log(data);
 
 
             ammo        = data[player_key][userName][ammo_key];

@@ -18,7 +18,7 @@ let playerAngle;
 let opponents;
 let currWeapon;
 let health;
-let ammo;               // ToRefactor: Merge a padded sprite and its bounds into a new class
+let ammo;
 let weaponAnimTime;
 
 async function init()
@@ -32,6 +32,7 @@ async function init()
     await initMap_Numbers();
 
     drawingHandler_init(); // Needs to wait for initRuntimeVariables();
+    drawingHandler_initKernel();
 
     inputHander_init(); // Needs to wait for drawingHandler_init()
 
@@ -44,32 +45,24 @@ function initRuntimeVariables()
     health = 200;
     currWeapon = 2;
     weaponAnimTime = -1;
-
-    //#region Init Textures with their biggest size
-    let healthText = getHealthText();
-    healthTextBounds_sizeX = healthText[0].length;
-    healthTextBounds_sizeY = healthText.length;
-    healthTextPaddingConfig = new PaddingConfig(healthText[0].length, healthText.length, -1, 0)
-
-    let ammoText = getAmmoText();
-    ammoTextBounds_sizeX = ammoText[0].length;
-    ammoTextBounds_sizeY = ammoText.length;
-    ammoTextPaddingConfig = new PaddingConfig(ammoTextBounds_sizeX, ammoTextBounds_sizeY, -1, 0);
-
-    //#endregion
+    playerX = playerY = playerAngle = 0;
 
     lastFrameTime = Date.now();
 }
 
 
-function getHealthText()
+function getHealthText(overrideValue)
 {
-    return font.getTextImg(health.toString()/*.padStart(3, '0')*/ + '%');
+    let val = health;
+    if (overrideValue != null) val = overrideValue;
+    return font.getTextImg(val.toString()/*.padStart(3, '0')*/ + '%');
 }
 
-function getAmmoText()
+function getAmmoText(overrideValue)
 {
-    return font.getTextImg(ammo.toString()/*.padStart(3, '0')*/);
+    let val = ammo;
+    if (overrideValue != null) val = overrideValue;
+    return font.getTextImg(val.toString()/*.padStart(3, '0')*/);
 }
 
 function onMapReceived(width, map)
@@ -96,6 +89,8 @@ async function initMap_Numbers()
     map_numbers = new Array(mapString.length);
     for(i = 0; i < map_numbers.length; i++)
         map_numbers[i] = mapString.charCodeAt(i);
+    
+    console.log('Received map');
 }
 
 function gameLoop()
@@ -109,7 +104,7 @@ function gameLoop()
     
     //inputHandler_updateInput(deltaTime);
 
-    drawingHandler_drawCells();
+    drawingHandler_draw();
     
     //console.log("forwardX: " + Math.sin(playerAngle) + ", forwardY: " + Math.cos(playerAngle)); 
 }
