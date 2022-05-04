@@ -51,14 +51,18 @@ function initRuntimeVariables()
 }
 
 
-function getHealthText()
+function getHealthText(overrideValue)
 {
-    return font.getTextImg(health.toString()/*.padStart(3, '0')*/ + '%');
+    let val = health;
+    if (overrideValue != null) val = overrideValue;
+    return font.getTextImg(val.toString()/*.padStart(3, '0')*/ + '%');
 }
 
-function getAmmoText()
+function getAmmoText(overrideValue)
 {
-    return font.getTextImg(ammo.toString()/*.padStart(3, '0')*/);
+    let val = ammo;
+    if (overrideValue != null) val = overrideValue;
+    return font.getTextImg(val.toString()/*.padStart(3, '0')*/);
 }
 
 function onMapReceived(width, map)

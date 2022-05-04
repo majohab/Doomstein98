@@ -12,31 +12,53 @@ let ctx;
 let screenWidth;    // Measured in pixels
 let screenHeight;   // Measured in pixels
 
-let buffer;
-
 let gpu;
 let gpu_kernel;
-let gpu_kernel_settings;
 
 let statusBar_Height;
 
+//#region Image (UI and Object) config
+
+
+// Constants
+
+const weapon_pivotX = 0.5;
+const weapon_pivotY = 1;
+
+const healthText_pivotX = 1;
+const healthText_pivotY = 1;
+
+const ammoText_pivotX = 1;
+const ammoText_pivotY = 1;
+
+// We call it PIXELscale, as it the rendered size of the object must depend on the sprite's pixel count (width, height)
+// We do not want to scale every sprite of an object to the same size
+// pixelScale => how we scale each pixel
+const opponent_pixelScale = 10;
+const opponent_startY = 0; // Bottom of corridor
+const opponent_pivotY = 0; // Image's reference point is at the bottom
+
+const bullet_pixelScale = 5;
+const bullet_startY = 0.5; // Center of corridor
+const bullet_pivotY = 0.5; // Image's reference point is in the middle
+
+
+// Dependent on screenSize
+
 let weapon_startX;
 let weapon_startY;
-let weapon_pivotX;
-let weapon_pivotY;
 let weapon_scale;
 
 let healthText_startX;
 let healthText_startY;
-let healthText_pivotX;
-let healthText_pivotY;
 let healthText_scale;
 
 let ammoText_startX;
 let ammoText_startY;
-let ammoText_pivotX;
-let ammoText_pivotY;
 let ammoText_scale;
+
+//#endregion
+
 
 gameWindowHeight = () => screenHeight - statusBar_Height;
 
@@ -49,20 +71,14 @@ function drawingHandler_init()
 
     weapon_startX = screenWidth * 0.5;
     weapon_startY = gameWindowHeight();
-    weapon_pivotX = 0.5;
-    weapon_pivotY = 1;
     weapon_scale = screenHeight / 250;
 
     healthText_startX = screenWidth * 0.43;
     healthText_startY = screenHeight * 0.94;
-    healthText_pivotX = 1;
-    healthText_pivotY = 1;
     healthText_scale = screenWidth / 280;
 
     ammoText_startX = screenWidth * 0.706;
     ammoText_startY = screenHeight * 0.95;
-    ammoText_pivotX = 1;
-    ammoText_pivotY = 1;
     ammoText_scale = screenWidth / 250;
 
     canvas = document.createElement('canvas');
@@ -78,7 +94,7 @@ function drawingHandler_init()
 
     gpu.addFunction(drawingHandler_draw_gpu_single);
 
-    gpu_kernel_settings = {
+    let gpu_kernel_settings = {
         output: { x: screenWidth, y: screenHeight },
         graphical: true,
         loopMaxIterations: 1000,
@@ -161,28 +177,40 @@ function drawingHandler_initKernel()
         return a;
     }
 
+    //#region UI Images
 
     let imageArray = [];
     let imageStartIndezes = [];
     let imageBounds = [];
     let imageCount = 0;
 
-    imageArray = createEmpty3DArray(200, 100, FourBitUnit).flat(1);
-    imageStartIndezes = createEmpty3DArray(1, 4, FourBitUnit).flat(1);
-    imageBounds = createEmpty3DArray(1, 4, SevenBitUnit).flat(1);
+    // Add biggest expected images
+    
+    let healthText = getHealthText(200); pushImage(healthText[0].length, healthText.length);
+    let ammoText = getAmmoText(200); pushImage(ammoText[0].length, ammoText.length);
+    let weaponBounds = shotgunSprite.getBiggestBounds(); pushImage(weaponBounds[0], weaponBounds[1]);
+    function pushImage(width, height) // biggestImage: image with the highest width * height (pixelCount) expected for a particular UI element.
+    {
+        imageArray.push(createEmpty3DArray(width, height, FourBitUnit));
+        imageStartIndezes.push(0);
+        imageBounds.push(SevenBitUnit);
+    }
+    imageArray = imageArray.flat(2);
+
+    //#endregion
 
     //#region 3D Objects
 
-    let objectStartIndezes = [];
-    let objectBounds = [];
+    let objectStartIndezes = []; // [0, 0, 0, ...]
+    let objectBounds = []; // array with elements of type [x, y, width, height, pixelScale, startY, pivotY]
 
     for (let i = 0; i < max_opponents * max_bullets * max_corpses; i++)
     {
         objectStartIndezes.push(0);
-        objectBounds.push([0, 0, 0, 0]);
+        objectBounds.push(SevenBitUnit);
     }
 
-    let objectArray = [];
+    let objectArray = []; // [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], ...]
     pushObjects(fireBulletSprite, max_bullets);
     pushObjects(corpseSprite, max_corpses);
     pushObjects(playerSprite, max_opponents);
@@ -260,7 +288,7 @@ function drawingHandler_draw()
     let objectBounds = [];
     let objectCount = 0;
 
-    function addObjects(maxCount, rec_objects, presentObject_Function)
+    function addObjects(maxCount, rec_objects, pixelScale, startY, pivotY, presentObject_Function)
     {
         for (let i = 0; i < maxCount; i++)
         {
@@ -274,14 +302,14 @@ function drawingHandler_draw()
                 newObject = presentObject_Function(rec_objects[i]);
                 
                 objectStartIndezes.push(objectArray.length);
-                objectBounds.push([x, y, newObject[0].length, newObject.length]);
+                objectBounds.push([x, y, newObject[0].length, newObject.length, pixelScale, startY, pivotY]);
                 objectArray = objectArray.concat(newObject.flat(1));
                 objectCount++;
             }
         }
     }
 
-    addObjects(max_opponents, rec_opponents, (object) =>
+    addObjects(max_opponents, rec_opponents, opponent_pixelScale, opponent_startY, opponent_pivotY, (object) =>
     {
         function getDeltaBetweenAngles(a, b)
         {
@@ -345,8 +373,8 @@ function drawingHandler_draw()
         return playerSprite.getAnimationSprite(t, animationName + '_' + spriteDir);
 
     });
-    addObjects(max_bullets, rec_bullets, () => fireBulletSprite.getSprite('Idle_S'));
-    addObjects(max_corpses, rec_corpses, (object) =>
+    addObjects(max_bullets, rec_bullets, bullet_pixelScale, bullet_startY, bullet_pivotY, () => fireBulletSprite.getSprite('Idle_S'));
+    addObjects(max_corpses, rec_corpses, opponent_pixelScale, opponent_startY, opponent_pivotY, (object) =>
     {
         let corpse;
         let t = object[duration_key];
@@ -363,6 +391,7 @@ function drawingHandler_draw()
         {
             corpse = corpseSprite.getSprite('Idle');
         }
+        console.log(corpse);
         return corpse;
         
     });
@@ -376,7 +405,7 @@ function drawingHandler_draw()
 
     //#endregion
 
-    buffer = gpu_kernel(playerX, playerY, playerAngle,
+    gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
         wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
         imageArray, imageStartIndezes, imageBounds, imageCount,
@@ -434,6 +463,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
             let pivotY = imageBounds[image][5]; // [0, 1]: from top to bottom
             let scale = imageBounds[image][6];
 
+            // ToMaybeDo: Calculate in cpu code
             let startX = posX - pivotX * width * scale;
             let startY = posY - pivotY * height * scale;
             let endX = startX + (width * scale);
@@ -677,10 +707,13 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
         {
             for (let object = 0; object < objectCount; object++) // First element is 0
             {
-                let objX = objectBounds[object][0];//corpses[corpses_startIndezes[corpse]][0];
-                let objY = objectBounds[object][1];//corpses[corpses_startIndezes[corpse]][1];
-                let spriteWidth = objectBounds[object][2];//corpses[corpses_startIndezes[corpse]][2];
-                let spriteHeight = objectBounds[object][3];//corpses[corpses_startIndezes[corpse]][3];
+                let objX = objectBounds[object][0];
+                let objY = objectBounds[object][1];
+                let spriteWidth = objectBounds[object][2];
+                let spriteHeight = objectBounds[object][3];
+                let pixelScale = objectBounds[object][4];
+                let startY = objectBounds[object][5]; // [0, 1]
+                let pivotY = objectBounds[object][6]; // [0, 1]
 
                 let vecX = objX - playerX;
                 let vecY = objY - playerY;
@@ -697,22 +730,38 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                     dstFromPlayer < depth &&
                     dstFromPlayer < depthBuffer)
                 {
-                    let objCeiling = (screenHeight * 0.5) - (screenHeight / dstFromPlayer);
-                    let objFloor = screenHeight - objCeiling;
-                    let objHeight = objFloor - objCeiling;
+                    //((screenHeight * 0.5) - ((screenHeight / distanceToWall)) * (screenHeight / screenWidth) * wallHeight)
+                    let corridorCeiling = ((screenHeight * 0.5) - ((screenHeight / dstFromPlayer)) * (screenHeight / screenWidth) * wallHeight);
+                    let corridorFloor = screenHeight - corridorCeiling;
+
+                    //corridorCeiling = ceiling; Use those lines for funny effects ^^
+                    //corridorFloor = floor;
+
+                    let corridorHeight = corridorFloor - corridorCeiling;
+
+                    // Note that dividing by screenHeight isn't really necessary, it just makes the values easier to work with
+                    // as the last part of the equation is now in range [0, 1]
+                    let objHeight = (spriteHeight * pixelScale) * (corridorHeight / screenHeight);
+
                     let objRatio = spriteWidth / spriteHeight;
                     let objWidth = objHeight * objRatio;
-                    let middleOfObject = (0.5 * (objAngle / (fov * 0.5)) + 0.5) * screenWidth;
+                    let middleOfObject_x = (0.5 * (objAngle / (fov * 0.5)) + 0.5) * screenWidth; // middle pixel of object. Range [0, screenWidth] (I think, lol)
 
                     // Absolutely zero idea what the following does and why the f*ck it works... It just works okay?! It just works... for now...
                     // Also, note that this only seems to work for fov = PI / 3, we probably need to adapt that sh*t calculation for other fovs.
-                    if (middleOfObject < 0 + objWidth * 0.5) middleOfObject += screenWidth * 3;
-                    if (middleOfObject > screenWidth * 3 - objWidth * 0.5) middleOfObject -= screenWidth * 3;
+                    if (middleOfObject_x < 0 + objWidth * 0.5) middleOfObject_x += screenWidth * 3;
+                    if (middleOfObject_x > screenWidth * 3 - objWidth * 0.5) middleOfObject_x -= screenWidth * 3;
 
-                    let objMinX = middleOfObject - objWidth * 0.5;
-                    let objMaxX = middleOfObject + objWidth * 0.5;
-                    let objMinY = screenHeight * 0.5 - objHeight * 0.5;
+                    let objMinX = middleOfObject_x - objWidth * 0.5;
+                    let objMaxX = middleOfObject_x + objWidth * 0.5;
+
+                    let objMinY = screenHeight * 0.5 - objHeight * 0.5; // screenHeight * 0.5: Start calculation in the center of the screen
                     let objMaxY = screenHeight * 0.5 + objHeight * 0.5;
+
+                    let yOffset = 0;
+                    yOffset += ((startY - 0.5) * corridorHeight);
+                    yOffset += ((0.5 - pivotY) * objHeight);
+                    objMinY -= yOffset; objMaxY -= yOffset;
 
                     if (x >= objMinX && x <= objMaxX && y >= objMinY && y <= objMaxY)
                     {

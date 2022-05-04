@@ -115,6 +115,7 @@ function socketHandler_init()
             }
 
             rec_corpses = data[corpses_key];
+            console.log(data);
 
 
             ammo        = data[player_key][userName][ammo_key];
