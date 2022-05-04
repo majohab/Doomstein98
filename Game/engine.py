@@ -1,5 +1,5 @@
 import math
-from operator import attrgetter
+from operator import attrgetter, index
 import random
 import threading
 import time
@@ -24,6 +24,15 @@ SETTINGS = 0
 
 # Get the current settings
 s : SettingDB = SettingDB.objects.filter(index=SETTINGS).first()
+
+# if there is nothing in the DataBase create a default Setting
+if(s is None):
+
+    #Create default setting
+    s = SettingDB.objects.create(index = 0)
+
+    #Save the state in the DataBase
+    s.save()
 
 #TODO: fit that for customized fps
 TICK_RATE = s.tick_rate
@@ -536,7 +545,7 @@ class Map:
         self.mapString  : str               = mapString
         self.spawns     : dict[Spawn]       = spawns
     
-    def func            (spawns, x, y, char) -> str:
+    def func            (spawns, x, y, char)    -> str:
         """helper function for handling the from list function
 
         Args:
@@ -737,7 +746,7 @@ class Map:
                 object.currentPosition = Coordinate(3.5,3.5)
                 return True
     
-    def render          (self) -> Mapping[str, Any]:
+    def render          (self)                  -> Mapping[str, Any]:
         """
         Returns relevant information about the map for the players
 
@@ -754,8 +763,7 @@ class Player:
     Class for handling Player's interaction, e.g. Shooting, Hitting, Dysing, Moving etc.
     """
 
-    # Initiate player
-    def __init__(self, username : str, position : Coordinate = Coordinate(3.5,3.5), weapons : dict[list] = AVAILABLE_WEAPONS, speed : float = PLAYER_SPEED, rotation_speed : float = ROTATION_SPEED, alive : int = 0):
+    def __init__        (self, username : str, position : Coordinate = Coordinate(3.5,3.5), weapons : dict[list] = AVAILABLE_WEAPONS, speed : float = PLAYER_SPEED, rotation_speed : float = ROTATION_SPEED, alive : int = 0):
 
         # Initiate the Username
         self.name : str = username
@@ -831,12 +839,19 @@ class Player:
         '''
         self.delayedTick : int = 0
 
-    def find_spawn(self, map : Map) -> bool:
-        '''
+    def find_spawn      (self, map : Map)                           -> bool:
+        """
         Find an available Spawn for the Player
         Returns True if found
         Returns False if not found
-        '''
+
+        Args:
+            map (Map): Map object to look for spawn
+
+        Returns:
+            bool: True if found and False if not found
+        """
+
         #Did the Player find Spawn?
         flag = False
 
@@ -876,13 +891,17 @@ class Player:
         # Spawn was found
         return True
 
-    def cond(self) -> bool:
+    def cond            (self)                                      -> bool:
         return self.name == "Picasso-Programmer"
 
-    def shoot(self, state) -> None:
-        '''
+    def shoot           (self, state)                               -> None:
+        """
         Describes the function to be called when the player shoots
-        '''
+        A bullet with specific damage is then created
+        
+        Args:
+            state (State): the current state of the game
+        """
         
         weapon = self.currentWeapon
 
@@ -923,14 +942,17 @@ class Player:
                 )
             )
         else:
-            pass
             #print(F"{self.name} has no bullets: {weaponA} or latency is still active : {weapon.curr_latency} ")
+            pass
 
-    def change_weapon(self, idx) -> None:
-        '''
+    def change_weapon   (self, idx : int)                           -> None:
+        """
         Change the weapon by an indicator
-        '''
-        
+
+        Args:
+            idx (int): to what weapon should the player change
+        """
+                
         print(F"Weapon was changed to: {idx}")
         
         # if the idx is too high then modulo the length of the weapons
@@ -938,15 +960,23 @@ class Player:
 
         self.currentWeapon = self.weapons[self.currentWeaponIdx]
 
-        # Wait 1 seconds to be able to shoot again
-        self.changeWeaponDelay = CHANGE_WEAPON_DELAY
-        
         # Reset the animation for bugs
         #TODO: HÄNGER
         #self.justShot          = 0
-        
-    #Describes the function to be called when the player is hit
-    def get_hit(self, state, bullet : Bullet, mode : int) -> None:
+
+        # Wait 1 seconds to be able to shoot again
+        self.changeWeaponDelay = CHANGE_WEAPON_DELAY
+       
+    def get_hit         (self, state, bullet : Bullet, mode : int)  -> None:
+        """
+        Describes the function to be called when the player is hit
+        The health reduction is defined here and the happenings after getting killed
+
+        Args:
+            state (State): the current state of the game
+            bullet (Bullet): the bullet which hits the player
+            mode (int): in what game mode is the game
+        """
 
         # The animation of getting hit shall go on for 1 second
         self.justHit = JUST_HIT_ANIMATION
@@ -995,8 +1025,15 @@ class Player:
         # delete the object
         del(bullet)
             
-    #Describes the function to be called when the player moves
-    def move(self, state, x : int = 0, y: int = 0) -> None:
+    def move            (self, state, x : int = 0, y: int = 0)      -> None:
+        """
+        Validate the x and y directions and the move the player in the direction of the view plus his moves
+
+        Args:
+            state (State): The state about the current situation
+            x (int, optional): From -1 to +1, if the player moves left or right. Defaults to 0.
+            y (int, optional): From -1 to +1, if the player moves down or up. Defaults to 0.
+        """
 
         #print(F"{self.name} is moving")
 
@@ -1045,10 +1082,13 @@ class Player:
         else:
             self.moveAnim = -1 # State for no movement
 
-    '''
-        Change the direction of the player by the given direction
-    '''
-    def change_direction(self, mouseX : float) -> None:
+    def change_direction(self, mouseX : float)                      -> None:
+        """
+        It changest the view direction of player if mouse is turning
+
+        Args:
+            mouseX (float): the degrees
+        """
 
         dir = self.dirView + mouseX * self.rotation_speed
 
@@ -1063,7 +1103,7 @@ class Player:
 
         self.dirView = dir
         
-    def update(self) -> None:
+    def update          (self)                                      -> None:
         """
         Reduce all latencies of the player by one if needed
         """
@@ -1092,12 +1132,10 @@ class Player:
             #reduce the waiting time
             self.alive -= 1
 
-    def die(self) -> None:
+    def die             (self)                                      -> None:
         """
         Describes the happening after dying
         """
-        #What should happen?
-        #print("Die!")
 
         # increase the death variable
         self.deaths += 1
@@ -1111,7 +1149,7 @@ class Player:
 
         self.alive = REVIVE_WAITING_TIME
 
-    def remove_from_game(self, value : int = -1) -> None:
+    def remove_from_game(self, value : int = -1)                    -> None:
         """
         Remove the Player from the game without any waiting time
 
@@ -1121,10 +1159,14 @@ class Player:
 
         self.alive = value
 
-    '''
-    Returns all relevant information about the player for the Client
-    '''
-    def render(self) -> Mapping[str, Any]:
+    def render          (self)                                      -> Mapping[str, Any]:
+        """
+        Returns all relevant information about the player for the Client
+
+        Returns:
+            Mapping[str, Any]: Returns the relevant information about the active player
+        """
+        
 
         return{
             x_coordinate_key        : self.currentPosition.x,
@@ -1141,15 +1183,19 @@ class Player:
             ammo_key                : self.currentWeapon.currAmmunition,
         }
 
-    '''
-    Returns all relelvant information about the inactive player for the client
-    '''
-    def render_inactive(self) -> Mapping[str, Any]:
+    def render_inactive (self)                                      -> Mapping[str, Any]:
+        """
+        Returns all relevant information about the inactive player for the client
+
+
+        Returns:
+            Mapping[str, Any]: relevant informaiton about the inactivity
+        """
         return{
             state_key : self.alive
         }
 
-    def save_statistic(self, engine)     -> None:
+    def save_statistic  (self, engine)                              -> None:
         """
         Saves the statistic of the player in the database
         with a timestamp
@@ -1329,6 +1375,7 @@ class State:
         Returns:
             Mapping[str, Any]: cotains the information
         """
+        
         return { 
             map_key         : self.map.render(),
             player_key      : {p.name: p.render() for p in self.players},
@@ -1598,6 +1645,33 @@ class GameEngine(threading.Thread):
 
                 # remove him from current game and add him to queue
                 self.playerQueue.append(self.state.players.pop(idx))
+        
+                print(F"{player.name} was added to the corpses")
+
+                self.state.corpses.append(
+                    {
+                        player_key       : player.name, 
+                        x_coordinate_key : player.currentPosition.x, 
+                        y_coordinate_key : player.currentPosition.y, 
+                        duration_key     : JUST_DIED_ANIMATION,
+                    }) 
+
+            # if the player was removed permanently
+            elif player.alive == -1:
+
+                # remove it from the players
+                self.state.players.pop(idx)
+                
+                print(F"{player.name} was added to the corpses")
+
+                self.state.corpses.append(
+                    {
+                        player_key       : player.name, 
+                        x_coordinate_key : player.currentPosition.x, 
+                        y_coordinate_key : player.currentPosition.y, 
+                        duration_key     : JUST_DIED_ANIMATION,
+                    }) 
+
 
             if self.gameMode == 0 and player.kills >= self.winScore:
                 
@@ -1784,19 +1858,6 @@ class GameEngine(threading.Thread):
             # -1 Players are not included
             elif player.alive > 0:
 
-                # If the player died in that frame
-                if(player.alive == REVIVE_WAITING_TIME):
-
-                    print(F"{player.name} was added to the corpses")
-
-                    self.state.corpses.append(
-                        {
-                            player_key       : player.name, 
-                            x_coordinate_key : player.currentPosition.x, 
-                            y_coordinate_key : player.currentPosition.y, 
-                            duration_key     : JUST_DIED_ANIMATION,
-                        }) 
-
                 #reduce wait time of player
                 player.alive -= 1
 
@@ -1833,7 +1894,7 @@ class GameEngine(threading.Thread):
         
         [ammunitionPack.update(self) for ammunitionPack in self.state.ammunitionPacks.values()]
                 
-    def win                         (self)       -> None:
+    def win                         (self)                                      -> None:
         """
         Is called if the game is finished.
 

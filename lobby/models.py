@@ -59,7 +59,9 @@ class Lobby(models.Model):
     Returns:
         Lobby: Lobby object
     """
-    name            = models.CharField                  (max_length=50, unique=True)
+    name            = models.SlugField                  (   max_length=50, 
+                                                            unique=True, 
+                                                            error_messages={"invalid":"No Spaces allowed"})
     map             = models.ForeignKey                 (Map, on_delete=models.CASCADE)
     mode            = models.PositiveSmallIntegerField  (default=0)
     max_players     = models.PositiveSmallIntegerField  (default=4, validators=[validator.MinValueValidator(2,"To play reasonably, you should play at least with two player"), validator.MaxValueValidator(MAX_PLAYERS, "The Server can not handle more players")])
