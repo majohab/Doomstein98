@@ -1,5 +1,5 @@
 import math
-from operator import attrgetter
+from operator import attrgetter, index
 import random
 import threading
 import time
@@ -24,6 +24,46 @@ SETTINGS = 0
 
 # Get the current settings
 s : SettingDB = SettingDB.objects.filter(index=SETTINGS).first()
+
+# if there is nothing in the DataBase create a default Setting
+if(s is None):
+
+    #Create default setting
+    s = SettingDB.objects.create(
+        index                           = 0,
+        tick_rate                       = .016666666666666666, 
+        player_speed                    = .1,
+        rotation_speed                  = 1,
+        bullet_speed                    = .016666666666666666,
+        min_munition                    = .2,
+        max_munition                    = 1, 
+        step_munition                   = .2,
+        default_ammunition_delay        = 2,
+        spawn_index                     = 50,
+        shot_animation_modulo           = 100,
+        move_animation_bullet_modulo    = 100,
+        move_animation_player_modulo    = 100,
+        hit_animation_duration          = 1,
+        died_animation_duration         = 10,
+        change_weapon_delay             = 1,
+        spawn_lock_time                 = 10,
+        revive_waiting_time             = 10,
+        player_delay_tolerance          = 3,
+        player_not_responding_time      = 10,
+        player_occupied_spawn_time      = .1,
+        default_max_players             = 6,
+        default_gamemode                = 0,
+        default_winscore                = 20,
+        default_max_endtime             = 30,
+        accuracy_reduction              = .11,
+        hit_box                         = .4,
+        wall_hit_box                    = .4,
+        wall_hit_box_player_tolerance   = .25,
+        wall_hit_box_bullet_tolerance   = .15,
+    )
+
+    #Save the state in the DataBase
+    s.save()
 
 #TODO: fit that for customized fps
 TICK_RATE = s.tick_rate
