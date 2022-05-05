@@ -82,28 +82,34 @@ WALL_HIT_BOX_BULLET_TOLERANCE   = s.wall_hit_box_bullet_tolerance
 
 #key constants
 ammo_key                = 'a'
+mov_b_anim_key          = 'b'
 bullet_key              = 'b'
 corpses_key             = 'c'
 click_key               = 'c'
+died_anim_key           = 'd'
 duration_key            = 'd'
 direction_key           = 'd'
-direction_move_key      = 'm'
 death_key               = 'd'
 group_key               = 'g'
+hit_anim_key            = 'h'
 health_key              = 'h'
 inactive_key            = 'i'
 kills_key               = 'k'
 killDeath_key           = 'kd'
 map_length_key          = 'l'
+direction_move_key      = 'm'
 map_key                 = 'm'
 mouseDelta_key          = 'm'
 name_key                = 'n'
+mov_p_anim_key          = 'p'
 player_key              = 'p'
 state_key               = 's'
+shot_anim_key           = 's'
 time_key                = 't'
 weapon_key              = 'w'
 x_coordinate_key        = 'x'
 y_coordinate_key        = 'y'
+init_key                = 'y'
 justShot_animation      = 's_a'
 justHit_animation       = 'h_a'
 move_animation_key      = 'm_a'
@@ -1377,11 +1383,18 @@ class State:
         """
         
         return { 
-            map_key         : self.map.render(),
             player_key      : {p.name: p.render() for p in self.players},
             bullet_key      : [b.render() for b in self.bullets],
             corpses_key     : self.corpses,
-            ammo_key        : [ammunitionPack.render() for ammunitionPack in self.ammunitionPacks.values() if ammunitionPack.curr_delay == 0]
+            ammo_key        : [ammunitionPack.render() for ammunitionPack in self.ammunitionPacks.values() if ammunitionPack.curr_delay == 0],
+            init_key  : {
+                map_key         : self.map.render(),
+                hit_anim_key    : JUST_HIT_ANIMATION,
+                shot_anim_key   : JUST_SHOT_ANIMATION,
+                died_anim_key   : JUST_DIED_ANIMATION,
+                mov_b_anim_key  : JUST_MOVE_ANIMATION_BULLET,
+                mov_p_anim_key  : JUST_MOVE_ANIMATION_PLAYER,
+            }
         }
 
 class GameEngine(threading.Thread):
