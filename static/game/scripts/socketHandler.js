@@ -36,6 +36,10 @@ const justHit_animation       = 'h_a';
 const weapon_change_animation = 'w_a';
 const move_animation_key      = 'm_a';
 
+const playerWalkingAnimationTime = 20;
+const bulletFlyingAnimationTime = 5;
+const corpseTotalAnimationTime = 600;
+
 let rec_corpses = [];
 let rec_bullets = [];
 let rec_opponents = [];
@@ -78,7 +82,7 @@ function socketHandler_init()
     webSocket.onmessage = (e) => {
 
         let data = JSON.parse(e.data)
-
+        
         if (data[type_key] == update_key)
         {
             if (mapString == null)
@@ -115,7 +119,6 @@ function socketHandler_init()
             }
 
             rec_corpses = data[corpses_key];
-            console.log(data);
 
 
             ammo        = data[player_key][userName][ammo_key];

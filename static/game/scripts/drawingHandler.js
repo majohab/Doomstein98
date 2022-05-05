@@ -34,7 +34,7 @@ const ammoText_pivotY = 1;
 // We call it PIXELscale, as it the rendered size of the object must depend on the sprite's pixel count (width, height)
 // We do not want to scale every sprite of an object to the same size
 // pixelScale => how we scale each pixel
-const opponent_pixelScale = 10;
+const opponent_pixelScale = 11;
 const opponent_startY = 0; // Bottom of corridor
 const opponent_pivotY = 0; // Image's reference point is at the bottom
 
@@ -188,7 +188,7 @@ function drawingHandler_initKernel()
     
     let healthText = getHealthText(200); pushImage(healthText[0].length, healthText.length);
     let ammoText = getAmmoText(200); pushImage(ammoText[0].length, ammoText.length);
-    let weaponBounds = shotgunSprite.getBiggestBounds(); pushImage(weaponBounds[0], weaponBounds[1]);
+    let weaponBounds = shotgunSpriteSet.getBiggestBounds(); pushImage(weaponBounds[0], weaponBounds[1]);
     function pushImage(width, height) // biggestImage: image with the highest width * height (pixelCount) expected for a particular UI element.
     {
         imageArray.push(createEmpty3DArray(width, height, FourBitUnit));
@@ -211,9 +211,9 @@ function drawingHandler_initKernel()
     }
 
     let objectArray = []; // [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], ...]
-    pushObjects(fireBulletSprite, max_bullets);
-    pushObjects(corpseSprite, max_corpses);
-    pushObjects(playerSprite, max_opponents);
+    pushObjects(fireBulletSpriteSet, max_bullets);
+    pushObjects(corpseSpriteSet, max_corpses);
+    pushObjects(opponentSpriteSet, max_opponents);
     function pushObjects(spriteSet, max)
     {
         let spriteBounds = spriteSet.getBiggestBounds();
@@ -264,7 +264,7 @@ function drawingHandler_draw()
 
     let weaponFrame_startY = 2 + currWeapon * 12;
 
-    let weaponToUse = currWeapon == 0 ? handgunSprite : currWeapon == 1 ? machinegunSprite : shotgunSprite;
+    let weaponToUse = currWeapon == 0 ? handgunSpriteSet : currWeapon == 1 ? machinegunSpriteSet : shotgunSpriteSet;
     let weaponImage;
     if (weaponAnimTime == -1)
     {
@@ -301,15 +301,22 @@ function drawingHandler_draw()
 
                 newObject = presentObject_Function(rec_objects[i]);
                 
-                objectStartIndezes.push(objectArray.length);
-                objectBounds.push([x, y, newObject[0].length, newObject.length, pixelScale, startY, pivotY]);
-                objectArray = objectArray.concat(newObject.flat(1));
-                objectCount++;
+                if (typeof newObject != undefined && newObject != null)
+                {
+                    objectStartIndezes.push(objectArray.length);
+                    objectBounds.push([x, y, newObject[0].length, newObject.length, pixelScale, startY, pivotY]);
+                    objectArray = objectArray.concat(newObject.flat(1));
+                    objectCount++;
+                }
+                else
+                {
+                    console.error('Something went wrong, please check the presentObject_Functions');
+                }
             }
         }
     }
 
-    addObjects(max_opponents, rec_opponents, opponent_pixelScale, opponent_startY, opponent_pivotY, (object) =>
+    function getEightDirSprite(object, animTime, spriteSet, spriteSet_stillName = 'Idle', spriteSet_animationName = 'Walk')
     {
         function getDeltaBetweenAngles(a, b)
         {
@@ -355,43 +362,49 @@ function drawingHandler_draw()
 
         if (t == -1)
         {
-            animationName = 'Idle';
+            animationName = spriteSet_stillName;
         }
         else
         {
-            animationName = 'Walk';
+            animationName = spriteSet_animationName;
 
-            let animTime = 20;
             t /= animTime;
 
-            // Check whether opponent moves in opposite direction (angle between movement and looking >90)
-            let movementDelta = getDeltaBetweenAngles(object[direction_key], object[direction_move_key]);
-            if (movementDelta > PI*0.5 || movementDelta < -PI*0.5)
-                t = 1 - t;
+            if (t > 1)
+                console.error('t > 1: This should never happen! The parameter animTime is probably incorrect.'); // It doesn't matter too much though, getAnimationSprite handles this case as well
+
+            if (object[direction_move_key])
+            {
+                // Check whether object moves in opposite direction (angle between movement and looking > 90) (currently only applicable for opponents)
+                let movementDelta = getDeltaBetweenAngles(object[direction_key], object[direction_move_key]);
+                if (movementDelta > PI*0.5 || movementDelta < -PI*0.5)
+                    t = 1 - t;
+            }
         }
         
-        return playerSprite.getAnimationSprite(t, animationName + '_' + spriteDir);
+        return spriteSet.getAnimationSprite(t, animationName + '_' + spriteDir);
 
-    });
-    addObjects(max_bullets, rec_bullets, bullet_pixelScale, bullet_startY, bullet_pivotY, () => fireBulletSprite.getSprite('Idle_S'));
+    }
+
+    addObjects(max_opponents, rec_opponents, opponent_pixelScale, opponent_startY, opponent_pivotY, (object) => getEightDirSprite(object, playerWalkingAnimationTime, opponentSpriteSet));
+    addObjects(max_bullets, rec_bullets, bullet_pixelScale, bullet_startY, bullet_pivotY, (object) => getEightDirSprite(object, bulletFlyingAnimationTime, fireBulletSpriteSet, 'Idle', 'Fly'));
     addObjects(max_corpses, rec_corpses, opponent_pixelScale, opponent_startY, opponent_pivotY, (object) =>
     {
         let corpse;
         let t = object[duration_key];
-        let totalTime = 600;
+        let totalTime = corpseTotalAnimationTime;
         let animTime = 20;
         t -= totalTime - animTime;
         if (t > 0)
         {
             t = t / animTime;
             t = 1 - t;
-            corpse = corpseSprite.getAnimationSprite(t, 'Explode');
+            corpse = corpseSpriteSet.getAnimationSprite(t, 'Explode');
         }
         else
         {
-            corpse = corpseSprite.getSprite('Idle');
+            corpse = corpseSpriteSet.getSprite('Idle');
         }
-        console.log(corpse);
         return corpse;
         
     });
