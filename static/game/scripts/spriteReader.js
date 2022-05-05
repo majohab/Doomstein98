@@ -310,13 +310,13 @@ let ceilingSprite;
 let statusBarSprite;
 let weaponFrameSprite;
 
-let fireBulletSprite;
-let playerSprite;
-let corpseSprite;
+let fireBulletSpriteSet;
+let opponentSpriteSet;
+let corpseSpriteSet;
 
-let handgunSprite;
-let shotgunSprite;
-let machinegunSprite;
+let handgunSpriteSet;
+let shotgunSpriteSet;
+let machinegunSpriteSet;
 
 let font;
 
@@ -335,7 +335,7 @@ async function spriteReader_init()
 
     spriteReader_getSpriteString('FireBullet',            (img) =>
     {
-        fireBulletSprite = new SpriteSet(img,
+        fireBulletSpriteSet = new SpriteSet(img,
             [
                 new Still('Idle_S', 0, 0, 34, 33),
                 new Still('Idle_SW', 0, 34, 56, 28),
@@ -395,7 +395,7 @@ async function spriteReader_init()
 
     spriteReader_getSpriteString('DoomGuy', (img) =>
     {
-        playerSprite = new SpriteSet(img,
+        opponentSpriteSet = new SpriteSet(img,
             [
                 new Still('Idle_S', 0, 0, 36, 56),
                 new Still('Idle_SW', 0, 56, 26, 56),
@@ -472,7 +472,7 @@ async function spriteReader_init()
     
     spriteReader_getSpriteString('Shotgun', (img) =>
     {
-        shotgunSprite = new SpriteSet(img,
+        shotgunSpriteSet = new SpriteSet(img,
             [
                 new Still('Idle', 0, 39, 91, 63)
             ],
@@ -501,7 +501,7 @@ async function spriteReader_init()
 
     spriteReader_getSpriteString('Chaingun', (img) =>
     {
-        machinegunSprite = new SpriteSet(img,
+        machinegunSpriteSet = new SpriteSet(img,
             [
                 new Still('Idle', 0, 0, 110, 54)
             ],
@@ -519,7 +519,7 @@ async function spriteReader_init()
 
     spriteReader_getSpriteString('Handgun', (img) =>
     {
-        handgunSprite = new SpriteSet(img,
+        handgunSpriteSet = new SpriteSet(img,
             [
                 new Still('Idle', 0, 23, 50, 64)
             ],
@@ -541,7 +541,7 @@ async function spriteReader_init()
     
     spriteReader_getSpriteString('Corpse', (img) =>
     {
-        corpseSprite = new SpriteSet(img,
+        corpseSpriteSet = new SpriteSet(img,
             [
                 new Still('Idle', 373, 0, 53, 16) // Last Sprite of Animation
             ],
