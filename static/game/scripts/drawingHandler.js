@@ -272,7 +272,7 @@ function drawingHandler_draw()
     }
     else
     {
-        let t = weaponAnimTime / 100;
+        let t = weaponAnimTime / weaponImageAnimationTime;
         t = 1 - t; // [0, 1): Animation; 1: Still
         weaponImage = weaponToUse.getAnimationSprite(t, 'Shoot');
     }

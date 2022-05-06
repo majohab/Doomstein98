@@ -1,7 +1,11 @@
+const mov_b_anim_key          = 'b';
 const channel_key             = 'c';
 const click_key               = 'c';
+const died_anim_key           = 'd';
 const down_key                = 'd';
 const group_key               = 'g';
+const hit_anim_key            = 'h';
+const init_key                = 'y';
 const inactive_key            = 'i';
 const left_key                = 'l';
 const loose_key               = 'l';
@@ -10,8 +14,10 @@ const mouseDelta_key          = 'm';
 const message_key             = 'm';
 const map_key                 = 'm';
 const name_key                = 'n';
+const mov_p_anim_key          = 'p';
 const player_key              = 'p';
 const right_key               = 'r';
+const shot_anim_key           = 's';
 const state_key               = 's';
 const time_key                = 't';
 const type_key                = 't';
@@ -36,9 +42,11 @@ const justHit_animation       = 'h_a';
 const weapon_change_animation = 'w_a';
 const move_animation_key      = 'm_a';
 
-const playerWalkingAnimationTime = 20;
-const bulletFlyingAnimationTime = 5;
-const corpseTotalAnimationTime = 600;
+ // Init animation times with default values, but will be overriden
+let weaponImageAnimationTime = 1;
+let playerWalkingAnimationTime = 1;
+let bulletFlyingAnimationTime = 1;
+let corpseTotalAnimationTime = 1;
 
 let rec_corpses = [];
 let rec_bullets = [];
@@ -85,12 +93,23 @@ function socketHandler_init()
         
         if (data[type_key] == update_key)
         {
+            //console.log(data);
             if (mapString == null)
             {
-                if (data[map_key] != null)
-                    onMapReceived(data[map_key]['l'], data[map_key]['m']);
-                else
-                    console.log('Cannot initialize map: Map was not received');
+                function initValueIfReceived(key, func)
+                {
+                    if (data[init_key][key] != null)
+                        func(data[init_key][key]);
+                    else
+                        console.log('Cannot initialize init value for key ' + key + ': Value was not received');
+                }
+
+                initValueIfReceived(map_key, (data) => onMapReceived(data['l'], data['m']));
+                //initValueIfReceived(hit_anim_key, );
+                initValueIfReceived(shot_anim_key, (data) => weaponImageAnimationTime = data);
+                initValueIfReceived(died_anim_key, (data) => corpseTotalAnimationTime = data);
+                initValueIfReceived(mov_b_anim_key, (data) => bulletFlyingAnimationTime = data);
+                initValueIfReceived(mov_p_anim_key, (data) => playerWalkingAnimationTime = data);
             }
 
 
