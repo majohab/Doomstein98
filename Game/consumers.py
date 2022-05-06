@@ -22,6 +22,7 @@ click_key      = 'c'
 down_key       = 'd'
 group_key      = 'g'
 inactive_key   = 'i'
+init_key       = 'y'
 left_key       = 'l'
 loose_key      = 'l'
 lobby_key      = 'l'
@@ -163,14 +164,22 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
             # If the max player was reached and the player is not currently in the game
             if(lobby.current_players >= lobby.max_players and not lobby.name in self.scope["lobby"]):
+                
+                await self.send(json.dumps(
+                    {
+                        type_key: message_key,
+                        message_key: F"Die Lobby {msg[lobby_key]} ist bereits voll",
+                    }
+                ))
+                
                 print(F"Too many players in Lobby {lobby.name}")
                 await self.close()
             else:
                 self.channelLayer = get_channel_layer()
                 self.groupName = msg[lobby_key]
 
-                # Has map already been sent?
-                self.map = 0
+                # Has init already been sent?
+                self.init = 0
 
                 #print(F"Joining {self.channel_name}")
 
@@ -255,7 +264,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
  
     async def game_update(self, event) -> None:
         """ Called by the GameConsumer when new information is ready to distribute to the client
-            Deletes the map information in content if already sent
+            Deletes the init information in content if already sent
             Deletes the information about player if not permitted to see
 
         Args:
@@ -277,15 +286,16 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                 event.pop(inactive_key)
             except KeyError:
                 pass
-            # if the map was already sent 10 times
-            if(self.map > 10):
+            # if the init was already sent 10 times
+            if(self.init > 10):
                 try:
-                    event.pop(map_key)
+                    event.pop(init_key)
                 except KeyError:
+                    print("There is no init_key")
                     pass       
-            # if the map was not sent that much yet
+            # if the init was not sent that much yet
             else:
-                self.map += 1
+                self.init += 1
                 pass
 
         # send the update information to the client
@@ -311,8 +321,6 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         await self.send(json.dumps(event))
 
-
-
 class GameConsumer(SyncConsumer): 
     """Class, which can communicate is the game engine channel, specifically it runs the infinite game loop ENGINE of one game
     They communicate through channels.
@@ -321,7 +329,7 @@ class GameConsumer(SyncConsumer):
          SyncConsumer: Is a consumer/worker which handles all lobbies and players
     """
 
-    def __init__(self):
+    def __init__        (self):
         """
         Constructor, which is called when first player wants to join the first game
         """
@@ -337,7 +345,7 @@ class GameConsumer(SyncConsumer):
         # Saves the player's information about his lobby
         self.lobbies = {}
 
-    def new_player(self, event : dict) -> None:
+    def new_player      (self, event : dict)                    -> None:
         """ Called by the asynchronous PlayerConsumer
             Join an existing game or create a new game. If player is already in a lobby then either forbidden to join, change lobby or rejoin
 
@@ -409,7 +417,7 @@ class GameConsumer(SyncConsumer):
         except KeyError:
             self.new_lobby(lobby, userName)
 
-    def new_lobby(self, lobby : Lobby, userName : str) -> None:
+    def new_lobby       (self, lobby : Lobby, userName : str)   -> None:
         """Called by new_player function if new lobby should be created. Create the lobby with the settings of the database
 
         Args:
@@ -430,7 +438,7 @@ class GameConsumer(SyncConsumer):
         #TODO: Only for TESTING
         self.engines[lobby.name].startFlag = True
 
-    def validate_event(self, event : dict) -> None:
+    def validate_event  (self, event : dict)                    -> None:
         """Called by asynchronous PlayerConsumer to get input and distribute on the lobby
 
         Args:
@@ -447,7 +455,7 @@ class GameConsumer(SyncConsumer):
         except:
             print(self.lobbies)
 
-    def win(self, event : dict) -> None:
+    def win             (self, event : dict)                    -> None:
         """Called by the lobby and send to every player in the lobby that the game is finished. It sends the information about the winning players
 
         Args:
@@ -469,7 +477,7 @@ class GameConsumer(SyncConsumer):
         # Delete the lobby from the DataBase
         self.delete_lobby(lobbyName)
 
-    def close_game(self, event : dict) -> None:
+    def close_game      (self, event : dict)                    -> None:
         """Closes a specific lobby if no player is active anymore
 
         Args:
@@ -483,7 +491,7 @@ class GameConsumer(SyncConsumer):
         # Delete the lobby from the DataBase
         self.delete_lobby(lobbyName)
 
-    def delete_lobby(self, lobbyName : str) -> None:
+    def delete_lobby    (self, lobbyName : str)                 -> None:
         """Deletes a lobby
 
         Args:
@@ -503,7 +511,7 @@ class GameConsumer(SyncConsumer):
         # remove all player from the lobby list
         self.lobbies = {key:lob for key, lob in self.lobbies.items() if lob != lobbyName}
         
-    def replace_lobby(self, userName : str, lobby : Lobby) -> None:
+    def replace_lobby   (self, userName : str, lobby : Lobby)   -> None:
         """
         Remove the player from current game and put him there on a forbidden list
         Add the player to a new game
