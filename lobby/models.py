@@ -146,8 +146,8 @@ class Setting(models.Model):
     # Get calculated as divisor
     # TICK_RATE/value
     player_speed                    = models.FloatField(default=0.1,  help_text="Get calculated as divisor")
-    rotation_speed                  = models.FloatField(default=1,    help_text="Get calculated as divisor")
-    bullet_speed                    = models.FloatField(default=1/60, help_text="Get calculated as divisor")
+    rotation_speed                  = models.FloatField(default=0.5,  help_text="Get calculated as divisor")
+    bullet_speed                    = models.FloatField(default=1,    help_text="Get calculated as divisor")
 
     # The minimum/maximum range of ammunition in a munition package in percentage of max ammunition of a weapon
     min_munition                    = models.FloatField(default=0.2,  help_text="The minimum percentage of ammunition calculating randomly in a munition package of a weapon")
@@ -172,13 +172,6 @@ class Setting(models.Model):
     player_not_responding_time      = models.SmallIntegerField(default=10, help_text="How many seconds has the player to wait after rejoining when disconnected")
     player_occupied_spawn_time      = models.FloatField       (default=0.1,help_text="How many seconds waits the player to find a spawn again whenn all are occupied")
 
-    # The Default GameSettings
-    default_max_players             = models.SmallIntegerField(default=6,  help_text="How many player at maximum")
-    default_gamemode                = models.SmallIntegerField(default=0,  help_text="default gamemode")
-    default_winscore                = models.SmallIntegerField(default=20, help_text="How many kills till game ends")  
-    default_max_endtime             = models.SmallIntegerField(default=30, help_text="How many minutes till the game ends")
-
-
     #Bullets
     start_position_bullet           = models.FloatField       (default=.5, help_text="How many blocks from the player should a bullet start")
     accuracy_reduction              = models.FloatField       (default=.11,help_text="The radians plus minus range for random calculation")
@@ -191,3 +184,8 @@ class Setting(models.Model):
     wall_hit_box                    = models.FloatField       (default=.4, help_text="How many blocks away from the realy players location")
     wall_hit_box_player_tolerance   = models.FloatField       (default=.25,help_text="How many blocks away from wall_hit_box")
     wall_hit_box_bullet_tolerance   = models.FloatField       (default=.15,help_text="How many blocks away from wall_hit_box")
+
+class UsedSetting(models.Model):
+
+    index    = models.SmallIntegerField(default=0, unique=True)
+    setting  = models.SmallIntegerField(default=0)                   

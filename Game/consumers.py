@@ -1,5 +1,4 @@
 
-import logging
 import json
 
 from asgiref.sync               import  async_to_sync
@@ -8,13 +7,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers            import get_channel_layer
 from lobby.models               import Lobby
 from channels.db                import database_sync_to_async
-from .engine                    import SETTINGS, GameEngine
-from lobby.models               import Setting   as SettingDB
-
-# Get the current settings
-s : SettingDB = SettingDB.objects.filter(index=SETTINGS).first()
-
-log = logging.getLogger(__name__)
+from .engine                    import GameEngine
+from lobby.models               import Setting   as SettingDB, UsedSetting as UsedSettingDB
 
 #Key Constants
 channel_key    = 'c'
@@ -76,6 +70,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         return lobby
  
     async def connect(self) -> None:
+
         """Function is called by the client if he tries to connect to the PlayerConsumer
            The username of the logged in user will be assigned to the PlayerConsumer
         """
@@ -243,10 +238,6 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         if not self.username:
             #print(F"User {self.username}: Attempting to join game")
             return
-
-        if abs(msg[mouseDelta_key]) > s.mouse_degree:
-            msg[mouseDelta_key] = s.mouse_degree
-            #print("Mouse change invalid!")
 
         # If both directions are pressed then dont move in those directions
         msg["y"] = msg[up_key] - msg[down_key]
@@ -437,12 +428,37 @@ class GameConsumer(SyncConsumer):
             userName (str): the username
         """
 
+                # Get the current usedSetting
+        self.us : UsedSettingDB  = UsedSettingDB.objects.filter(index=0).first()
+
+        # if there is nothing in the DataBase create a default Setting
+        if(self.us is None):
+
+            #Create default setting
+            self.us = SettingDB.objects.create(index = 0)
+
+            #Save the state in the DataBase
+            self.us.save()
+
+        # Get the current settings
+        self.s  : SettingDB      = SettingDB.objects.filter(index=self.us.setting).first()
+
+        # if there is nothing in the DataBase create a default Setting
+        if(self.s is None):
+
+            #Create default setting
+            self.s = SettingDB.objects.create(index = 0)
+
+            #Save the state in the DataBase
+            self.s.save()
+
+
         self.engines[lobby.name] = GameEngine(
             lobby.name, 
             lobby.map,
             maxPlayers          = lobby.max_players,
             gameMode            = lobby.mode,
-            endTime             = lobby.game_runtime * 1/s.tick_rate * 60,
+            endTime             = lobby.game_runtime * 1/self.s.tick_rate * 60,
             )
         self.engines[lobby.name].start()
         self.engines[lobby.name].join_game(userName)
