@@ -42,6 +42,10 @@ const bullet_pixelScale = 5;
 const bullet_startY = 0.5; // Center of corridor
 const bullet_pivotY = 0.5; // Image's reference point is in the middle
 
+const boxes_pixelScale = 10;
+const boxes_startY = 0;
+const boxes_pivotY = 0;
+
 
 // Dependent on screenSize
 
@@ -204,7 +208,7 @@ function drawingHandler_initKernel()
     let objectStartIndezes = []; // [0, 0, 0, ...]
     let objectBounds = []; // array with elements of type [x, y, width, height, pixelScale, startY, pivotY]
 
-    for (let i = 0; i < max_opponents * max_bullets * max_corpses; i++)
+    for (let i = 0; i < maxObjectCount; i++)
     {
         objectStartIndezes.push(0);
         objectBounds.push(SevenBitUnit);
@@ -214,6 +218,7 @@ function drawingHandler_initKernel()
     pushObjects(fireBulletSpriteSet, max_bullets);
     pushObjects(corpseSpriteSet, max_corpses);
     pushObjects(opponentSpriteSet, max_opponents);
+    pushObjects(ammoBoxesSpriteSet, max_boxes);
     function pushObjects(spriteSet, max)
     {
         let spriteBounds = spriteSet.getBiggestBounds();
@@ -264,7 +269,7 @@ function drawingHandler_draw()
 
     let weaponFrame_startY = 2 + currWeapon * 12;
 
-    let weaponToUse = currWeapon == 0 ? handgunSpriteSet : currWeapon == 1 ? machinegunSpriteSet : shotgunSpriteSet;
+    let weaponToUse = currWeapon == 0 ? handgunSpriteSet : currWeapon == 1 ? chaingunSpriteSet : shotgunSpriteSet;
     let weaponImage;
     if (weaponAnimTime == -1)
     {
@@ -407,6 +412,10 @@ function drawingHandler_draw()
         }
         return corpse;
         
+    });
+    addObjects(max_boxes, rec_boxes, boxes_pixelScale, boxes_startY, boxes_pivotY, (object) => 
+    {
+        return ammoBoxesSpriteSet.getSprite(object[name_key] == 'Pistol' ? 0 : object[name_key] == 'Chaingun' ? 1 : 2);
     });
 
     if (objectCount == 0)
