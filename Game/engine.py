@@ -967,8 +967,7 @@ class Player:
         self.currentWeapon = self.weapons[self.currentWeaponIdx]
 
         # Reset the animation for bugs
-        #TODO: HÄNGER
-        #self.justShot          = 0
+        self.justShot          = -1
 
         # Wait 1 seconds to be able to shoot again
         self.changeWeaponDelay = CHANGE_WEAPON_DELAY
