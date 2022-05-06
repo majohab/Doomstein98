@@ -1,14 +1,15 @@
 
 import json
-
-from asgiref.sync               import  async_to_sync
+from typing import Any, Tuple
+from asgiref.sync               import async_to_sync
 from channels.consumer          import SyncConsumer
+from channels.db                import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers            import get_channel_layer
 from lobby.models               import Lobby
-from channels.db                import database_sync_to_async
-from .engine                    import GameEngine
-from lobby.models               import Setting   as SettingDB, UsedSetting as UsedSettingDB
+from lobby.models               import Setting as SettingDB
+from lobby.models               import UsedSetting as UsedSettingDB
+from .engine import GameEngine
 
 #Key Constants
 channel_key    = 'c'
@@ -37,7 +38,8 @@ joinLobby_key  = 'jL'
 joinGame_key   = 'jG' 
 
 class PlayerConsumer(AsyncWebsocketConsumer):
-    """Async Consumer which gets the data from the client synchronously, but in perspective of the worker GameConsumer asynchronously.
+    """
+    Async Consumer which gets the data from the client synchronously, but in perspective of the worker GameConsumer asynchronously.
         It sends then the data to GameConsumer
 
     Inherits:
@@ -45,8 +47,9 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     """
 
     @database_sync_to_async
-    def get_lobby(self, lobbyName) -> Lobby | None:
-        """Is an asynchronous function to get lobby information about the recieved lobbyname. If there is no lobby called like 'lobbyname', an exception is raised
+    def get_lobby           (self, lobbyName)                       -> Lobby | None:
+        """
+        Is an asynchronous function to get lobby information about the recieved lobbyname. If there is no lobby called like 'lobbyname', an exception is raised
 
         Args:
             lobbyName (str): name of the lobby
@@ -55,12 +58,36 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             Lobby: information about lobby
         """
 
-        return Lobby.objects.filter(name=lobbyName).first()
-        #return Lobby.objects.get(name=lobbyName)
+        # Get the current usedSetting
+        self.us : UsedSettingDB  = UsedSettingDB.objects.filter(index = 0).first()
+
+        # if there is nothing in the DataBase create a default Setting
+        if(self.us is None):
+
+            #Create default setting
+            self.us : UsedSettingDB = UsedSettingDB.objects.create(index = 0)
+
+            #Save the state in the DataBase
+            self.us.save()
+
+        # Get the current settings
+        self.s : SettingDB = SettingDB.objects.filter(index=self.us.setting).first()
+
+        # if there is nothing in the DataBase create a default Setting
+        if(self.s is None):
+
+            #Create default setting
+            self.s : SettingDB = SettingDB.objects.create(index = 0)
+
+            #Save the state in the DataBase
+            self.s.save()
+
+        return Lobby.objects.filter(name=lobbyName).first() 
 
     @database_sync_to_async
-    def get_last_lobby(self) -> list[Lobby]:
-        """Get last lobby in the database for testing
+    def get_last_lobby      (self)                                  -> list[Lobby]:
+        """
+        Get last lobby in the database for testing
 
         Returns:
             list(Lobby): Contains all active lobbies
@@ -69,23 +96,26 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         return lobby
  
-    async def connect(self) -> None:
-
-        """Function is called by the client if he tries to connect to the PlayerConsumer
+    async def connect       (self)                                  -> None:
+        """
+        Function is called by the client if he tries to connect to the PlayerConsumer
            The username of the logged in user will be assigned to the PlayerConsumer
         """
+        
         #If user is unknown
         if self.scope["user"].is_anonymous:
             print("User is unknown. So he has been disconnected")
             await self.close()
         
-        self.username = self.scope["user"].user_name
+        # save the username
+        self.username : str = self.scope["user"].user_name
 
         # Accept the connection with Browser
         await self.accept()
 
-    async def disconnect(self, close_code) -> None:
-        """Disconnect the consumer from the client if he leaves the game or the game ends
+    async def disconnect    (self, close_code)                      -> None:
+        """
+        Disconnect the consumer from the client if he leaves the game or the game ends
 
         Args:
             close_code (str): the code
@@ -100,8 +130,9 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         except:
             pass
     
-    async def receive(self, text_data=None, byte_data=None) -> None:
-        """This the function which automatically recieves the data from the client, when the client send data to websocket. It forwards the data to the specific 
+    async def receive       (self, text_data=None, byte_data=None)  -> None:
+        """
+        This the function which automatically recieves the data from the client, when the client send data to websocket. It forwards the data to the specific 
            functions:
                 validate(msg)
                 join_lobby(msg)
@@ -135,8 +166,9 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             #Der Typ der Message ist unbekannt
             print(F"Incoming msg {msg_type} is unknown")
 
-    async def join_lobby(self, msg) -> None:
-        """Called by recieve function. It checks if the lobby is open and joinable.
+    async def join_lobby    (self, msg   : dict[str : Any])         -> None:
+        """
+        Called by recieve function. It checks if the lobby is open and joinable.
                 If not then the client will be disconnected from the consumer.
                 If yes then the worker GameEngine will be called to distribute the player on the correct game
 
@@ -207,7 +239,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             # close connection with client
             await self.close()
 
-    async def message(self, msg) -> None:
+    async def message       (self, msg   : dict[str : Any])         -> None:
         """Handles messages if they should be printed by PlayerConsumer
 
         Args:
@@ -217,13 +249,11 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         await self.send(json.dumps(
                 {
                     type_key: message_key,
-                    message_key: message_key,
+                    message_key: msg,
                 }
             ))
 
-        #print(F"{msg[message_key][message_key]} was sent by {msg[message_key][channel_key]}")
-
-    async def validate(self, msg) -> None:
+    async def validate      (self, msg   : dict[str : Any])         -> None:
         """ Called by recieve and gets the input of the client
             Here is already checked if mouse input is valid and transform the movement in shorter expression
             Forwards the input to the GameConsumer for distribution to lobby
@@ -244,6 +274,16 @@ class PlayerConsumer(AsyncWebsocketConsumer):
 
         msg["x"] = msg[right_key] - msg[left_key]
 
+        # if the mouse was moved too quickly
+        if msg[mouseDelta_key] > self.s.max_mouse_degree:
+            
+            print(F"Mouse change is invalid +{msg[mouseDelta_key]}")
+            msg[mouseDelta_key] = self.s.max_mouse_degree
+        
+        elif msg[mouseDelta_key] < -self.s.max_mouse_degree:
+            
+            print(F"Mouse change is invalid {msg[mouseDelta_key]}")
+            msg[mouseDelta_key] = -self.s.max_mouse_degree
 
         await self.channelLayer.send(
             "game_engine",
@@ -260,7 +300,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             }
         )
  
-    async def game_update(self, event) -> None:
+    async def game_update   (self, event : dict[str : Any])         -> None:
         """ Called by the GameConsumer when new information is ready to distribute to the client
             Deletes the init information in content if already sent
             Deletes the information about player if not permitted to see
@@ -299,7 +339,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         # send the update information to the client
         await self.send(json.dumps(event))
 
-    async def win(self, event) -> None:
+    async def win           (self, event : dict[str : Any])         -> None:
         """Check if current player won the game and forward the message to player
             If the player is not part of the winning player then send lose
 
@@ -320,7 +360,8 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         await self.send(json.dumps(event))
 
 class GameConsumer(SyncConsumer): 
-    """Class, which can communicate is the game engine channel, specifically it runs the infinite game loop ENGINE of one game
+    """
+    Class, which can communicate is the game engine channel, specifically it runs the infinite game loop ENGINE of one game
     They communicate through channels.
 
     Inherits:
@@ -421,50 +462,32 @@ class GameConsumer(SyncConsumer):
             self.new_lobby(lobby, userName)
 
     def new_lobby       (self, lobby : Lobby, userName : str)   -> None:
-        """Called by new_player function if new lobby should be created. Create the lobby with the settings of the database
+        """
+        Called by new_player function if new lobby should be created. Create the lobby with the settings of the database
 
         Args:
             lobby (Lobby): Lobby object from database
             userName (str): the username
         """
 
-                # Get the current usedSetting
+        # Get the current usedSetting
         self.us : UsedSettingDB  = UsedSettingDB.objects.filter(index=0).first()
-
-        # if there is nothing in the DataBase create a default Setting
-        if(self.us is None):
-
-            #Create default setting
-            self.us = SettingDB.objects.create(index = 0)
-
-            #Save the state in the DataBase
-            self.us.save()
 
         # Get the current settings
         self.s  : SettingDB      = SettingDB.objects.filter(index=self.us.setting).first()
 
-        # if there is nothing in the DataBase create a default Setting
-        if(self.s is None):
-
-            #Create default setting
-            self.s = SettingDB.objects.create(index = 0)
-
-            #Save the state in the DataBase
-            self.s.save()
-
-
+        # Create a Lobby with the configuration 
         self.engines[lobby.name] = GameEngine(
-            lobby.name, 
-            lobby.map,
+            setting             = self.s,
+            lobbyName           = lobby.name, 
+            map                 = lobby.map,
             maxPlayers          = lobby.max_players,
             gameMode            = lobby.mode,
+            winScore            = lobby.win_score,
             endTime             = lobby.game_runtime * 1/self.s.tick_rate * 60,
             )
         self.engines[lobby.name].start()
         self.engines[lobby.name].join_game(userName)
-
-        #TODO: Only for TESTING
-        self.engines[lobby.name].startFlag = True
 
     def validate_event  (self, event : dict)                    -> None:
         """Called by asynchronous PlayerConsumer to get input and distribute on the lobby
@@ -550,7 +573,6 @@ class GameConsumer(SyncConsumer):
         """
 
         print(F"Player {userName} is moving from {self.lobbies[userName]} to {lobby.name}")
-
 
         # Remove the Player from former game
         #currLobby : Lobby = Lobby.objects.get(name=self.lobbies[userName])
