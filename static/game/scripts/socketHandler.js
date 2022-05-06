@@ -109,9 +109,7 @@ function socketHandler_init()
 
             objectCount = i;
 
-
             rec_corpses = data[corpses_key];
-
 
             ammo        = data[player_key][userName][ammo_key];
             health      = data[player_key][userName][health_key];

@@ -358,14 +358,11 @@ class GameConsumer(SyncConsumer):
         channelName : str = event[channel_key]
 
         lobby : Lobby = Lobby.objects.filter(name=lobbyName).first()
-        #lobby : Lobby = Lobby.objects.get(name=lobbyName)
 
         try:
             # if the game exists he is trying to join and is on the forbidden list
             if(userName in self.engines[lobbyName].playerForbidden):
                 print(F"Player {userName} is forbidden to join the game {lobbyName}")
-                
-                print(channelName)
 
                 async_to_sync(self.channelLayer.send)(
                     channelName, 
@@ -392,7 +389,7 @@ class GameConsumer(SyncConsumer):
                     print("Player is rejoining the game")
 
                 elif(len([player for player in self.engines[lobbyName].playerQueue if userName == player.name]) != 0):
-
+                    #TODO: Testen
                     print("Player is trying joining the game even though he is already in")
                 
                 return

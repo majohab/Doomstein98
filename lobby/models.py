@@ -162,7 +162,6 @@ class Setting(models.Model):
     move_animation_bullet_modulo    = models.SmallIntegerField(default=100, help_text="How many Frames are needed to display an animation for moving a player")
     move_animation_player_modulo    = models.SmallIntegerField(default=100, help_text="How many Frames are needed to display an animation for moving a bullet")
 
-    #TODO: SHould be edited
     hit_animation_duration          = models.SmallIntegerField(default=1,  help_text="How many seconds are needed to display an animation for dying")         
     died_animation_duration         = models.SmallIntegerField(default=10, help_text="How many seconds are needed to display an animation for getting hit")
 
@@ -185,6 +184,9 @@ class Setting(models.Model):
     accuracy_reduction              = models.FloatField       (default=.11,help_text="The radians plus minus range for random calculation")
     hit_box                         = models.FloatField       (default=.4, help_text="How many blocks away from the realy players location")
 
+    # Anti-Hack Congio
+
+    # Wall collision
     wall_hit_box                    = models.FloatField       (default=.4, help_text="How many blocks away from the realy players location")
     wall_hit_box_player_tolerance   = models.FloatField       (default=.25,help_text="How many blocks away from wall_hit_box")
     wall_hit_box_bullet_tolerance   = models.FloatField       (default=.15,help_text="How many blocks away from wall_hit_box")
