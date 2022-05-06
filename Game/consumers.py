@@ -9,10 +9,9 @@ from channels.layers            import get_channel_layer
 from lobby.models               import Lobby
 from channels.db                import database_sync_to_async
 
-from .engine import GameEngine, TICK_RATE
+from .engine import GameEngine, TICK_RATE, MAX_DEGREE
 
-#TODO: Anpassen
-MAX_DEGREE = 300
+
 
 log = logging.getLogger(__name__)
 

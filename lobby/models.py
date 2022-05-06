@@ -185,6 +185,7 @@ class Setting(models.Model):
     hit_box                         = models.FloatField       (default=.4, help_text="How many blocks away from the realy players location")
 
     # Anti-Hack Congio
+    mouse_degree                    = models.SmallIntegerField(default=100, help_text="The maximal degrees which can be changed in one frame")
 
     # Wall collision
     wall_hit_box                    = models.FloatField       (default=.4, help_text="How many blocks away from the realy players location")
