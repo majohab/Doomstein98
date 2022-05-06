@@ -7,10 +7,10 @@ COPY ./Pipfile /Pipfile
 
 # Install dependencies
 RUN apk update && apk upgrade
-RUN apk add --update --no-cache --virtual .tmp gcc libc-dev linux-headers libffi-dev libressl-dev g++
+RUN apk add --update --no-cache --virtual .tmp gcc libc-dev linux-headers libffi-dev libressl-dev g++ openssl ca-certificates ssmtp
 RUN apk add --update tk
 RUN pip install pipenv
-RUN pipenv install 
+RUN pipenv install
 RUN pipenv install --system
 
 # Copy app

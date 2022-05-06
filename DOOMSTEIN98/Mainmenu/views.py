@@ -35,6 +35,7 @@ def menu(request):
     return render(request, "menu.html",
                   {'form': LobbyForm, 'lobbies': Lobby.objects.all()})
 
+@login_required(login_url='/accounts/login/')
 def play(request):
     """Renders HTML document and sends the response.
 

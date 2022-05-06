@@ -215,11 +215,11 @@ LOGGING = {
 }
 
 # HTTPS Setting (uncomment in prod)
-#SESSION_COOKIE_SECURE = True # Serves session cookie over https
-#CSRF_COOKIE_SECURE = True # Serves csrf tokens over https
-#SECURE_SSL_REDIRECT = True # Redirect from http to https
+SESSION_COOKIE_SECURE = True # Serves session cookie over https
+CSRF_COOKIE_SECURE = True # Serves csrf tokens over https
+SECURE_SSL_REDIRECT = True # Redirect from http to https
 
 # HSTS Settings
-#SECURE_HSTS_SECONDS = 31536000 # (1 Year) Client cannot connect from insecure connections
-#SECURE_HSTS_PRELOAD = True # Extends SECONDS
-#SECURE_HSTS_INCLUDE_SUBDOMAINS = True # Extends to subdomains
+SECURE_HSTS_SECONDS = 31536000 # (1 Year) Client cannot connect from insecure connections
+SECURE_HSTS_PRELOAD = True # Extends SECONDS
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True # Extends to subdomains
