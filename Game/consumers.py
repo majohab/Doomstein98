@@ -8,10 +8,11 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers            import get_channel_layer
 from lobby.models               import Lobby
 from channels.db                import database_sync_to_async
+from .engine                    import SETTINGS, GameEngine
+from lobby.models               import Setting   as SettingDB
 
-from .engine import GameEngine, TICK_RATE, MAX_DEGREE
-
-
+# Get the current settings
+s : SettingDB = SettingDB.objects.filter(index=SETTINGS).first()
 
 log = logging.getLogger(__name__)
 
@@ -217,8 +218,15 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         Args:
             msg (dict): contains the message
         """
+        
+        await self.send(json.dumps(
+                {
+                    type_key: message_key,
+                    message_key: message_key,
+                }
+            ))
 
-        print(F"{msg[message_key][message_key]} was sent by {msg[message_key][channel_key]}")
+        #print(F"{msg[message_key][message_key]} was sent by {msg[message_key][channel_key]}")
 
     async def validate(self, msg) -> None:
         """ Called by recieve and gets the input of the client
@@ -236,8 +244,8 @@ class PlayerConsumer(AsyncWebsocketConsumer):
             #print(F"User {self.username}: Attempting to join game")
             return
 
-        if abs(msg[mouseDelta_key]) > MAX_DEGREE:
-            msg[mouseDelta_key] = MAX_DEGREE
+        if abs(msg[mouseDelta_key]) > s.mouse_degree:
+            msg[mouseDelta_key] = s.mouse_degree
             #print("Mouse change invalid!")
 
         # If both directions are pressed then dont move in those directions
@@ -290,7 +298,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
                 try:
                     event.pop(init_key)
                 except KeyError:
-                    print("There is no init_key")
+                    #print("There is no init_key")
                     pass       
             # if the init was not sent that much yet
             else:
@@ -387,10 +395,18 @@ class GameConsumer(SyncConsumer):
                     
                     print("Player is rejoining the game")
 
-                elif(len([player for player in self.engines[lobbyName].playerQueue if userName == player.name]) != 0):
-                    #TODO: Testen
-                    print("Player is trying joining the game even though he is already in")
+                elif(len([player for player in self.engines[lobbyName].state.players if userName == player.name]) != 0):
                 
+                    print("Player is trying joining the game even though he is already in")
+
+                    async_to_sync(self.channelLayer.send)(
+                    channelName, 
+                    {
+                    "type"   : "message",
+                    message_key: F"Player {userName} is forbidden to join the game {lobbyName} because he already with same account in game.", 
+                    }
+                    )
+
                 return
 
             # if the game is some different game, so that player is going to log out from his old game
@@ -426,7 +442,7 @@ class GameConsumer(SyncConsumer):
             lobby.map,
             maxPlayers          = lobby.max_players,
             gameMode            = lobby.mode,
-            endTime             = lobby.game_runtime * 1/TICK_RATE * 60,
+            endTime             = lobby.game_runtime * 1/s.tick_rate * 60,
             )
         self.engines[lobby.name].start()
         self.engines[lobby.name].join_game(userName)

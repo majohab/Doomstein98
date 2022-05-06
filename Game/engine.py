@@ -1,5 +1,5 @@
 import math
-from operator import attrgetter, index
+from operator import attrgetter
 import random
 import threading
 import time
@@ -34,7 +34,6 @@ if(s is None):
     #Save the state in the DataBase
     s.save()
 
-#TODO: fit that for customized fps
 TICK_RATE = s.tick_rate
 
 #region Constant Variables
@@ -71,14 +70,16 @@ DEFAULT_MAX_PLAYERS             = s.default_max_players
 DEFAULT_WINSCORE                = s.default_winscore
 DEFAULT_GAMEMODE                = s.default_gamemode
 
-
+# Shoot settings
 ACCURACY_REDUCTION              = s.accuracy_reduction
 HIT_BOX                         = s.hit_box
 
+# Wall collision
 WALL_HIT_BOX                    = s.wall_hit_box
 WALL_HIT_BOX_PLAYER_TOLERANCE   = s.wall_hit_box_player_tolerance
 WALL_HIT_BOX_BULLET_TOLERANCE   = s.wall_hit_box_bullet_tolerance
 
+MOUSE_DEGREE                    = s.mouse_degree
 
 #key constants
 ammo_key                = 'a'
