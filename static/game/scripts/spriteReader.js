@@ -112,7 +112,7 @@ class StillSequence
 
 class SpriteSet
 {
-    constructor(img, stills, animations)
+    constructor(img, stills, animations, flipped = false)
     {
         let imgData = new Sprite(img, 1, 1).data;
 
@@ -126,14 +126,23 @@ class SpriteSet
         function getStillData(still)
         {
             let stillData = [];
+
             for (let y = 0; y < still.sizeY; y++)
             {
                 stillData.push([]);
                 for (let x = 0; x < still.sizeX; x++)
                 {
                     stillData[y].push([]);
+                }
+            }
 
-                    stillData[y][x] = imgData[imgHeight - (still.startY + y) - 1][still.startX + x];
+            for (let y = 0; y < still.sizeY; y++)
+            {
+                for (let x = 0; x < still.sizeX; x++)
+                {
+                    let img_y = imgHeight - (still.startY + y) - 1;
+                    let still_y = flipped ? y : (still.sizeY - y - 1);
+                    stillData[still_y][x] = imgData[img_y][still.startX + x];
                 }
             }
             
@@ -173,23 +182,65 @@ class SpriteSet
 
     getAnimationSprite(t, animationIdentifier = 'Idle') // t: [0, 1]
     {
-        if (!Array.isArray(this.dict[animationIdentifier][0][0][0])) // Still
+        if (this.dict[animationIdentifier] == null || typeof this.dict[animationIdentifier] == undefined)
+        {
+            console.error('No animation for given animationIdentifier: ' + animationIdentifier);
+        }
+
+        if (!this.getIsAnimation(this.dict[animationIdentifier])) // Still
         {
             return this.getSprite(animationIdentifier);
         }
         else    // Animation
         {
-            // Example: 5 Sprites, Index 1 to 4 for Animation
-            // [0, 0.25):   Index 1
-            // [0.25, 0.5): Index 2
-            // [0.5, 0.75): Index 3
-            // [0.75, 1):   Index 4
-            // 1:           Index 0
-            let index = Math.floor(t * this.dict[animationIdentifier].length);
+            // Example: 4 Sprites
+            // [0, 0.25):   Index 0
+            // [0.25, 0.5): Index 1
+            // [0.5, 0.75): Index 2
+            // [0.75, 1):   Index 3
+            // 1        :   Index 0
+            let index = Math.floor(t * this.dict[animationIdentifier].length) % this.dict[animationIdentifier].length;
             return this.dict[animationIdentifier][index];
         }
+    }
 
-        
+    /**
+     * Returns the highest width and height found in any sprite of the SpriteSet as an array [width, height]
+     */
+    getBiggestBounds()
+    {
+        let width = getHighestValue(this.dict, this.getIsAnimation, (sprite) => sprite[0].length);
+        let height = getHighestValue(this.dict, this.getIsAnimation, (sprite) => sprite.length);
+
+        function getHighestValue(dict, getIsAnimation, valueFunction)
+        {
+            let a = -1;
+            for (let key in dict)
+            {
+                let content = dict[key];
+                if (getIsAnimation(content))   // content is animation
+                    for (let sprite of content)
+                        checkA (sprite);
+                else                                // content is sprite
+                    checkA (content);
+            }
+
+            function checkA(sprite)
+            {
+                let potentialValue = valueFunction(sprite);
+                if (potentialValue > a)
+                    a = potentialValue;
+            }
+
+            return a;
+        }
+
+        return [width, height];
+    }
+
+    getIsAnimation(entry) // ToMaybeDo: Store this value (Animation or still) and the actual data in separate values of the json
+    {
+        return Array.isArray(entry[0][0][0]);
     }
 }
 
@@ -240,7 +291,7 @@ class Font extends SpriteSet
                 let yMargin = (textHeight - letterHeight) * 0.5;
 
                 if (y < yMargin || y >= textHeight - yMargin)
-                    data[y][x].push([0, 0, 0]); // ToDo: Don't just assume imgData is 24Bits
+                    data[y][x].push([0, 0, 0, 0]); // ToDo: Don't just assume imgData is 32Bits
                 else
                 {
                     data[y][x] = letterData[y - yMargin][x - currWidth + letterWidth];
@@ -252,47 +303,6 @@ class Font extends SpriteSet
     }
 }
 
-function padSprite(sprite, destWidth, destHeight, 
-    pad_x, // -1: left, 0: mid, 1: right
-    pad_y) // -1: bottom, 0: mid, 1: top
-{
-    let spriteWidth = sprite[0].length;
-    let spriteHeight = sprite.length;
-
-    if (spriteWidth > destWidth || spriteHeight > destHeight)
-    {
-        console.log("ERROR: destSize is smaller than current size");
-        return sprite;
-    }
-
-    let data = [];
-
-    let totalXpadding = destWidth - spriteWidth;
-    let totalYpadding = destHeight - spriteHeight;
-
-    let paddingRight_01 = pad_x + 0.5 - pad_x * 0.5; // 0, 0.5, 1
-    let paddingTop_01 = pad_y + 0.5 - pad_y * 0.5; // 0, 0.5, 1
-
-    let paddingRight = Math.round(paddingRight_01 * totalXpadding);
-    let paddingTop = Math.round(paddingTop_01 * totalYpadding);
-    let paddingLeft = totalXpadding - paddingRight;
-    let paddingBottom = totalYpadding - paddingTop;
-
-    for (let y = 0; y < destHeight; y++)
-    {
-        data.push([]);
-        for (let x = 0; x < destWidth; x++)
-        {
-            if (x < paddingLeft || x >= destWidth - paddingRight || y < paddingTop || y > destHeight - paddingBottom)
-                data[y].push([0, 0, 0, 0]);
-            else
-                data[y].push(sprite[y - paddingTop][x - paddingLeft]);
-        }
-    }
-    
-    return data;
-}
-
 let wallSprite;
 let floorSprite;
 let ceilingSprite;
@@ -300,15 +310,13 @@ let ceilingSprite;
 let statusBarSprite;
 let weaponFrameSprite;
 
-let bulletSprite;
-let playerSprite;
+let fireBulletSpriteSet;
+let opponentSpriteSet;
+let corpseSpriteSet;
 
-let handgun;
-let shotgun;
-let machinegun;
-
-let opponentSprite;
-let corpseSprite;
+let handgunSpriteSet;
+let shotgunSpriteSet;
+let machinegunSpriteSet;
 
 let font;
 
@@ -325,13 +333,146 @@ async function spriteReader_init()
     spriteReader_getSpriteString('StatusBar_Doom_Own',  (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
     spriteReader_getSpriteString('WeaponFrame',         (img) => { weaponFrameSprite = new Sprite(img, 1, 1); inits++ });
 
-    spriteReader_getSpriteString('Bullet_1',            (img) => { bulletSprite = new Sprite(img, 1, 1); inits++; });
-    spriteReader_getSpriteString('DoomGuy_Front',       (img) => { playerSprite = new Sprite(img, 1, 1); inits++; });
+    spriteReader_getSpriteString('FireBullet',            (img) =>
+    {
+        fireBulletSpriteSet = new SpriteSet(img,
+            [
+                new Still('Idle_S', 0, 0, 34, 33),
+                new Still('Idle_SW', 0, 34, 56, 28),
+                new Still('Idle_W', 0, 62, 67, 25),
+                new Still('Idle_NW', 0, 89, 54, 26),
+                new Still('Idle_N', 0, 115, 28, 30),
+                new Still('Idle_NE', 0, 145, 54, 26),
+                new Still('Idle_E', 0, 171, 67, 25),
+                new Still('Idle_SE', 0, 198, 56, 28)
+            ],
+            [
+                new StillSequence('Fly_S',
+                [
+                    new Still(0, 0, 0, 34, 33),
+                    new Still(0, 34, 0, 33, 33)
+                ]),
+                new StillSequence('Fly_SW',
+                [
+                    new Still(0, 0, 34, 56, 28),
+                    new Still(0, 56, 34, 51, 28)
+                ]),
+                new StillSequence('Fly_W',
+                [
+                    new Still(0, 0, 62, 67, 25),
+                    new Still(0, 67, 62, 62, 27)
+                ]),
+                new StillSequence('Fly_NW',
+                [
+                    new Still(0, 0, 89, 54, 26),
+                    new Still(0, 54, 89, 46, 26)
+                ]),
+                new StillSequence('Fly_N',
+                [
+                    new Still(0, 0, 115, 28, 30),
+                    new Still(0, 28, 115, 25, 27)
+                ]),
+                new StillSequence('Fly_NE',
+                [
+                    new Still(0, 0, 145, 54, 26),
+                    new Still(0, 54, 145, 46, 27)
+                ]),
+                new StillSequence('Fly_E',
+                [
+                    new Still(0, 0, 171, 67, 25),
+                    new Still(0, 67, 171, 62, 27)
+                ]),
+                new StillSequence('Fly_SE',
+                [
+                    new Still(0, 0, 198, 56, 28),
+                    new Still(0, 56, 198, 51, 28)
+                ])
+            ],
+            false
+        );
+        inits++;
+    });
+
+    spriteReader_getSpriteString('DoomGuy', (img) =>
+    {
+        opponentSpriteSet = new SpriteSet(img,
+            [
+                new Still('Idle_S', 0, 0, 36, 56),
+                new Still('Idle_SW', 0, 56, 26, 56),
+                new Still('Idle_W', 0, 112, 29, 56),
+                new Still('Idle_NW', 0, 168, 29, 55),
+                new Still('Idle_N', 0, 224, 38, 56),
+                new Still('Idle_NE', 0, 280, 29, 55),
+                new Still('Idle_E', 0, 336, 29, 56),
+                new Still('Idle_SE', 0, 392, 26, 56)
+            ],
+            [
+                new StillSequence('Walk_S',
+                [
+                    new Still(0, 0, 0, 36, 56),
+                    new Still(0, 36, 0, 36, 56),
+                    new Still(0, 72, 0, 36, 56),
+                    new Still(0, 108, 0, 35, 56)
+                ]),
+                new StillSequence('Walk_SW',
+                [
+                    new Still(0, 0, 56, 26, 56),
+                    new Still(0, 26, 56, 33, 56),
+                    new Still(0, 59, 56, 26, 56),
+                    new Still(0, 85, 56, 31, 56)
+                ]),
+                new StillSequence('Walk_W',
+                [
+                    new Still(0, 0, 112, 29, 56),
+                    new Still(0, 29, 112, 42, 56),
+                    new Still(0, 70, 112, 29, 56),
+                    new Still(0, 99, 112, 39, 55)
+                ]),
+                new StillSequence('Walk_NW',
+                [
+                    new Still(0, 0, 168, 29, 55),
+                    new Still(0, 29, 168, 37, 56),
+                    new Still(0, 66, 168, 29, 56),
+                    new Still(0, 95, 167, 37, 56)
+                ]),
+                new StillSequence('Walk_N',
+                [
+                    new Still(0, 0, 224, 38, 56),
+                    new Still(0, 38, 224, 34, 56),
+                    new Still(0, 72, 224, 35, 56),
+                    new Still(0, 107, 224, 34, 56)
+                ]),
+                new StillSequence('Walk_NE',
+                [
+                    new Still(0, 0, 280, 29, 55),
+                    new Still(0, 29, 280, 37, 56),
+                    new Still(0, 66, 280, 29, 56),
+                    new Still(0, 95, 280, 37, 56)
+                ]),
+                new StillSequence('Walk_E',
+                [
+                    new Still(0, 0, 336, 29, 56),
+                    new Still(0, 29, 336, 41, 56),
+                    new Still(0, 70, 336, 29, 56),
+                    new Still(0, 99, 336, 39, 56)
+                ]),
+                new StillSequence('Walk_SE',
+                [
+                    new Still(0, 0, 392, 26, 56),
+                    new Still(0, 26, 392, 33, 56),
+                    new Still(0, 59, 392, 26, 56),
+                    new Still(0, 85, 392, 31, 56)
+                ])
+            ],
+            false
+        );
+        inits++;
+    });
 
     
     spriteReader_getSpriteString('Shotgun', (img) =>
     {
-        shotgun = new SpriteSet(img,
+        shotgunSpriteSet = new SpriteSet(img,
             [
                 new Still('Idle', 0, 39, 91, 63)
             ],
@@ -352,14 +493,15 @@ async function spriteReader_init()
                     new Still(10, 0, 39, 91, 63),
                     new Still(10, 0, 39, 91, 63)
                 ])
-            ]
+            ],
+            true
         );
         inits++;
     });
 
     spriteReader_getSpriteString('Chaingun', (img) =>
     {
-        machinegun = new SpriteSet(img,
+        machinegunSpriteSet = new SpriteSet(img,
             [
                 new Still('Idle', 0, 0, 110, 54)
             ],
@@ -369,14 +511,15 @@ async function spriteReader_init()
                     new Still(1, 110, 0, 110, 85),
                     new Still(2, 220, 15, 110, 70)
                 ])
-            ]
+            ],
+            true
         );
         inits++;
     });
 
     spriteReader_getSpriteString('Handgun', (img) =>
     {
-        handgun = new SpriteSet(img,
+        handgunSpriteSet = new SpriteSet(img,
             [
                 new Still('Idle', 0, 23, 50, 64)
             ],
@@ -389,7 +532,8 @@ async function spriteReader_init()
                     new Still(4, 203, 0, 51, 87),
                     new Still(5, 0, 23, 50, 64) // First Image
                 ])
-            ]
+            ],
+            true
         );
         inits++;
     });
@@ -397,23 +541,25 @@ async function spriteReader_init()
     
     spriteReader_getSpriteString('Corpse', (img) =>
     {
-        corpseSprite = new SpriteSet(img,
+        corpseSpriteSet = new SpriteSet(img,
             [
-                new Still('Idle', 335, 0, 53, 16) // Last Sprite of Animation
+                new Still('Idle', 373, 0, 53, 16) // Last Sprite of Animation
             ],
             [
                 new StillSequence('Explode',
                 [
-                    new Still(0, 0, 0, 41, 53),
-                    new Still(0, 41, 0, 44, 49),
-                    new Still(0, 85, 0, 46, 45),
-                    new Still(0, 131, 0, 49, 39),
-                    new Still(0, 180, 0, 49, 35),
-                    new Still(0, 229, 0, 53, 27),
-                    new Still(0, 282, 0, 53, 16),
-                    new Still(0, 335, 0, 53, 16)
+                    //new Still(0, 0, 0, 38, 56, paddingConfig),
+                    new Still(1, 38, 0, 41, 53),
+                    new Still(2, 79, 0, 44, 49),
+                    new Still(3, 123, 0, 46, 45),
+                    new Still(4, 169, 0, 49, 39),
+                    new Still(5, 218, 0, 49, 35),
+                    new Still(6, 267, 0, 53, 27),
+                    new Still(7, 310, 0, 53, 16),
+                    new Still(8, 373, 0, 53, 16)
                 ])
-            ]
+            ],
+            false
         );
         inits++;
     })
@@ -436,7 +582,9 @@ async function spriteReader_init()
                 new Still('8', 107, 17, 12, 15),
                 new Still('9', 120, 17, 13, 15)
                 //new Subsprite(''),
-            ]
+            ],
+            [],
+            true
         );
         inits++;
     });
