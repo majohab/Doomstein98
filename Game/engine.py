@@ -29,7 +29,6 @@ click_key               = 'c'
 dead_key                = 'd'
 died_anim_key           = 'd'
 duration_key            = 'd'
-direction_key           = 'd'
 death_key               = 'd'
 event_key               = 'e'
 group_key               = 'g'
@@ -50,6 +49,7 @@ state_key               = 's'
 shot_anim_key           = 's'
 time_key                = 't'
 type_key                = 't'
+direction_view_key      = 'v'
 weapon_key              = 'w'
 x_coordinate_key        = 'x'
 y_coordinate_key        = 'y'
@@ -326,7 +326,7 @@ class Bullet:
         return {
             x_coordinate_key   : self.currentPosition.x,
             y_coordinate_key   : self.currentPosition.y,
-            direction_key      : self.dirMove,
+            direction_view_key : self.dirMove,
             move_animation_key : self.moveAnim,
         }
 
@@ -1150,13 +1150,13 @@ class Player:
             Mapping[str, Any]: Returns the relevant information about the active player
         """
         
-
         return{
             x_coordinate_key        : self.currentPosition.x,
             y_coordinate_key        : self.currentPosition.y,
             health_key              : self.health,
             kills_key               : self.kills,
-            direction_key           : self.dirView,
+            death_key               : self.deaths,
+            direction_view_key      : self.dirView,
             direction_move_key      : self.dirMove,
             justShot_animation      : self.justShot,
             justHit_animation       : self.justHit,

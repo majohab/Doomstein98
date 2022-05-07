@@ -34,7 +34,7 @@ const ammo_key                = 'a';
 const bullet_key              = 'b';
 const corpses_key             = 'c';
 const duration_key            = 'd';
-const direction_key           = 'd';
+const direction_view_key      = 'v';
 const direction_move_key      = 'm';
 const health_key              = 'h';
 const kills_key               = 'k';
@@ -118,8 +118,7 @@ function socketHandler_init()
 
             playerX     = data[player_key][userName][x_coordinate_key];
             playerY     = data[player_key][userName][y_coordinate_key];
-            playerAngle = data[player_key][userName][direction_key];
-            
+            playerAngle = data[player_key][userName][direction_view_key];          
 
             rec_bullets = data[bullet_key];
 

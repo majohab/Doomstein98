@@ -332,7 +332,7 @@ function drawingHandler_draw()
         let angleToOpponent = Math.atan2(vecX, vecY); // Yeah usually it is (y, x), but it only works like this (maybe there is (x, y) in the backend?)
 
         // delta is the angle which to opponent looks in relative to the vector between opponent and self
-        let delta = getDeltaBetweenAngles(object[direction_key], angleToOpponent);
+        let delta = getDeltaBetweenAngles(object[direction_view_key], angleToOpponent);
 
         let spriteDir;
         if (delta > PI * (7 / 8) || delta <= -PI * (7 / 8))
@@ -376,7 +376,7 @@ function drawingHandler_draw()
             if (object[direction_move_key])
             {
                 // Check whether object moves in opposite direction (angle between movement and looking > 90) (currently only applicable for opponents)
-                let movementDelta = getDeltaBetweenAngles(object[direction_key], object[direction_move_key]);
+                let movementDelta = getDeltaBetweenAngles(object[direction_view_key], object[direction_move_key]);
                 if (movementDelta > PI*0.5 || movementDelta < -PI*0.5)
                     t = 1 - t;
             }
