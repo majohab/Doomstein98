@@ -1,5 +1,6 @@
 from django.db import models
 import django.core.validators as validator
+from Login.models import User
 
 MAX_PLAYERS = 10
 
@@ -65,9 +66,10 @@ class Lobby(models.Model):
     map             = models.ForeignKey                 (Map, on_delete=models.CASCADE)
     mode            = models.PositiveSmallIntegerField  (default=0)
     max_players     = models.PositiveSmallIntegerField  (default=4, validators=[validator.MinValueValidator(2,"To play reasonably, you should play at least with two player"), validator.MaxValueValidator(MAX_PLAYERS, "The Server can not handle more players")])
-    current_players = models.PositiveSmallIntegerField  (default=0, validators=[validator.MaxValueValidator(max_players)])
+    current_players = models.ManyToManyField            (User)
     game_runtime    = models.PositiveSmallIntegerField  (default=10,validators=[validator.MinValueValidator(2), validator.MaxValueValidator(60)])
     win_score       = models.PositiveSmallIntegerField  (default=10,validators=[validator.MinValueValidator(1), validator.MaxValueValidator(100)])
+
 
     def __str__(self) -> str:
         """ Prints user data

@@ -26,15 +26,18 @@ mov_b_anim_key          = 'b'
 bullet_key              = 'b'
 corpses_key             = 'c'
 click_key               = 'c'
+dead_key                = 'd'
 died_anim_key           = 'd'
 duration_key            = 'd'
 direction_key           = 'd'
 death_key               = 'd'
+event_key               = 'e'
 group_key               = 'g'
 hit_anim_key            = 'h'
 health_key              = 'h'
 inactive_key            = 'i'
 kills_key               = 'k'
+killer_key              = 'k'
 killDeath_key           = 'kd'
 map_length_key          = 'l'
 direction_move_key      = 'm'
@@ -46,6 +49,7 @@ player_key              = 'p'
 state_key               = 's'
 shot_anim_key           = 's'
 time_key                = 't'
+type_key                = 't'
 weapon_key              = 'w'
 x_coordinate_key        = 'x'
 y_coordinate_key        = 'y'
@@ -958,7 +962,22 @@ class Player:
             bullet.player.currentWeapon.healthReduction += bullet.weapon.damage
             bullet.player.currentWeapon.hitTimes        += 1
         
+        # if player has died
         if(self.health < 1):
+
+            # Synchronize the channel's information and send them to all participants
+            async_to_sync(self.engine.channelLayer.group_send)(
+                self.engine.lobbyName, 
+                {
+                "type": "game.event",
+                state_key   : {
+                    type_key    : event_key,
+                    killer_key  : bullet.player.name,
+                    dead_key    : self.name,
+                    weapon_key  : bullet.player.currentWeapon.name, 
+                },
+                }
+            )
 
             # increase score of player
             bullet.player.kills +=1
@@ -989,7 +1008,7 @@ class Player:
         # delete the object
         del(bullet)
             
-    def move            (self, x : int = 0, y: int = 0)      -> None:
+    def move            (self, x : int = 0, y: int = 0)     -> None:
         """
         Validate the x and y directions and the move the player in the direction of the view plus his moves
 
@@ -1046,7 +1065,7 @@ class Player:
         else:
             self.moveAnim = -1 # State for no movement
 
-    def change_direction(self, mouseX : float)                      -> None:
+    def change_direction(self, mouseX : float)              -> None:
         """
         It changest the view direction of player if mouse is turning
 
@@ -1067,7 +1086,7 @@ class Player:
 
         self.dirView = dir
         
-    def update          (self)                                      -> None:
+    def update          (self)                              -> None:
         """
         Reduce all latencies of the player by one if needed
         """
@@ -1096,7 +1115,7 @@ class Player:
             #reduce the waiting time
             self.alive -= 1
 
-    def die             (self)                                      -> None:
+    def die             (self)                              -> None:
         """
         Describes the happening after dying
         """
@@ -1113,7 +1132,7 @@ class Player:
 
         self.alive = round( self.engine.s.revive_waiting_time/ self.engine.s.tick_rate)
 
-    def remove_from_game(self, value : int)                    -> None:
+    def remove_from_game(self, value : int)                 -> None:
         """
         Remove the Player from the game without any waiting time
 
@@ -1123,7 +1142,7 @@ class Player:
 
         self.alive = value
 
-    def render          (self)                                      -> Mapping[str, Any]:
+    def render          (self)                              -> Mapping[str, Any]:
         """
         Returns all relevant information about the player for the Client
 
@@ -1147,7 +1166,7 @@ class Player:
             ammo_key                : self.currentWeapon.currAmmunition,
         }
 
-    def render_inactive (self)                                      -> Mapping[str, Any]:
+    def render_inactive (self)                              -> Mapping[str, Any]:
         """
         Returns all relevant information about the inactive player for the client
 
@@ -1861,9 +1880,6 @@ class GameEngine(threading.Thread):
 
                 # add the players to the game
                 self.state.players.append(self.playerQueue.pop(idx))
-
-
-               #print(player.name)
 
             # if player is waiting for rejoining
             # -1 Players are not included

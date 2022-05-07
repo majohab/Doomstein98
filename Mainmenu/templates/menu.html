@@ -24,7 +24,7 @@
     <div class="div lobbybox">
         {% for lobby in lobbies %}
             <div class="div lobbyline">
-                <p class="p lobbytext"><b>{{ lobby.name }}</b> ({{ lobby.current_players }}/{{ lobby.max_players }})</p>
+                <p class="p lobbytext"><b>{{ lobby.name }}</b> ({{ lobby.current_players.count }}/{{ lobby.max_players }})</p>
                 <a href="{% url 'game' lobby_name=lobby.name %}">
                     <button class="button lobby">
                         Join
