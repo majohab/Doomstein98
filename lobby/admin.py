@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Lobby, Map, Weapon, Setting, Statistic, WeaponStatistic
+from .models import Lobby, Map, Weapon, UsedSetting, Setting, Statistic, WeaponStatistic
 from django.contrib.auth.models import Group
 
 # config
@@ -10,6 +10,7 @@ admin.site.register(Lobby)
 admin.site.register(Map)
 admin.site.register(Weapon)
 admin.site.register(Setting)
+admin.site.register(UsedSetting)
 admin.site.register(Statistic)
 admin.site.register(WeaponStatistic)
 admin.site.unregister(Group)
@@ -131,3 +132,20 @@ class SettingAdminConfig(admin.ModelAdmin):
 
 admin.site.unregister(Setting)
 admin.site.register(Setting, SettingAdminConfig)
+
+class UsedSettingAdminConfig(admin.ModelAdmin):
+    """Configuration for map table
+
+    Args:
+        UserAdmin (Class): Admin config
+    """
+    ordering = ('index', 'setting')  
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('index')
+        }),
+    )
+
+admin.site.unregister(UsedSetting)
+admin.site.register(UsedSetting, UsedSettingAdminConfig)

@@ -1,12 +1,15 @@
 const mov_b_anim_key          = 'b';
 const channel_key             = 'c';
 const click_key               = 'c';
+const dead_key                = 'd';
 const died_anim_key           = 'd';
 const down_key                = 'd';
+const event_key               = 'e';
 const group_key               = 'g';
 const hit_anim_key            = 'h';
 const init_key                = 'y';
 const inactive_key            = 'i';
+const killer_key              = 'k';
 const left_key                = 'l';
 const loose_key               = 'l';
 const lobby_key               = 'l';
@@ -31,7 +34,7 @@ const ammo_key                = 'a';
 const bullet_key              = 'b';
 const corpses_key             = 'c';
 const duration_key            = 'd';
-const direction_key           = 'd';
+const direction_view_key      = 'v';
 const direction_move_key      = 'm';
 const health_key              = 'h';
 const kills_key               = 'k';
@@ -115,8 +118,7 @@ function socketHandler_init()
 
             playerX     = data[player_key][userName][x_coordinate_key];
             playerY     = data[player_key][userName][y_coordinate_key];
-            playerAngle = data[player_key][userName][direction_key];
-            
+            playerAngle = data[player_key][userName][direction_view_key];          
 
             let rec_opponents_tmp = data[player_key]
             rec_opponents = [];
@@ -129,7 +131,6 @@ function socketHandler_init()
             rec_corpses = data[corpses_key];
             rec_bullets = data[bullet_key];
             rec_boxes = data[ammo_key];
-
 
             ammo        = data[player_key][userName][ammo_key];
             health      = data[player_key][userName][health_key];
@@ -228,6 +229,9 @@ function socketHandler_init()
             //TODO: Was soll passieren wenn er eine Nachricht erhält: Lobby kann nicht gefunden werden
             console.log(data[message_key])
             window.location.replace(window.location.href.replace(/game([\s\S]*)$/ ,'menu/'));
+        }else if(data[type_key] == event_key){
+            //TODO: Was soll passieren, wenn jemand auf dem Spielfeld stirbt
+            console.log(data)
         }else if(data[type_key] == win_key){
             //TODO: Was soll beim Gewinnen passieren
             console.log(data)
