@@ -1,15 +1,15 @@
 groups:
-  - doomslayers
+  - dhbw
 
 users:
   - default
-  - name: lasse
-    gecos: Lasse Henrich
+  - name: jonas
+    gecos: Jonas Haberstroh
     shell: /bin/bash
-    primary_group: doomslayers
+    primary_group: dhbw
     sudo: ALL=(ALL) NOPASSWD:ALL
     groups: users, admin, docker
-    passwd : lasseswarm
+    passwd : jonasswarm
     lock_passwd: false
     ssh_authorized_keys:
-      - ssh-rsa
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNEDOkzcWytAhPTMrmf8D9jbXhblYaod51hbouP3aM8QC4nHA+nCm/MfdXH3dVZ9+lb5nBpPLJ5xMbekZxqbT169NfrbkFqpjZKLAQWmYF3rbx6U2SBNnd4P7Ox647aZ8mtn08M4IJStpA3UPtvg2AgXrIXfa3zX8xsPhNx/hMwET+NJr4QG/0AaUrtZXcST8PDQDIHFWXcBMqIaEah5ddL59M2Dw/XH6rr3tWkFLmDDdg+qtb4oBVdcq+V6bSsC39BXIUQsgS93m3hcrQFwjn4ubHGD3atJkQQTGTRjX3MDd4YIreHBvcPUgoGVbFIYG3/CtMJIlZfwGMuQr01frh Generated-by-Nova

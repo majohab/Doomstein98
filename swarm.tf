@@ -21,7 +21,7 @@ resource "openstack_compute_instance_v2" "SwarmManager" {
   name            = "SwarmManager"
   image_id        = "e6da7b16-5fef-4a15-a417-db4f68c30312"
   flavor_name     = "m1.small"
-  key_pair        = "cloudkey"
+  key_pair        = "Windows"
   security_groups = [openstack_networking_secgroup_v2.SwarmSec.name]
   user_data       =  data.template_file.user_data.rendered
   network {
@@ -34,7 +34,7 @@ resource "openstack_compute_instance_v2" "Worker1" {
   name            = "Worker1"
   image_id        = "e6da7b16-5fef-4a15-a417-db4f68c30312"
   flavor_name     = "m1.small"
-  key_pair        = "cloudkey"
+  key_pair        = "Windows"
   security_groups = [openstack_networking_secgroup_v2.SwarmSec.name]
   user_data       =  data.template_file.user_data.rendered
   network {
@@ -47,7 +47,7 @@ resource "openstack_compute_instance_v2" "Worker2" {
   name            = "Worker2"
   image_id        = "e6da7b16-5fef-4a15-a417-db4f68c30312"
   flavor_name     = "m1.small"
-  key_pair        = "cloudkey"
+  key_pair        = "Windows"
   security_groups = [openstack_networking_secgroup_v2.SwarmSec.name]
   user_data       =  data.template_file.user_data.rendered
   network {
@@ -58,13 +58,13 @@ resource "openstack_compute_instance_v2" "Worker2" {
 # Install docker on each instance
 resource "null_resource" "InstallDocker" {
   provisioner "local-exec"  {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u lasse -i '${openstack_compute_instance_v2.SwarmManager.access_ip_v4},' --private-key ../../CloudComputing/keys/cloud_2.ppk ansible/playbook.yml"
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u debian -i '${openstack_compute_instance_v2.SwarmManager.access_ip_v4},' --private-key /home/.ssh/Windows.pem ansible/playbook.yml"
   }
   provisioner "local-exec"  {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u lasse -i '${openstack_compute_instance_v2.Worker1.access_ip_v4},' --private-key ../../CloudComputing/keys/cloud_2.ppk ansible/playbook.yml"
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u debian -i '${openstack_compute_instance_v2.Worker1.access_ip_v4},' --private-key /home/.ssh/Windows.pem ansible/playbook.yml"
   }
   provisioner "local-exec"  {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u lasse -i '${openstack_compute_instance_v2.Worker2.access_ip_v4},' --private-key ../../CloudComputing/keys/cloud_2.ppk ansible/playbook.yml"
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u debian -i '${openstack_compute_instance_v2.Worker2.access_ip_v4},' --private-key /home/.ssh/Windows.pem ansible/playbook.yml"
   }
 }
 #------------------------------------------------------------------------------
@@ -127,8 +127,8 @@ resource "openstack_networking_secgroup_rule_v2" "workerrule2b" {
 #  Get an additional shared volume (beside the Ubuntu Images) to be used by all nodes
 # ------------------------------------------------------------------------------
 resource "openstack_blockstorage_volume_v3" "volume_1" {
-  name = "mysharedVolume"
-  size = 1
+  name = "sharedvolume"
+  size = 10
   multiattach = true
 }
 # ------------------------------------------------------------------------------
@@ -156,71 +156,25 @@ resource "openstack_compute_volume_attach_v2" "attach-3" {
   multiattach = true
 }
 # -----------------------------------------------------------------------------
-# Format the Volume and mount it as  /mydata  (wait for the first attachement) and if done
+# Format the Volume and mount it as  /data  (wait for the first attachement) and if done
 # build the python flask image
 # -----------------------------------------------------------------------------
 resource "null_resource" "volumeformating" {
  connection {
    type = "ssh"
     host = openstack_compute_instance_v2.SwarmManager.access_ip_v4
-    user = "juergen"
+    user = "debian"
     port = 22
-    private_key = file("/Users/juergenschneider/Documents/webpages/DHBW/Cloud2022/InternalStuff/BWCloud/cloud.key")
+    private_key = file("/home/.ssh/Windows.pem")
   }
   provisioner "remote-exec" {
       inline = [
+      "ls -la",
       "sudo mkfs -t ext4 ${openstack_compute_volume_attach_v2.attach-1.device}",
-      "sudo mkdir /mydata",
-      "sudo mount ${openstack_compute_volume_attach_v2.attach-1.device} /mydata",
-      "sudo chmod ugo+rwx /mydata",
-    ]
- }
-}
-# -----------------------------------------------------------------------------
-# Mount the volume to worker 1 and build Python flask
-# -----------------------------------------------------------------------------
-resource "null_resource" "volumemountworker1" {
-  depends_on = [openstack_compute_instance_v2.Worker1,null_resource.volumeformating,null_resource.softwareconfig,null_resource.InstallDocker]
-  triggers = { thisfile_hash = "${sha1(file("${path.cwd}/swarm.tf"))}" }
- connection {
-   type = "ssh"
-    host = openstack_compute_instance_v2.Worker1.access_ip_v4
-    user = "juergen"
-    port = 22
-    private_key = file("/Users/juergenschneider/Documents/webpages/DHBW/Cloud2022/InternalStuff/BWCloud/cloud.key")
-  }
-  provisioner "remote-exec" {
-      inline = [
-      "sudo mkdir /mydata",
-      "sudo umount ${openstack_compute_volume_attach_v2.attach-2.device} /mydata",
-      "sudo mount ${openstack_compute_volume_attach_v2.attach-2.device} /mydata",
-      "sudo chmod ugo+rwx /mydata",
-      "cd /mydata",
-      "sudo docker build -t mypython:latest --network=host --build-arg InstanceName=worker1 ."
-    ]
- }
-}
-# -----------------------------------------------------------------------------
-# Mount the volume to worker 2 and Python flask
-# -----------------------------------------------------------------------------
-resource "null_resource" "volumemountworker2" {
-  depends_on = [openstack_compute_instance_v2.Worker2,null_resource.volumeformating,null_resource.softwareconfig,null_resource.InstallDocker]
-  triggers = { thisfile_hash = "${sha1(file("${path.cwd}/swarm.tf"))}" }
- connection {
-   type = "ssh"
-    host = openstack_compute_instance_v2.Worker2.access_ip_v4
-    user = "juergen"
-    port = 22
-    private_key = file("/Users/juergenschneider/Documents/webpages/DHBW/Cloud2022/InternalStuff/BWCloud/cloud.key")
-  }
-  provisioner "remote-exec" {
-      inline = [
-      "sudo mkdir /mydata",
-      "sudo umount ${openstack_compute_volume_attach_v2.attach-3.device} /mydata",
-      "sudo mount ${openstack_compute_volume_attach_v2.attach-3.device} /mydata",
-      "sudo chmod ugo+rwx /mydata",
-      "cd /mydata",
-      "sudo docker build -t mypython:latest --network=host --build-arg InstanceName=worker2  ."
+      "sudo mkdir /home/debian/data",
+      "sudo mount ${openstack_compute_volume_attach_v2.attach-1.device} /home/debian/data",
+      "sudo chmod ugo+rwx /home/debian/data",
+      "ls -la",
     ]
  }
 }
@@ -233,21 +187,86 @@ resource "null_resource" "softwareconfig" {
  connection {
    type = "ssh"
     host = openstack_compute_instance_v2.SwarmManager.access_ip_v4
-    user = "juergen"
+    user = "debian"
     port = 22
-    private_key = file("~/Documents/webpages/DHBW/Cloud2022/InternalStuff/BWCloud/cloud.key")
+    private_key = file("/home/.ssh/Windows.pem")
   }
   provisioner "file" {
-  source      = "/Users/juergenschneider/Documents/webpages/DHBW/Cloud2022/InternalStuff/BWCloud/DockerSwarm/app/"
-  destination = "/mydata/"
+  source      = "/mnt/f/Webeng/Doomstein98"
+  destination = "/home/debian/data"
   }
   provisioner "remote-exec" {
       inline = [
-      "cd /mydata",
-      "sudo docker build -t mypython:latest --network=host --build-arg InstanceName=swarmmanager  ."
+      "cd /home/debian/data",
+      #"sudo docker build -t mypython:latest --network=host --build-arg InstanceName=swarmmanager  ."
     ]
  }
+}
+# -----------------------------------------------------------------------------
+# Mount the volume to worker 1
+# -----------------------------------------------------------------------------
+resource "null_resource" "volumemountworker1" {
+  depends_on = [openstack_compute_instance_v2.Worker1,null_resource.volumeformating,null_resource.softwareconfig,null_resource.InstallDocker]
+  triggers = { thisfile_hash = "${sha1(file("${path.cwd}/swarm.tf"))}" }
+ connection {
+   type = "ssh"
+    host = openstack_compute_instance_v2.Worker1.access_ip_v4
+    user = "debian"
+    port = 22
+    private_key = file("/home/.ssh/Windows.pem")
+  }
+  provisioner "remote-exec" {
+      inline = [
+      "sudo mkdir /home/debian/data",
+      "sudo mkfs -t ext4 ${openstack_compute_volume_attach_v2.attach-2.device}",
+      "sudo umount ${openstack_compute_volume_attach_v2.attach-2.device} /home/debian/data",
+      "sudo mount ${openstack_compute_volume_attach_v2.attach-2.device} /home/debian/data",
+      "sudo chmod ugo+rwx /home/debian/data",
+      "cd /home/debian/data",
+      #"sudo docker build -t mypython:latest --network=host --build-arg InstanceName=worker1 ."
+    ]
  }
+}
+# -----------------------------------------------------------------------------
+# Mount the volume to worker 2
+# -----------------------------------------------------------------------------
+resource "null_resource" "volumemountworker2" {
+  depends_on = [openstack_compute_instance_v2.Worker2,null_resource.volumeformating,null_resource.softwareconfig,null_resource.InstallDocker, null_resource.volumemountworker1]
+  triggers = { thisfile_hash = "${sha1(file("${path.cwd}/swarm.tf"))}" }
+ connection {
+   type = "ssh"
+    host = openstack_compute_instance_v2.Worker2.access_ip_v4
+    user = "debian"
+    port = 22
+    private_key = file("/home/.ssh/Windows.pem")
+  }
+  provisioner "remote-exec" {
+      inline = [
+      "sudo mkdir /home/debian/data",
+      "sudo mkfs -t ext4 ${openstack_compute_volume_attach_v2.attach-3.device}",
+      "sudo umount ${openstack_compute_volume_attach_v2.attach-3.device} /home/debian/data",
+      "sudo mount ${openstack_compute_volume_attach_v2.attach-3.device} /home/debian/data",
+      "sudo chmod ugo+rwx /home/debian/data",
+      "cd /home/debian/data",
+      #"sudo docker build -t mypython:latest --network=host --build-arg InstanceName=worker2  ."
+    ]
+ }
+}
+
+resource "null_resource" "copydata" {
+  depends_on = [openstack_compute_instance_v2.SwarmManager,null_resource.volumeformating,null_resource.InstallDocker,null_resource.softwareconfig, null_resource.volumemountworker2]
+ connection {
+   type = "ssh"
+    host = openstack_compute_instance_v2.SwarmManager.access_ip_v4
+    user = "debian"
+    port = 22
+    private_key = file("/home/.ssh/Windows.pem")
+  }
+  provisioner "file" {
+  source      = "/mnt/f/Webeng/Doomstein98"
+  destination = "/home/debian/data"
+  }
+}
  # -----------------------------------------------------------------------------
  # to put Docker in Swarm Node please enter the following commands
  #  Swarn Manager sudo docker swarm init --advertise-addr <192.168.xx.yy>
@@ -255,7 +274,7 @@ resource "null_resource" "softwareconfig" {
  #  sudo docker swarm join --token SWMTKN-1-2otb7izdwdzu67ca51wuzjcla4rlc7zox616yeff526508t83i-95hvg59ioj9xto2ryhn33pg7l 192.168.1.155:2377
  # -----------------------------------------------------------------------------
  # now we are ready to start the swarm service
- # on the manager Node on /mydata
+ # on the manager Node on /data
  # sudo docker stack deploy --compose-file dockerswarm-app.yml juergenapp
  # sudo docker stack ls
  # sudo docker stack ps juergenapp  -> Status anschauen
