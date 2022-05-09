@@ -54,6 +54,7 @@ let corpseTotalAnimationTime = 1;
 let rec_corpses = [];
 let rec_bullets = [];
 let rec_opponents = [];
+let rec_boxes = [];
 
 function socketHandler_init()
 {
@@ -96,7 +97,6 @@ function socketHandler_init()
         
         if (data[type_key] == update_key)
         {
-            //console.log(data);
             if (mapString == null)
             {
                 function initValueIfReceived(key, func)
@@ -120,17 +120,6 @@ function socketHandler_init()
             playerY     = data[player_key][userName][y_coordinate_key];
             playerAngle = data[player_key][userName][direction_view_key];          
 
-            rec_bullets = data[bullet_key];
-
-            //rec_users = data[player_key];
-            //for (users_name in rec_users)
-            //{
-            //    if (users_name != userName && i < max_objects)
-            //    {
-            //        objects[i] = [rec_users[users_name][x_coordinate_key], rec_users[users_name][y_coordinate_key], 1, 0]
-            //        i++;
-            //    }
-            //}
             let rec_opponents_tmp = data[player_key]
             rec_opponents = [];
             for (users_name in rec_opponents_tmp)
@@ -140,6 +129,8 @@ function socketHandler_init()
             }
 
             rec_corpses = data[corpses_key];
+            rec_bullets = data[bullet_key];
+            rec_boxes = data[ammo_key];
 
             ammo        = data[player_key][userName][ammo_key];
             health      = data[player_key][userName][health_key];
