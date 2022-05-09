@@ -807,7 +807,7 @@ class Player:
         '''
         self.delayedTick : int = 0
 
-    def find_spawn      (self, map : Map)                           -> bool:
+    def find_spawn      (self, map : Map)                   -> bool:
         """
         Find an available Spawn for the Player
         Returns True if found
@@ -859,10 +859,10 @@ class Player:
         # Spawn was found
         return True
 
-    def cond            (self)                                      -> bool:
+    def cond            (self)                              -> bool:
         return self.name == "Picasso-Programmer"
 
-    def shoot           (self)                               -> None:
+    def shoot           (self)                              -> None:
         """
         Describes the function to be called when the player shoots
         A bullet with specific damage is then created
@@ -914,7 +914,7 @@ class Player:
             #print(F"{self.name} has no bullets: {weaponA} or latency is still active : {weapon.curr_latency} ")
             pass
 
-    def change_weapon   (self, idx : int)                           -> None:
+    def change_weapon   (self, idx : int)                   -> None:
         """
         Change the weapon by an indicator
 
@@ -935,7 +935,7 @@ class Player:
         # Wait 1 seconds to be able to shoot again
         self.changeWeaponDelay = round( self.engine.s.change_weapon_delay/ self.engine.s.tick_rate)
        
-    def get_hit         (self, bullet : Bullet, mode : int)  -> None:
+    def get_hit         (self, bullet : Bullet, mode : int) -> None:
         """
         Describes the function to be called when the player is hit
         The health reduction is defined here and the happenings after getting killed
