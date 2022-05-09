@@ -22,7 +22,7 @@ let statusBar_Height;
 
 // Constants
 
-const weapon_pivotX = [21/52, 55/110, 55.5/91]; // pixelOfMid/spriteWidth
+const weapon_pivotX = [21/50, 55/110, 55.5/91]; // pixelOfMid/spriteWidth
 const weapon_pivotY = 1;
 
 const healthText_pivotX = 1;
