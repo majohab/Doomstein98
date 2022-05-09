@@ -22,7 +22,7 @@ let statusBar_Height;
 
 // Constants
 
-const weapon_pivotX = 0.5;
+const weapon_pivotX = [21/52, 55/110, 55.5/91]; // pixelOfMid/spriteWidth
 const weapon_pivotY = 1;
 
 const healthText_pivotX = 1;
@@ -282,7 +282,7 @@ function drawingHandler_draw()
         weaponImage = weaponToUse.getAnimationSprite(t, 'Shoot');
     }
 
-    addImage(weaponImage, weapon_startX, weapon_startY, weapon_pivotX, weapon_pivotY, weapon_scale)
+    addImage(weaponImage, weapon_startX, weapon_startY, weapon_pivotX[currWeapon], weapon_pivotY, weapon_scale)
 
     //#endregion
 
