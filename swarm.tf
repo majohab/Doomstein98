@@ -16,6 +16,10 @@ data "template_file" "user_data" {
   template = file("./cloud_init.yaml")
 }
 
+# -----------------------------------------------------------------------------
+# Create Instances
+# -----------------------------------------------------------------------------
+
 # Manager
 resource "openstack_compute_instance_v2" "SwarmManager" {
   name            = "SwarmManager"
@@ -55,7 +59,9 @@ resource "openstack_compute_instance_v2" "Worker2" {
   }
 }
 
-# Install docker on each instance
+# -----------------------------------------------------------------------------
+# Install docker on each instance via Ansible
+# -----------------------------------------------------------------------------
 resource "null_resource" "InstallDocker" {
   provisioner "local-exec"  {
     command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u debian -i '${openstack_compute_instance_v2.SwarmManager.access_ip_v4},' --private-key /home/.ssh/Windows.pem ansible/playbook.yml"
@@ -67,9 +73,13 @@ resource "null_resource" "InstallDocker" {
     command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u debian -i '${openstack_compute_instance_v2.Worker2.access_ip_v4},' --private-key /home/.ssh/Windows.pem ansible/playbook.yml"
   }
 }
-#------------------------------------------------------------------------------
-# Security Group for Swarm Manager.... egress no limitation
+
 # -----------------------------------------------------------------------------
+# Security Groups
+# -----------------------------------------------------------------------------
+
+# Security Group for Swarm Manager.... egress no limitation
+
 resource "openstack_networking_secgroup_v2" "SwarmSec" {
     name = "SwarmSec"
     description = "Terraform generated Security, to enable Docker Swarm Manager"
@@ -95,9 +105,9 @@ resource "openstack_networking_secgroup_rule_v2" "workerrule1b" {
   remote_ip_prefix  = "0.0.0.0/0"
   security_group_id = openstack_networking_secgroup_v2.SwarmSec.id
 }
-#------------------------------------------------------------------------------
+
 # Security Group for workers  .. egress no limitation
-# -----------------------------------------------------------------------------
+
 resource "openstack_networking_secgroup_v2" "SwarmWorkerSec" {
     name = "SwarmWorkerSec"
     description = "Terraform generated Security, to enable Docker Swarm Worker"
@@ -123,43 +133,42 @@ resource "openstack_networking_secgroup_rule_v2" "workerrule2b" {
   remote_ip_prefix  = "192.168.0.0/16"
   security_group_id = openstack_networking_secgroup_v2.SwarmWorkerSec.id
 }
-# ------------------------------------------------------------------------------
-#  Get an additional shared volume (beside the Ubuntu Images) to be used by all nodes
-# ------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# Create, attach and mount a Shared Volume
+# -----------------------------------------------------------------------------
+
+# Get an additional shared volume (beside the Ubuntu Images) to be used by all nodes
 resource "openstack_blockstorage_volume_v3" "volume_1" {
   name = "sharedvolume"
   size = 10
   multiattach = true
 }
-# ------------------------------------------------------------------------------
+
 #  Attach the volume to the Swarm Manager
-# ------------------------------------------------------------------------------
 resource "openstack_compute_volume_attach_v2" "attach-1" {
   instance_id = "${openstack_compute_instance_v2.SwarmManager.id}"
   volume_id   = "${openstack_blockstorage_volume_v3.volume_1.id}"
   multiattach = true
 }
-# ------------------------------------------------------------------------------
+
 #  Attach the volume to the Worker 1
-# ------------------------------------------------------------------------------
 resource "openstack_compute_volume_attach_v2" "attach-2" {
   instance_id = "${openstack_compute_instance_v2.Worker1.id}"
   volume_id   = "${openstack_blockstorage_volume_v3.volume_1.id}"
   multiattach = true
 }
-# ------------------------------------------------------------------------------
-#  Attach the volume to the Wokrer 2
-# ------------------------------------------------------------------------------
+
+#  Attach the volume to the Worker 2
 resource "openstack_compute_volume_attach_v2" "attach-3" {
   instance_id = "${openstack_compute_instance_v2.Worker2.id}"
   volume_id   = "${openstack_blockstorage_volume_v3.volume_1.id}"
   multiattach = true
 }
-# -----------------------------------------------------------------------------
-# Format the Volume and mount it as  /data  (wait for the first attachement) and if done
-# build the python flask image
-# -----------------------------------------------------------------------------
+
+# Format the Volume and mount it as /home/debian/data on SwarmManager (wait for the first attachement) 
 resource "null_resource" "volumeformating" {
+ depends_on = [openstack_compute_volume_attach_v2.attach-1, openstack_compute_instance_v2.SwarmManager, null_resource.InstallDocker]
  connection {
    type = "ssh"
     host = openstack_compute_instance_v2.SwarmManager.access_ip_v4
@@ -169,44 +178,20 @@ resource "null_resource" "volumeformating" {
   }
   provisioner "remote-exec" {
       inline = [
-      "ls -la",
       "sudo mkfs -t ext4 ${openstack_compute_volume_attach_v2.attach-1.device}",
       "sudo mkdir /home/debian/data",
       "sudo mount ${openstack_compute_volume_attach_v2.attach-1.device} /home/debian/data",
-      "sudo chmod ugo+rwx /home/debian/data",
-      "ls -la",
+      "sudo chmod 777 /home/debian/data -R",
     ]
  }
 }
-# -----------------------------------------------------------------------------
-# Copy the docker App yaml and all other application artifacts
-# -----------------------------------------------------------------------------
-resource "null_resource" "softwareconfig" {
- depends_on = [openstack_compute_instance_v2.SwarmManager,null_resource.volumeformating,null_resource.InstallDocker]
- triggers = { thisfile_hash = "${sha1(file("${path.cwd}/swarm.tf"))}" }
- connection {
-   type = "ssh"
-    host = openstack_compute_instance_v2.SwarmManager.access_ip_v4
-    user = "debian"
-    port = 22
-    private_key = file("/home/.ssh/Windows.pem")
-  }
-  provisioner "file" {
-  source      = "/mnt/f/Webeng/Doomstein98"
-  destination = "/home/debian/data"
-  }
-  provisioner "remote-exec" {
-      inline = [
-      "cd /home/debian/data",
-      #"sudo docker build -t mypython:latest --network=host --build-arg InstanceName=swarmmanager  ."
-    ]
- }
-}
-# -----------------------------------------------------------------------------
-# Mount the volume to worker 1
-# -----------------------------------------------------------------------------
+
+# Note that mounting a shared volume doesn't seem to work here. (Seems like a bug.)
+# Therefore, in the following section, we only create the directories for the volume and mount it later manually.
+
+# Create Shared Volume Directory on Worker 1
 resource "null_resource" "volumemountworker1" {
-  depends_on = [openstack_compute_instance_v2.Worker1,null_resource.volumeformating,null_resource.softwareconfig,null_resource.InstallDocker]
+  depends_on = [openstack_compute_instance_v2.Worker1, openstack_compute_volume_attach_v2.attach-2, null_resource.volumeformating, null_resource.InstallDocker]
   triggers = { thisfile_hash = "${sha1(file("${path.cwd}/swarm.tf"))}" }
  connection {
    type = "ssh"
@@ -218,20 +203,14 @@ resource "null_resource" "volumemountworker1" {
   provisioner "remote-exec" {
       inline = [
       "sudo mkdir /home/debian/data",
-      "sudo mkfs -t ext4 ${openstack_compute_volume_attach_v2.attach-2.device}",
-      "sudo umount ${openstack_compute_volume_attach_v2.attach-2.device} /home/debian/data",
-      "sudo mount ${openstack_compute_volume_attach_v2.attach-2.device} /home/debian/data",
-      "sudo chmod ugo+rwx /home/debian/data",
-      "cd /home/debian/data",
-      #"sudo docker build -t mypython:latest --network=host --build-arg InstanceName=worker1 ."
+      "sudo mount ${openstack_compute_volume_attach_v2.attach-1.device} /home/debian/data",
     ]
  }
 }
-# -----------------------------------------------------------------------------
-# Mount the volume to worker 2
-# -----------------------------------------------------------------------------
+
+# Create Shared Volume Directory on Worker 2
 resource "null_resource" "volumemountworker2" {
-  depends_on = [openstack_compute_instance_v2.Worker2,null_resource.volumeformating,null_resource.softwareconfig,null_resource.InstallDocker, null_resource.volumemountworker1]
+  depends_on = [openstack_compute_instance_v2.Worker1, openstack_compute_volume_attach_v2.attach-3, null_resource.volumeformating, null_resource.InstallDocker]
   triggers = { thisfile_hash = "${sha1(file("${path.cwd}/swarm.tf"))}" }
  connection {
    type = "ssh"
@@ -243,18 +222,19 @@ resource "null_resource" "volumemountworker2" {
   provisioner "remote-exec" {
       inline = [
       "sudo mkdir /home/debian/data",
-      "sudo mkfs -t ext4 ${openstack_compute_volume_attach_v2.attach-3.device}",
-      "sudo umount ${openstack_compute_volume_attach_v2.attach-3.device} /home/debian/data",
-      "sudo mount ${openstack_compute_volume_attach_v2.attach-3.device} /home/debian/data",
-      "sudo chmod ugo+rwx /home/debian/data",
-      "cd /home/debian/data",
-      #"sudo docker build -t mypython:latest --network=host --build-arg InstanceName=worker2  ."
+      "sudo mount ${openstack_compute_volume_attach_v2.attach-1.device} /home/debian/data",
     ]
  }
 }
 
-resource "null_resource" "copydata" {
-  depends_on = [openstack_compute_instance_v2.SwarmManager,null_resource.volumeformating,null_resource.InstallDocker,null_resource.softwareconfig, null_resource.volumemountworker2]
+# -----------------------------------------------------------------------------
+# Copy Doomstein98 data to volume
+# -----------------------------------------------------------------------------
+
+resource "null_resource" "softwareconfig" {
+ depends_on = [openstack_compute_instance_v2.Worker1, null_resource.InstallDocker, openstack_compute_volume_attach_v2.attach-3, null_resource.volumeformating,
+              null_resource.volumemountworker1, null_resource.volumemountworker2]
+ triggers = { thisfile_hash = "${sha1(file("${path.cwd}/swarm.tf"))}" }
  connection {
    type = "ssh"
     host = openstack_compute_instance_v2.SwarmManager.access_ip_v4
@@ -263,10 +243,17 @@ resource "null_resource" "copydata" {
     private_key = file("/home/.ssh/Windows.pem")
   }
   provisioner "file" {
-  source      = "/mnt/f/Webeng/Doomstein98"
+  source      = "/mnt/f/Webeng/Doomstein98" # Note that this line failes sometimes... but only sometimes (Delete ssh keys from known hosts)
   destination = "/home/debian/data"
   }
+  provisioner "remote-exec" {
+      inline = [
+      "cd /home/debian/data",
+      #"sudo docker build -t mypython:latest --network=host --build-arg InstanceName=swarmmanager  ."
+    ]
+ }
 }
+
  # -----------------------------------------------------------------------------
  # to put Docker in Swarm Node please enter the following commands
  #  Swarn Manager sudo docker swarm init --advertise-addr <192.168.xx.yy>
