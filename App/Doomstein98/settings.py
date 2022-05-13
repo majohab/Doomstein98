@@ -21,12 +21,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-!3!4d$y*&npjmh8d6uf7vr_4ickgw!ti7+a8o-nvw(-7em8g)b'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = str(os.environ.get('DEBUG')) == '1' # 1 equals True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = []
+ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS_ENV')
+if ALLOWED_HOSTS_ENV:
+    ALLOWED_HOSTS.extend(ALLOWED_HOSTS_ENV.split(','))
 
 
 # Application definition
@@ -80,11 +83,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'Doomstein98.wsgi.application'
 ASGI_APPLICATION = 'Game.routing.application'
 
+# Redis
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [("redis", 6379)],
         },
     },
 }
@@ -138,7 +142,8 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "static"),
 )
 
-STATIC_URL = 'static/'
+STATIC_ROOT = '/vol/web/static'
+STATIC_URL = '/static/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -152,18 +157,18 @@ INTERNAL_IPS = [
 
 # Disables password parsers
 AUTH_PASSWORD_VALIDATORS = [
-    # {
-    #     "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    # },
-    # {
-    #     "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    # },
-    # {
-    #     "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    # },
-    # {
-    #     "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    # },
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
 ]
 
 # USERMANAGEMENT CONFIG
@@ -182,7 +187,8 @@ EMAIL_FROM_USER = os.environ.get('EMAIL_FROM_USER')
 EMAIL_HOST = os.environ.get('EMAIL_HOST')
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS')
+EMAIL_USE_TLS = str(os.environ.get('EMAIL_USE_TLS')) == '1'
+EMAIL_USE_SSL = False
 EMAIL_PORT = os.environ.get('EMAIL_PORT')
 
 # LOGGING CONFIG
@@ -202,8 +208,18 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'level': os.environ.get('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False,
         },
     },
 }
+
+# HTTPS Setting (uncomment in prod)
+#SESSION_COOKIE_SECURE = True # Serves session cookie over https
+#CSRF_COOKIE_SECURE = True # Serves csrf tokens over https
+#SECURE_SSL_REDIRECT = True # Redirect from http to https
+
+# HSTS Settings
+#SECURE_HSTS_SECONDS = 31536000 # (1 Year) Client cannot connect from insecure connections
+#SECURE_HSTS_PRELOAD = True # Extends SECONDS
+#SECURE_HSTS_INCLUDE_SUBDOMAINS = True # Extends to subdomains

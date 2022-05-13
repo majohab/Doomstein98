@@ -27,4 +27,4 @@
 
     - name: Update apt and install docker
       apt: name={{ item }} state=latest update_cache=yes
-      loop: [ 'docker', 'docker-compose-plugin']
+      loop: [ 'docker-ce', 'docker-ce-cli', 'containerd.io', 'docker-compose-plugin' ]

@@ -2,45 +2,59 @@ version: '3.9'
 
 services:
   app:
-    build: 
-      context: .
+    image: app
     volumes:
-      - static_data:/vol/web
+      - ../static_data:/vol/web # Dont know if that works
       - ./App/db.sqlite3:/App/db.sqlite3
     env_file:
       - .env
     ports:
       - "587:587"
       - "25:25"
+      - "8000:8000"
+      - "8001:8001"
+    deploy:
+      replicas: 3
+      placement:
+        max_replicas_per_node: 1
     depends_on:
       - redis
 
   proxy:
-    build:
-      context: ./proxy
+    image: proxy
     volumes:
-      - static_data:/vol/static
-      - ./ssl_cert/conf/:/nginx/ssl
-      - ./ssl_cert/data/:/nginx/html/letsencrypt
+      - ../static_data:/vol/static
+      #- ../ssl_cert/conf/:/nginx/ssl
+      #- ../ssl_cert/data/:/nginx/html/letsencrypt
     ports:
-      - "8080:8080" # 80 for prod
-      #- "443:443" # uncomment in prod
+      - "80:80" #for prod
+      # - "443:443" # uncomment in prod
+    deploy:
+      replicas: 3
+      placement:
+        max_replicas_per_node: 1
     depends_on:
       - app
-      - certbot
+#      - certbot # uncomment for renewal
 
   redis:
     image: redis:latest
-    command: ["redis-server", "--bind", "redis", "--port", "6379"]
+    ports:
+      - "6379:6379"
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - "node.role==worker"
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
 
-  certbot:
-    image: certbot/certbot:latest
-    command: certonly --webroot --webroot-path /usr/share/nginx/html/letsencrypt --email doomstein98@gmail.com --agree-tos --no-eff-email -d doomstein98.server-welt.com
-    volumes: 
-      - ./ssl_cert/conf/:/etc/letsencrypt
-      - ./ssl_cert/logs/:/var/log/letsencrypt
-      - ./ssl_cert/data/:/nginx/html/letsencrypt
-
-
-volumes:
-  static_data:
+# uncomment for renewal
+#  certbot:
+#    image: certbot/certbot:latest
+#    command: certonly --force-renew --webroot --webroot-path /nginx/html/letsencrypt --email doomstein98@gmail.com --agree-tos --no-eff-email -d doomstein98.server-welt.com -->
+#    volumes:
+#      - ../ssl_cert/conf/:/etc/letsencrypt
+#      - ../ssl_cert/logs/:/var/log/letsencrypt
+#      - ../ssl_cert/data/:/nginx/html/letsencrypt

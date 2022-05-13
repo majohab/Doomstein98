@@ -7,20 +7,22 @@ COPY ./Pipfile /Pipfile
 
 # Install dependencies
 RUN apk update && apk upgrade
-RUN apk add --update --no-cache --virtual .tmp gcc libc-dev linux-headers libffi-dev libressl-dev g++
+RUN apk add --update --no-cache --virtual .tmp gcc libc-dev linux-headers libffi-dev libressl-dev g++ openssl ca-certificates ssmtp
 RUN apk add --update tk
 RUN pip install pipenv
-RUN pipenv install 
+RUN pipenv install
 RUN pipenv install --system
 
 # Copy app
-RUN mkdir /App
-COPY ./App /App
-WORKDIR /App
+RUN mkdir /DOOMSTEIN98
+COPY ./App /DOOMSTEIN98
+WORKDIR /DOOMSTEIN98
 
 # Copy scripts
 COPY ./scripts /scripts
 RUN chmod +x /scripts/*
+RUN dos2unix /scripts/entrypoint.sh
+# Last line: Shell can't find the file with its old format
 
 # Add static volume
 RUN mkdir -p /vol/web/static
@@ -33,9 +35,9 @@ RUN set -x ; \
 # Restrict permissions
 RUN chown -R www-data:www-data /vol
 RUN chmod -R 755 /vol/web
-RUN chown -R www-data:www-data /App
+RUN chown -R www-data:www-data /DOOMSTEIN98
 
 # Switch to user
 USER www-data
 
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["/scripts/entrypoint.sh"]
