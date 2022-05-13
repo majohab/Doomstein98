@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Lobby, Map, Weapon
+from .models import Lobby, Map, Weapon, UsedSetting, Setting, Statistic, WeaponStatistic
 from django.contrib.auth.models import Group
 
 # config
@@ -9,6 +9,10 @@ admin.site.site_header = 'DOOMSTEIN98'
 admin.site.register(Lobby)
 admin.site.register(Map)
 admin.site.register(Weapon)
+admin.site.register(Setting)
+admin.site.register(UsedSetting)
+admin.site.register(Statistic)
+admin.site.register(WeaponStatistic)
 admin.site.unregister(Group)
 
 class LobbyAdminConfig(admin.ModelAdmin):
@@ -19,8 +23,7 @@ class LobbyAdminConfig(admin.ModelAdmin):
     """
     search_fields = ('name', 'current_players')
     list_filter = ('map', 'max_players', 
-                   'current_players', 'game_runtime',
-                   'start_weapon')
+                   'current_players', 'game_runtime')
     ordering = ('name', 'current_players')
     list_display = ('name', 'map', 
                     'max_players', 'game_runtime')
@@ -28,7 +31,7 @@ class LobbyAdminConfig(admin.ModelAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('name', 'map', 'max_players', 'current_players', 'game_runtime', 'start_weapon')
+            'fields': ('name', 'map', 'max_players', 'current_players', 'game_runtime')
         }),
     )
 
@@ -42,14 +45,13 @@ class MapAdminConfig(admin.ModelAdmin):
         UserAdmin (Class): Admin config
     """
     search_fields = ('name', 'description')
-    list_filter = ('name', 'topology')
-    ordering = ('name', 'topology')
+    ordering = ('name', 'string')
     list_display = ('name', 'description')
     
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('name', 'topology', 'description')
+            'fields': ('name', 'string', 'description')
         }),
     )
 
@@ -62,20 +64,88 @@ class WeaponAdminConfig(admin.ModelAdmin):
     Args:
         UserAdmin (Class): Admin config
     """
-    search_fields = ('name', 'ammunition', 
+    search_fields = ('index','name', 'ammunition', 
                      'latency', 'damage', 
-                     'skin')
+                     )
     list_filter = ('ammunition', 'latency', 
                    'damage')
     ordering = ('name', 'damage')
-    list_display = ('name', 'ammunition', 'damage', 'skin')
+    list_display = ('index', 'name', 'ammunition', 'damage')
     
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('name', 'ammunition', 'latency''damage', 'skin')
+            'fields': ('index', 'name', 'ammunition', 'latency','damage')
         }),
     )
 
 admin.site.unregister(Weapon)
 admin.site.register(Weapon, WeaponAdminConfig)
+
+class StatisticAdminConfig(admin.ModelAdmin):
+    """Configuration for map table
+
+    Args:
+        UserAdmin (Class): Admin config
+    """
+    ordering = ('username', 'time')  
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username')
+        }),
+    )
+
+admin.site.unregister(Statistic)
+admin.site.register(Statistic, StatisticAdminConfig)
+
+class WeaponStatisticAdminConfig(admin.ModelAdmin):
+    """Configuration for map table
+
+    Args:
+        UserAdmin (Class): Admin config
+    """
+    ordering = ('name', 'time')  
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('name')
+        }),
+    )
+
+admin.site.unregister(WeaponStatistic)
+admin.site.register(WeaponStatistic, WeaponStatisticAdminConfig)
+
+class SettingAdminConfig(admin.ModelAdmin):
+    """Configuration for map table
+
+    Args:
+        UserAdmin (Class): Admin config
+    """
+    ordering = ('index', 'tick_rate')  
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('index')
+        }),
+    )
+
+admin.site.unregister(Setting)
+admin.site.register(Setting, SettingAdminConfig)
+
+class UsedSettingAdminConfig(admin.ModelAdmin):
+    """Configuration for map table
+
+    Args:
+        UserAdmin (Class): Admin config
+    """
+    ordering = ('index', 'setting')  
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('index')
+        }),
+    )
+
+admin.site.unregister(UsedSetting)
+admin.site.register(UsedSetting, UsedSettingAdminConfig)
