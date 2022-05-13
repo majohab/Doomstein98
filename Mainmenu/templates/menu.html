@@ -13,13 +13,17 @@
         </button>
     </a>
 
+    <a href="{% url 'settings' %}">
     <button class="button user">
         Settings
     </button>
+    </a>
 
+    <a href="{% url 'changepassword' %}">
     <button class="button user">
         {{ user.user_name }}
     </button>
+    </a>
     
     <div class="div lobbybox">
         {% for lobby in lobbies %}
@@ -69,6 +73,5 @@
             </button>
         </section>
     </form>
-
     
 {% endblock %}

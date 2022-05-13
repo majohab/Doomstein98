@@ -363,7 +363,7 @@ class Map:
 
     # Check if Object collides with Map
     # Returns True if Oject collide with wall in any way
-    def check_collision(self, coordinate : Coordinate, object, dir : float = 0, tolerance : float = 0.25) -> int | None:        
+    def check_collision(self, coordinate : Coordinate, object, dir : float = 0, tolerance : float = 0.25) -> int:      
         '''
         Checks collision for bullets.
         '''

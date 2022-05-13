@@ -57,3 +57,14 @@ def impressum(request):
         HTTP Response: Impressum page
     """
     return render(request, 'impressum.html', {})
+
+def settings(request):
+    """Renders HTML document and sends the response.
+
+    Args:
+        request (GET): Get settings page.
+
+    Returns:
+        HTTP Response: Settings page
+    """
+    return render(request, 'settings.html', {})

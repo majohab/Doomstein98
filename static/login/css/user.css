@@ -73,16 +73,17 @@ p.lobbytext{
     margin-top: 5px;
 }
 
-.field-row-stacked.register{
-    float: left;
+.field-row-stacked.user {
+    width: 250px
 }
 
-
-.window {
-    width: 90%;
-    height: 90%;
+.window.user {
+    max-width: 300px;
+    max-height: 400px;
     position: fixed;
-    top: 2.5%;
-    left: 5%;
-    resize: both;
+
+    top: 50%;
+    left: 50%;
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
   }

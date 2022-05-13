@@ -1,7 +1,6 @@
 
 import logging
 import json
-from msilib import type_key
 
 
 from asgiref.sync import  async_to_sync
