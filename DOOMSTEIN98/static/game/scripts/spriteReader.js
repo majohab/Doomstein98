@@ -306,17 +306,17 @@ class Font extends SpriteSet
 let wallSprite;
 let floorSprite;
 let ceilingSprite;
-
 let statusBarSprite;
 let weaponFrameSprite;
 
 let fireBulletSpriteSet;
 let opponentSpriteSet;
 let corpseSpriteSet;
+let ammoBoxesSpriteSet;
 
 let handgunSpriteSet;
+let chaingunSpriteSet;
 let shotgunSpriteSet;
-let machinegunSpriteSet;
 
 let font;
 
@@ -324,14 +324,13 @@ let font;
 async function spriteReader_init()
 {
     let inits = 0;
-    const initCount = 12;
+    const initCount = 13;
 
     spriteReader_getSpriteString('rrock10',                 (img) => { wallSprite = new Sprite(img, 0.5, 0.66); inits++; });
-    spriteReader_getSpriteString('floor5_1',                 (img) => { floorSprite = new Sprite(img, 1, 1); inits++; })
-    spriteReader_getSpriteString('ceil3_5',                 (img) => { ceilingSprite = new Sprite(img, 2, 2); inits++; })
-
-    spriteReader_getSpriteString('StatusBar_Doom_Own',  (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
-    spriteReader_getSpriteString('WeaponFrame',         (img) => { weaponFrameSprite = new Sprite(img, 1, 1); inits++ });
+    spriteReader_getSpriteString('floor5_1',                (img) => { floorSprite = new Sprite(img, 1, 1); inits++; });
+    spriteReader_getSpriteString('ceil3_5',                 (img) => { ceilingSprite = new Sprite(img, 2, 2); inits++; });
+    spriteReader_getSpriteString('StatusBar_Doom_Own',      (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
+    spriteReader_getSpriteString('WeaponFrame',             (img) => { weaponFrameSprite = new Sprite(img, 1, 1); inits++; });
 
     spriteReader_getSpriteString('FireBullet',            (img) =>
     {
@@ -469,6 +468,21 @@ async function spriteReader_init()
         inits++;
     });
 
+    spriteReader_getSpriteString('AmmoBoxes', (img) =>
+    {
+        ammoBoxesSpriteSet = new SpriteSet(img,
+            [
+                new Still('0', 0, 0, 17, 16),
+                new Still('1', 0, 16, 34, 13),
+                new Still('2', 0, 28, 14, 11)
+            ],
+            [
+            ],
+            false
+        );
+        inits++;
+    });
+
     
     spriteReader_getSpriteString('Shotgun', (img) =>
     {
@@ -501,7 +515,7 @@ async function spriteReader_init()
 
     spriteReader_getSpriteString('Chaingun', (img) =>
     {
-        machinegunSpriteSet = new SpriteSet(img,
+        chaingunSpriteSet = new SpriteSet(img,
             [
                 new Still('Idle', 0, 0, 110, 54)
             ],

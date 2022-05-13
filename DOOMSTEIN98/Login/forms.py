@@ -1,4 +1,4 @@
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm, AuthenticationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django import forms
 from .models import User
 
@@ -76,6 +76,3 @@ class UserLoginForm(AuthenticationForm):
             'type': "text",
         }) 
         self.fields['password'].label = 'PASSWORD'
-
-class UserCangeForm(UserChangeForm):
-    pass

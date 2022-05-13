@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Stylesheets -->
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'menu/css/settings.css' %}">
+
+    <h2 class="h2 lobby"><b>Lobby</b></h2>
+    
+    <a href="{% url 'logout' %}">
+        <button class="button user">
+        Sign out
+        </button>
+    </a>
+
+    <a href="{% url 'settings' %}">
+    <button class="button user">
+        Settings
+    </button>
+    </a>
+
+    <a href="{% url 'changepassword' %}">
+    <button class="button user">
+        {{ user.user_name }}
+    </button>
+    </a>
+    
+    <div class="div lobbybox">
+        {% for lobby in lobbies %}
+            <div class="div lobbyline">
+                <p class="p lobbytext"><b>{{ lobby.name }}</b> ({{ lobby.current_players }}/{{ lobby.max_players }})</p>
+                    <button class="button lobby">
+                        Join
+                    </button>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+
+
+    <div class="window settings">
+        <div class="title-bar">
+            <div class="title-bar-text">Settings</div>
+            <div class="title-bar-controls">
+            <a href="{% url 'menu' %}">
+                <button aria-label="Close"></button>
+            </a>
+        </div>
+    </div>
+    <div class="window-body">
+        <form method="post">
+            {% csrf_token %}
+
+                
+            
+        </form>    
+    </div>
+  </div>
+    
+{% endblock %}

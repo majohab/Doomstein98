@@ -11,7 +11,7 @@ class LobbyForm(ModelForm):
     """
     class Meta():
         model = Lobby
-        fields = ('name', 'map', 'max_players', 'game_runtime')
+        fields = ('name', 'map', 'max_players', 'win_score', 'game_runtime')
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -22,6 +22,9 @@ class LobbyForm(ModelForm):
             'class': "formfield"
         }) 
         self.fields['max_players'].widget.attrs.update({
+            'class': "formfield"
+        }) 
+        self.fields['win_score'].widget.attrs.update({
             'class': "formfield"
         }) 
         self.fields['game_runtime'].widget.attrs.update({

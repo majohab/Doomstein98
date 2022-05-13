@@ -35,7 +35,6 @@ def menu(request):
     return render(request, "menu.html",
                   {'form': LobbyForm, 'lobbies': Lobby.objects.all()})
 
-@login_required(login_url='/accounts/login/')
 def play(request):
     """Renders HTML document and sends the response.
 
@@ -46,7 +45,8 @@ def play(request):
         HTTP Response: Start page
     """
     return render(request, 'play.html', {})
- 
+
+@login_required(login_url='/accounts/login/')
 def impressum(request):
     """Renders HTML document and sends the response.
 
@@ -57,3 +57,15 @@ def impressum(request):
         HTTP Response: Impressum page
     """
     return render(request, 'impressum.html', {})
+
+@login_required(login_url='/accounts/login/')
+def settings(request):
+    """Renders HTML document and sends the response.
+
+    Args:
+        request (GET): Get settings page.
+
+    Returns:
+        HTTP Response: Settings page
+    """
+    return render(request, 'settings.html', {})
