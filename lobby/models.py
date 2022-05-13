@@ -168,6 +168,7 @@ class Setting(models.Model):
     hit_animation_duration          = models.SmallIntegerField(default=1,   help_text="How many seconds are needed to display an animation for dying")         
     died_animation_duration         = models.SmallIntegerField(default=10,  help_text="How many seconds are needed to display an animation for getting hit")
 
+    change_weapon_invalid           = models.SmallIntegerField(default=.01, help_text="How many seconds is it not allowed to change the weapon in order to prevent errors")
     change_weapon_delay             = models.FloatField       (default=1,   help_text="How many seconds does the change of weapon take to shoot again")
     spawn_lock_time                 = models.FloatField       (default=10,  help_text="How many seconds is a spawn locked after having been used or having been next to player")          
     revive_waiting_time             = models.SmallIntegerField(default=10,  help_text="How many seconds has a player to wait to respawn")          

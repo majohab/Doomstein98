@@ -922,7 +922,14 @@ class Player:
             idx (int): to what weapon should the player change
         """
                 
+        weaponDelay = round( self.engine.s.change_weapon_delay/ self.engine.s.tick_rate)
+
         print(F"Weapon was changed to: {idx}")
+
+        # if the change came too often
+        if(self.changeWeaponDelay >= weaponDelay - round( self.engine.s.change_weapon_invalid/ self.engine.s.tick_rate)):
+            print("the change of weapon was too fast")
+            return
         
         # if the idx is too high then modulo the length of the weapons
         self.currentWeaponIdx = idx % len(self.weapons)
@@ -933,7 +940,7 @@ class Player:
         self.justShot          = -1
 
         # Wait 1 seconds to be able to shoot again
-        self.changeWeaponDelay = round( self.engine.s.change_weapon_delay/ self.engine.s.tick_rate)
+        self.changeWeaponDelay = weaponDelay
        
     def get_hit         (self, bullet : Bullet, mode : int)  -> None:
         """
