@@ -11,6 +11,8 @@ from django.conf import settings
 from threading import Thread
 from .utils import generate_token
 from .forms import RegistrationForm, UserLoginForm
+from django.contrib.auth import update_session_auth_hash
+
 from .models import User
 
 # Create your views here.
@@ -161,3 +163,16 @@ def privacy(request):
         HTTP Response: Privacy page
     """
     return render(request, 'privacy.html', {})
+
+def user(request):
+
+    """Renders HTML document and sends the response.
+
+    Args:
+        request (GET): Get Change Password page.
+
+    Returns:
+        HTTP Response: User page
+    """
+   
+    return render(request, "user.html", {})

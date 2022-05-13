@@ -3,39 +3,68 @@
 {% block content %}
 <!-- Stylesheets -->
 {% load static %}
-<link rel="stylesheet" type="text/css" href="{% static 'login/css/login.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'login/css/user.css' %}">
 
-    <h2 class="h1 start">
-        DOOMSTEIN98
-    </h2>
+    <h2 class="h2 lobby"><b>Lobby</b></h2>
+    
+    <a href="{% url 'logout' %}">
+        <button class="button user">
+        Sign out
+        </button>
+    </a>
 
-    <div class="window login" style="width: 300px">
+    <a href="{% url 'settings' %}">
+        <button class="button user">
+            Settings
+        </button>
+    </a>
+
+    <a href="{% url 'changepassword' %}">
+        <button class="button user">
+            {{ user.user_name }}
+        </button>
+    </a>
+
+    <div class="div lobbybox">
+        {% for lobby in lobbies %}
+            <div class="div lobbyline">
+                <p class="p lobbytext"><b>{{ lobby.name }}</b> ({{ lobby.current_players }}/{{ lobby.max_players }})</p>
+                    <button class="button lobby">
+                        Join
+                    </button>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <div class="window user">
         <div class="title-bar">
-            <div class="title-bar-text">Login</div>
+            <div class="title-bar-text">{{ user.user_name }}</div>
             <div class="title-bar-controls">
-                <a href="{% url 'play' %}">
+                <a href="{% url 'menu' %}">
                     <button aria-label="Close"></button>
                 </a>
             </div>
         </div>
+   
         <div class="window-body">
             <form method="post">
                 {% csrf_token %}
-
+    
                 {% for field in form %}
-                    <div class="field-row-stacked register" style="width: 200px">
+                    <div class="field-row-stacked register">
                         <label><strong>{{ field.label_tag }}</strong></label>
                         {{ field }}
                         {% if field.help_text %}
                             <span class="helptext">{{ field.help_text }}</span>
                         {% endif %}
                     </div>
-
+    
                     {% for error in field.errors %}
                         <span class="error">{{ field.help_text }}</span>
                     {% endfor %}
                 {% endfor %}
-                
+    
                 {% if messages %}
                 {% for message in messages %}
                         <span class="error">{{ message }}</span>
@@ -43,13 +72,12 @@
                 {% else %}
                 <br>
                 {% endif %}
-
+    
                 <section class="field-row" style="justify-content: flex-end">
-                    <a href="{% url 'register' %}">Not a user? Register here!</a>
-                    <button type="submit">OK</button>
+                    <button type="submit">Save changes</button>
                 </section>
-                
             </form>    
         </div>
-  </div>
+    
+    </div>
 {% endblock %}
