@@ -1367,12 +1367,14 @@ class State:
             Mapping[str, Any]: cotains the information
         """
         
+        #print(math.ceil(self.engine.countdown*self.engine.s.tick_rate))
+
         return { 
             player_key      : {p.name: p.render() for p in self.players},
             bullet_key      : [b.render() for b in self.bullets],
             corpses_key     : self.corpses,
             ammo_key        : [ammunitionPack.render() for ammunitionPack in self.ammunitionPacks.values() if ammunitionPack.curr_delay == 0],
-            countdown_key   : self.engine.countdown,
+            countdown_key   : math.ceil(self.engine.countdown*self.engine.s.tick_rate),
             init_key  : {
                 map_key         : self.map.render(),
                 hit_anim_key    : round(self.engine.s.hit_animation_duration/self.engine.s.tick_rate),
