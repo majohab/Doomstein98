@@ -64,7 +64,7 @@ class Lobby(models.Model):
                                                             unique=True, 
                                                             error_messages={"invalid":"No Spaces allowed"})
     map             = models.ForeignKey                 (Map, on_delete=models.CASCADE)
-    mode            = models.PositiveSmallIntegerField  (default=0)
+    mode            = models.PositiveSmallIntegerField  (default=0, validators=[validator.MaxValueValidator(1,"Since there are only two gamemodes")])
     max_players     = models.PositiveSmallIntegerField  (default=4, validators=[validator.MinValueValidator(2,"To play reasonably, you should play at least with two player"), validator.MaxValueValidator(MAX_PLAYERS, "The Server can not handle more players")])
     current_players = models.ManyToManyField            (User)
     game_runtime    = models.PositiveSmallIntegerField  (default=10,validators=[validator.MinValueValidator(2), validator.MaxValueValidator(60)])
@@ -145,6 +145,8 @@ class Setting(models.Model):
     index                           = models.SmallIntegerField(default=0, unique=True)
     
     tick_rate                       = models.FloatField       (default=0.017) 
+
+    countdown_start_game            = models.SmallIntegerField(default=3)
     
     # Get calculated as divisor
     # TICK_RATE/value

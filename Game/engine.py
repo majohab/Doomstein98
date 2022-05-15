@@ -26,6 +26,7 @@ mov_b_anim_key          = 'b'
 bullet_key              = 'b'
 corpses_key             = 'c'
 click_key               = 'c'
+countdown_key           = 'd'
 dead_key                = 'd'
 died_anim_key           = 'd'
 duration_key            = 'd'
@@ -1371,6 +1372,7 @@ class State:
             bullet_key      : [b.render() for b in self.bullets],
             corpses_key     : self.corpses,
             ammo_key        : [ammunitionPack.render() for ammunitionPack in self.ammunitionPacks.values() if ammunitionPack.curr_delay == 0],
+            countdown_key   : self.engine.countdown,
             init_key  : {
                 map_key         : self.map.render(),
                 hit_anim_key    : round(self.engine.s.hit_animation_duration/self.engine.s.tick_rate),
@@ -1379,6 +1381,7 @@ class State:
                 mov_b_anim_key  : self.engine.s.move_animation_bullet_modulo,
                 mov_p_anim_key  : self.engine.s.move_animation_player_modulo,
             }
+
         }
 
 class GameEngine(threading.Thread):
@@ -1427,6 +1430,9 @@ class GameEngine(threading.Thread):
 
         # Did the game started?
         self.startFlag = False
+
+        # Countdown in seconds to start the game when condition is reached
+        self.countdown = round(self.s.countdown_start_game/self.s.tick_rate)
 
         # Should the game stop?
         self.stopFlag = False
@@ -1492,25 +1498,23 @@ class GameEngine(threading.Thread):
         # infinite loop
         while True:
 
-            if(self.startFlag):
+            start = time.time()
 
-                start = time.time()
+            # After each tick update the current status of the game
+            self.tick()
 
-                # After each tick update the current status of the game
-                self.tick()
+            # Broadcast the current Status to all players in game
+            self.broadcast_state()
 
-                # Broadcast the current Status to all players in game
-                self.broadcast_state()
+            # Sleep for a specific time, in which the game will calculate every new status
+            try:
+                time.sleep( self.s.tick_rate - (time.time() - start))
+            except ValueError:
+                # indication for not computing fast enough to reach the Tick-Rate
+                #print("1", end="")
+                pass
 
-                # Sleep for a specific time, in which the game will calculate every new status
-                try:
-                    time.sleep( self.s.tick_rate - (time.time() - start))
-                except ValueError:
-                    # indication for not computing fast enough to reach the Tick-Rate
-                    #print("1", end="")
-                    pass
-
-            elif(self.stopFlag):
+            if(self.stopFlag):
                 # if the worker wants to stop the thread
                 # save all player's statistic 
                 for player in self.playerQueue + self.state.players :
@@ -1543,6 +1547,47 @@ class GameEngine(threading.Thread):
         """ 
         Function in which every tick is described. It contains the 
         """
+
+        # gather all events which have been changed
+        with self.eventLock:
+            events = self.eventChanges.copy()
+            self.eventChanges.clear()
+
+        # if there are players in game
+        if self.state.players:
+            self.process_players(events)
+
+        # if the game has started, then calculate the game fully
+        if(self.startFlag):
+
+            # increase the ticknum
+            self.tickNum += 1         
+
+            # if time limit was reached
+            if(self.tickNum >= self.endTime):
+                
+                self.finish_game()
+
+            # handle all current bullets
+            self.process_bullets()
+            
+            # handle all hits by bullets
+            self.process_hits()
+
+            # handle all corpses on the map
+            self.process_corpses()
+
+            # handle all spawns on the map
+            self.process_spawns()
+
+            # handle all ammunitionPacks
+            self.process_ammunitionPack()
+
+        # add player to game if needed
+        self.process_new_players()
+
+    """
+    def tick                        (self)                                      -> None:
 
         # increase the ticknum
         self.tickNum += 1         
@@ -1614,6 +1659,8 @@ class GameEngine(threading.Thread):
                 spawns {spawns}
             ''')
 
+    """
+
     def process_players             (self, events : dict)                       -> None:
         """
         Handle the actions of a player and check the winning conditions
@@ -1624,7 +1671,7 @@ class GameEngine(threading.Thread):
         """
 
         # if game is about last man standing and only one Player remained
-        if self.gameMode == 1 and len(self.state.players) == 1:
+        if(self.startFlag and self.gameMode == 1 and len(self.state.players) == 1):
 
             print(F"Last Man Standing was won because only one player {self.state.players[0].name} left")
             
@@ -1633,6 +1680,23 @@ class GameEngine(threading.Thread):
             
             # Declare it as a win
             self.win()
+
+        # if enough players are in the game to start the game
+        elif(not self.startFlag and len(self.state.players) == self.maxPlayers):
+            
+            print(F"Countdown: {self.countdown}")
+
+            # if there is still a countdown going
+            if(self.countdown):
+
+                #reduce the countdown by one
+                self.countdown -= 1
+
+            # else if the game has been reduced till zero
+            else:
+
+                # start the game fully
+                self.startFlag = True
 
         for idx, player in enumerate(self.state.players):
 
@@ -1724,7 +1788,8 @@ class GameEngine(threading.Thread):
                 # reduce the latencies of the player by one
                 player.update()
 
-                if(event[x_coordinate_key] != 0 or event[y_coordinate_key] != 0):
+                # if the game started and the player wants to move
+                if(self.startFlag and (event[x_coordinate_key] != 0 or event[y_coordinate_key] != 0)):
                     player.move(event[x_coordinate_key], event[y_coordinate_key])
                     #print(F"x: {player.currentPosition.x}, y: {player.currentPosition.y}")
                 else:
@@ -1734,8 +1799,8 @@ class GameEngine(threading.Thread):
                     # set the movement animation index to default
                     player.moveAnim = -1
 
-                # if the player has clicked the mouse button
-                if(event[click_key]):
+                # if game has started and the player has clicked the mouse button
+                if(self.startFlag and event[click_key]):
 
                     # if the weapon is ready to shoot
                     if(player.changeWeaponDelay == 0):
@@ -1843,13 +1908,6 @@ class GameEngine(threading.Thread):
                                                 speed           = self.s.player_speed,
                                                 rotation_speed  = self.s.rotation_speed,       
                                                 ))
-
-                # TODO: Bedingung für den Start des Spiels ändern
-                # if the game has not been started yet and enough player have joined the game
-                if(not self.startFlag and len(self.playerQueue) > 0):
-                    
-                    # start the game
-                    self.startFlag = True
 
     def process_new_players         (self)                                      -> None:
         """

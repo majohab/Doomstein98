@@ -498,7 +498,7 @@ class GameConsumer(SyncConsumer):
             # if the game is some different game, so that player is going to log out from his old game
             else:
                 # if the game exists he wants to join then replace the current status 
-                self.replace_lobby(user, lobbyName, lobby)
+                self.replace_lobby(user, lobby)
 
         # if he is not already in a game
         except KeyError:
@@ -602,11 +602,13 @@ class GameConsumer(SyncConsumer):
         Args:
             lobbyName (str): lobby name
         """
-        
-        print(F"Lobby {lobbyName} has been deleted")
 
         # Find and delete the lobby
-        Lobby.objects.filter(name=lobbyName).first().delete()
+        try:
+            Lobby.objects.filter(name=lobbyName).first().delete()
+            print(F"Lobby {lobbyName} has been deleted successfully")
+        except:
+            pass
 
         # Stop the thread by ending its tasks
         #self.engines[groupName].running = False
