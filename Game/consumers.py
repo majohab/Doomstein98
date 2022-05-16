@@ -1,16 +1,17 @@
 
 import json
-from typing import Any, Tuple
-from asgiref.sync               import async_to_sync, sync_to_async
+from typing                     import Any, Tuple
+from copy                       import copy
+from asgiref.sync               import async_to_sync
 from channels.consumer          import SyncConsumer
 from channels.db                import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers            import get_channel_layer
-from Login.models import User
+from Login.models               import User
 from lobby.models               import Lobby
 from lobby.models               import Setting as SettingDB
 from lobby.models               import UsedSetting as UsedSettingDB
-from .engine import GameEngine
+from .engine                    import GameEngine
 
 #Key Constants
 channel_key    = 'c'
@@ -357,7 +358,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     async def game_event    (self, event : dict[str : Any])         -> None:
         
         # Extract message for WebSocket
-        event = event[state_key]
+        event = copy(event[state_key])
 
         # if own name appears in event
         if  (event[killer_key] == self.userName):
@@ -380,13 +381,19 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         '''
         
         '''
+        event = copy(event)
+        
         event[type_key] = loose_key #type loose
+
+        event.pop("type")
 
         for player in event[player_key]: #player
 
-            if player[name_key] == self.userName:  #player's name
-
+            if player[name_key] == self.userName and player[win_key]:  #player's name
+                #print(F"{self.userName} Winner was found")
                 event[type_key] = win_key
+
+        #print(F"\n{self.userName}\n{event}\n")
 
         await self.send(json.dumps(event))
 
@@ -611,10 +618,11 @@ class GameConsumer(SyncConsumer):
             pass
 
         # Stop the thread by ending its tasks
-        #self.engines[groupName].running = False
-        self.engines[lobbyName].startFlag = False
-        self.engines.pop(lobbyName).stopFlag = True
-
+        try:
+            self.engines[lobbyName].startFlag = False
+            self.engines.pop(lobbyName).stopFlag = True
+        except:
+            print(F"No lobby {lobbyName} was found to delete")
         # remove all player from the lobby list
         self.lobbies = {key:lob for key, lob in self.lobbies.items() if lob != lobbyName}
         

@@ -1705,6 +1705,7 @@ class GameEngine(threading.Thread):
             #if player did not respond for one second or more
             if player.delayedTick >= round( self.s.player_delay_tolerance/ self.s.tick_rate):
 
+                # remove player temporarily without countdown with disconnected flag
                 player.remove_from_game(-2)
 
                 print(F"Player {player.name} did not respond for one second or more! So he was removed temporarily from GameEngine!")
@@ -1969,7 +1970,8 @@ class GameEngine(threading.Thread):
         if(disconnect > 0 and not self.state.players and disconnect == len(self.playerQueue)):
             print(F"Lobby will be closed since nobody connected in game")
             
-            # Stop doing somethin
+            # Stop doing something
+            self.stopFlag  = True
             self.startFlag = False
             
             # Send the essential information for validate the winner of the game
@@ -2001,6 +2003,7 @@ class GameEngine(threading.Thread):
 
         # Stop doing something
         self.startFlag = False
+        self.stopFlag  = True
 
         # Send the essential information for validate the winner of the game
         async_to_sync(self.channelLayer.send)(
