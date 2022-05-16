@@ -95,7 +95,7 @@ function socketHandler_init()
 
         let data = JSON.parse(e.data)
         
-        if (data[type_key] == update_key)
+        if (data[type_key] == update_key && gameState < 2)
         {
             if (mapString == null)
             {
