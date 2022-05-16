@@ -101,7 +101,7 @@ function socketHandler_init()
             {
                 function initValueIfReceived(key, func)
                 {
-                    if (data[init_key][key] != null)
+                    if (data[init_key] != null && data[init_key][key] != null)
                         func(data[init_key][key]);
                     else
                         console.log('Cannot initialize init value for key ' + key + ': Value was not received');
@@ -114,7 +114,6 @@ function socketHandler_init()
                 initValueIfReceived(mov_b_anim_key, (data) => bulletFlyingAnimationTime = data);
                 initValueIfReceived(mov_p_anim_key, (data) => playerWalkingAnimationTime = data);
             }
-
 
             playerX     = data[player_key][userName][x_coordinate_key];
             playerY     = data[player_key][userName][y_coordinate_key];
@@ -136,8 +135,10 @@ function socketHandler_init()
             health      = data[player_key][userName][health_key];
             currWeapon  = data[player_key][userName][weapon_key];
             weaponAnimTime = data[player_key][userName][justShot_animation];
+            waiting_countdown_value = data[duration_key];
 
-            if (data[corpses_key][userName]) console.log(data[corpses_key][userName][duration_key]);
+            gameState = 1;
+            if (waiting_countdown_value > 0) gameState = 0;
 
             let mouseDeltaX = lastRecordedMouseX - lastMouseX;
             lastMouseX = lastRecordedMouseX;
@@ -227,17 +228,17 @@ function socketHandler_init()
             //console.log(data[player_key][userName][justShot_animation]);
         }else if(data[type_key] == message_key){
             //TODO: Was soll passieren wenn er eine Nachricht erhält: Lobby kann nicht gefunden werden
-            console.log(data[message_key])
+            console.log(data[message_key]);
             window.location.replace(window.location.href.replace(/game([\s\S]*)$/ ,'menu/'));
         }else if(data[type_key] == event_key){
             //TODO: Was soll passieren, wenn jemand auf dem Spielfeld stirbt
-            console.log(data)
+            console.log(data);
         }else if(data[type_key] == win_key){
-            //TODO: Was soll beim Gewinnen passieren
-            console.log(data)
+            gameState = 3;
+            console.log(data);
         }else if(data[type_key] == loose_key){
-            //TODO: Was soll beim Verlieren getan werden
-            console.log(data)
+            gameState = 4;
+            console.log(data);
         }
     };
 

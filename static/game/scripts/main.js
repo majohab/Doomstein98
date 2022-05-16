@@ -12,6 +12,7 @@ let mapString;
 let map_numbers;
 let mapWidth;    // 87
 let mapHeight;   // 38
+let gameState = 0; // 0: Not started; 1: Playing; 2: Dead; 3: Won; 4: Lost
 
 // Received from backend each frame
 let playerX;
@@ -21,6 +22,7 @@ let opponents;
 let currWeapon;
 let health;
 let ammo;
+let waiting_countdown_value;
 let weaponAnimTime;
 
 async function init()
@@ -43,10 +45,13 @@ async function init()
 
 function initRuntimeVariables()
 {
+    gameStarted = false;
+
     ammo = 200;
     health = 200;
     currWeapon = 2;
     weaponAnimTime = -1;
+    waiting_countdown_value = 3
     playerX = playerY = playerAngle = 0;
 
     lastFrameTime = Date.now();
@@ -65,6 +70,20 @@ function getAmmoText(overrideValue)
     let val = ammo;
     if (overrideValue != null) val = overrideValue;
     return font.getTextImg(val.toString()/*.padStart(3, '0')*/);
+}
+
+function getWaitingCountdownText(overrideValue)
+{
+    let val = waiting_countdown_value;
+    if (overrideValue != null) val = overrideValue;
+    return font.getTextImg(val.toString());
+}
+
+function getWaitingInfoText(overrideValue)
+{
+    let val = rec_opponents.length + 1;
+    if (overrideValue != null) val = overrideValue
+    return font.getTextImg('waiting for more players... (' + val + ')');
 }
 
 function onMapReceived(width, map)

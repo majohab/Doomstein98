@@ -320,17 +320,22 @@ let shotgunSpriteSet;
 
 let font;
 
+let victoryScreenSprite;
+let defeatScreenSprite;
+
 
 async function spriteReader_init()
 {
     let inits = 0;
-    const initCount = 13;
+    const initCount = 15;
 
     spriteReader_getSpriteString('rrock10',                 (img) => { wallSprite = new Sprite(img, 0.5, 0.66); inits++; });
     spriteReader_getSpriteString('floor5_1',                (img) => { floorSprite = new Sprite(img, 1, 1); inits++; });
     spriteReader_getSpriteString('ceil3_5',                 (img) => { ceilingSprite = new Sprite(img, 2, 2); inits++; });
     spriteReader_getSpriteString('StatusBar_Doom_Own',      (img) => { statusBarSprite = new Sprite(img, 1, 1); inits++; });
     spriteReader_getSpriteString('WeaponFrame',             (img) => { weaponFrameSprite = new Sprite(img, 1, 1); inits++; });
+    spriteReader_getSpriteString('VictoryScreen',           (img) => { victoryScreenSprite = new Sprite(img, 1, 1); inits++; });
+    spriteReader_getSpriteString('DefeatScreen',            (img) => { defeatScreenSprite = new Sprite(img, 1, 1); inits++; })
 
     spriteReader_getSpriteString('FireBullet',            (img) =>
     {
@@ -585,6 +590,11 @@ async function spriteReader_init()
                 new Still(' ', 1, 1, 9, 15),
                 new Still('!', 11, 1, 5, 15),
                 new Still('%', 53, 1, 13, 15),
+                new Still('.', 146, 1, 5, 15),
+                new Still('(', 84, 1, 9, 15),
+                new Still(')', 94, 1, 9, 15),
+                new Still('{', 1, 161, 10, 15),
+                new Still('}', 20, 161, 10, 15),
                 new Still('0', 1, 17, 15, 15),
                 new Still('1', 17, 17, 8, 15),
                 new Still('2', 26, 17, 11, 15),
@@ -594,7 +604,33 @@ async function spriteReader_init()
                 new Still('6', 78, 17, 13, 15),
                 new Still('7', 92, 17, 14, 15),
                 new Still('8', 107, 17, 12, 15),
-                new Still('9', 120, 17, 13, 15)
+                new Still('9', 120, 17, 13, 15),
+                new Still('a', 1, 113, 13, 15),
+                new Still('b', 15, 113, 11, 15),
+                new Still('c', 27, 113, 11, 15),
+                new Still('d', 39, 113, 12, 15),
+                new Still('e', 52, 113, 10, 15),
+                new Still('f', 63, 113, 11, 15),
+                new Still('g', 75, 113, 11, 15),
+                new Still('h', 1, 129, 11, 15),
+                new Still('i', 13, 129, 9, 15),
+                new Still('j', 23, 129, 11, 15),
+                new Still('k', 35, 129, 12, 15),
+                new Still('l', 48, 129, 10, 15),
+                new Still('m', 59, 129, 14, 15),
+                new Still('n', 74, 129, 12, 15),
+                new Still('o', 87, 129, 12, 15),
+                new Still('p', 100, 129, 10, 15),
+                new Still('q', 111, 129, 12, 15),
+                new Still('r', 1, 145, 10, 15),
+                new Still('s', 12, 145, 13, 15),
+                new Still('t', 26, 145, 13, 15),
+                new Still('u', 40, 145, 11, 15),
+                new Still('v', 52, 145, 13, 15),
+                new Still('w', 66, 145, 13, 15),
+                new Still('x', 80, 145, 11, 15),
+                new Still('y', 92, 145, 11, 15),
+                new Still('z', 104, 145, 12, 15),
                 //new Subsprite(''),
             ],
             [],
