@@ -1705,6 +1705,7 @@ class GameEngine(threading.Thread):
             #if player did not respond for one second or more
             if player.delayedTick >= round( self.s.player_delay_tolerance/ self.s.tick_rate):
 
+                # remove player temporarily without countdown with disconnected flag
                 player.remove_from_game(-2)
 
                 print(F"Player {player.name} did not respond for one second or more! So he was removed temporarily from GameEngine!")

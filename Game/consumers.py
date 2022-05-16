@@ -1,16 +1,17 @@
 
 import json
-from typing import Any, Tuple
-from asgiref.sync               import async_to_sync, sync_to_async
+from typing                     import Any, Tuple
+from copy                       import copy
+from asgiref.sync               import async_to_sync
 from channels.consumer          import SyncConsumer
 from channels.db                import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers            import get_channel_layer
-from Login.models import User
+from Login.models               import User
 from lobby.models               import Lobby
 from lobby.models               import Setting as SettingDB
 from lobby.models               import UsedSetting as UsedSettingDB
-from .engine import GameEngine
+from .engine                    import GameEngine
 
 #Key Constants
 channel_key    = 'c'
@@ -357,7 +358,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
     async def game_event    (self, event : dict[str : Any])         -> None:
         
         # Extract message for WebSocket
-        event = event[state_key]
+        event = copy(event[state_key])
 
         # if own name appears in event
         if  (event[killer_key] == self.userName):
