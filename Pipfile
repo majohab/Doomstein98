@@ -7,12 +7,12 @@ name = "pypi"
 channels = "*"
 django = "*"
 six = "*"
-django-dotenv = "*"
 django-debug-toolbar = "*"
 numpy = "*"
 daphne = "*"
 django-redis = "*"
 channels-redis = "*"
+uWSGI = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"

@@ -64,7 +64,7 @@ class Lobby(models.Model):
                                                             unique=True, 
                                                             error_messages={"invalid":"No Spaces allowed"})
     map             = models.ForeignKey                 (Map, on_delete=models.CASCADE)
-    mode            = models.PositiveSmallIntegerField  (default=0)
+    mode            = models.PositiveSmallIntegerField  (default=0, validators=[validator.MaxValueValidator(1,"Since there are only two gamemodes")])
     max_players     = models.PositiveSmallIntegerField  (default=4, validators=[validator.MinValueValidator(2,"To play reasonably, you should play at least with two player"), validator.MaxValueValidator(MAX_PLAYERS, "The Server can not handle more players")])
     current_players = models.ManyToManyField            (User)
     game_runtime    = models.PositiveSmallIntegerField  (default=10,validators=[validator.MinValueValidator(2), validator.MaxValueValidator(60)])
@@ -145,6 +145,8 @@ class Setting(models.Model):
     index                           = models.SmallIntegerField(default=0, unique=True)
     
     tick_rate                       = models.FloatField       (default=0.017) 
+
+    countdown_start_game            = models.SmallIntegerField(default=3)
     
     # Get calculated as divisor
     # TICK_RATE/value
@@ -168,6 +170,7 @@ class Setting(models.Model):
     hit_animation_duration          = models.SmallIntegerField(default=1,   help_text="How many seconds are needed to display an animation for dying")         
     died_animation_duration         = models.SmallIntegerField(default=10,  help_text="How many seconds are needed to display an animation for getting hit")
 
+    change_weapon_invalid           = models.SmallIntegerField(default=.01, help_text="How many seconds is it not allowed to change the weapon in order to prevent errors")
     change_weapon_delay             = models.FloatField       (default=1,   help_text="How many seconds does the change of weapon take to shoot again")
     spawn_lock_time                 = models.FloatField       (default=10,  help_text="How many seconds is a spawn locked after having been used or having been next to player")          
     revive_waiting_time             = models.SmallIntegerField(default=10,  help_text="How many seconds has a player to wait to respawn")          
