@@ -381,13 +381,19 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         '''
         
         '''
+        event = copy(event)
+        
         event[type_key] = loose_key #type loose
+
+        event.pop("type")
 
         for player in event[player_key]: #player
 
-            if player[name_key] == self.userName:  #player's name
-
+            if player[name_key] == self.userName and player[win_key]:  #player's name
+                #print(F"{self.userName} Winner was found")
                 event[type_key] = win_key
+
+        #print(F"\n{self.userName}\n{event}\n")
 
         await self.send(json.dumps(event))
 
@@ -612,10 +618,11 @@ class GameConsumer(SyncConsumer):
             pass
 
         # Stop the thread by ending its tasks
-        #self.engines[groupName].running = False
-        self.engines[lobbyName].startFlag = False
-        self.engines.pop(lobbyName).stopFlag = True
-
+        try:
+            self.engines[lobbyName].startFlag = False
+            self.engines.pop(lobbyName).stopFlag = True
+        except:
+            print(F"No lobby {lobbyName} was found to delete")
         # remove all player from the lobby list
         self.lobbies = {key:lob for key, lob in self.lobbies.items() if lob != lobbyName}
         
