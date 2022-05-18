@@ -86,6 +86,13 @@ function getWaitingInfoText(overrideValue)
     return font.getTextImg('waiting for more players... (' + val + ')');
 }
 
+function getDeadScreenText(overrideValue)
+{
+    let val = currDeadTime / 60;
+    if (overrideValue != null) val = overrideValue;
+    return font.getTextImg('respawning in ' + val.toFixed(1));
+}
+
 function onMapReceived(width, map)
 {
     mapString = map;

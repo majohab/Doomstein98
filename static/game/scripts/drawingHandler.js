@@ -44,6 +44,9 @@ const waiting_countdown_pivotY = 0.5;
 const waiting_info_pivotX = 0.5;
 const waiting_info_pivotY = 0.5;
 
+const deadScreen_pivotX = 0.5;
+const deadScreen_pivotY = 0.5;
+
 const endscreen_pivotX = 0;
 const endscreen_pivotY = 0;
 const endscreen_startX = 0;
@@ -104,6 +107,11 @@ let waiting_info_startY;
 let waiting_info_scaleX;
 let waiting_info_scaleY;
 
+let deadScreen_startX;
+let deadScreen_startY;
+let deadScreen_scaleX;
+let deadScreen_scaleY;
+
 //let endscreen_scaleX; Calculated in drawing function (depends on the screen we want to draw)
 //let endscreen_scaleY;
 
@@ -146,6 +154,10 @@ function drawingHandler_init()
     waiting_info_startX = screenWidth * 0.5;
     waiting_info_startY = screenHeight * 0.3;
     waiting_info_scaleX = waiting_info_scaleY = screenHeight / 300;
+
+    deadScreen_startX = screenWidth * 0.5;
+    deadScreen_startY = screenHeight * 0.45;
+    deadScreen_scaleX = deadScreen_scaleY = screenHeight / 250;
 
 
     canvas = document.createElement('canvas');
@@ -250,6 +262,7 @@ function drawingHandler_initKernel()
     pushImage(weaponFrameSprite.width, weaponFrameSprite.height);
     let waiting_countdown_text = getWaitingCountdownText(3); pushImage(waiting_countdown_text[0].length, waiting_countdown_text.length);
     let waiting_info_text = getWaitingInfoText(99); pushImage(waiting_info_text[0].length, waiting_info_text.length);
+    let deadScreen_text = getDeadScreenText(10); pushImage(deadScreen_text[0].length, deadScreen_text.length);
     pushImage(victoryScreenSprite.width, victoryScreenSprite.height); // Note: Victory and Defeat Screen have the same bounds
     function pushImage(width, height) // biggestImage: image with the highest width * height (pixelCount) expected for a particular UI element.
     {
@@ -347,6 +360,10 @@ function drawingHandler_draw()
     {
         addImage(getWaitingCountdownText(), waiting_countdown_startX, waiting_countdown_startY, waiting_countdown_pivotX, waiting_countdown_pivotY, waiting_countdown_scaleX, waiting_countdown_scaleY);
         addImage(getWaitingInfoText(), waiting_info_startX, waiting_info_startY, waiting_info_pivotX, waiting_info_pivotY, waiting_info_scaleX, waiting_info_scaleY);
+    }
+    else if (gameState == 2)
+    {
+        addImage(getDeadScreenText(), deadScreen_startX, deadScreen_startY, deadScreen_pivotX, deadScreen_pivotY, deadScreen_scaleX, deadScreen_scaleY);
     }
     else if (gameState == 3)
     {
