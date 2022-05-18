@@ -96,17 +96,9 @@ function socketHandler_init()
     webSocket.onmessage = (e) => {
 
         let data = JSON.parse(e.data)
-        
-        console.log(data);
-        if (!data.hasOwnProperty[type_key])
-        {
-            gameState = 2;
-            currDeadTime = data['s'];
-        }
 
         if (data[type_key] == update_key && gameState < 3)
         {
-            console.log('c');
 
             if (mapString == null)
             {
@@ -138,15 +130,22 @@ function socketHandler_init()
             rec_corpses = data[corpses_key];
             rec_bullets = data[bullet_key];
             rec_boxes = data[ammo_key];
-
                         
             gameState = 1;
             if (waiting_countdown_value > 0) gameState = 0;
-            else if (rec_corpses.hasOwnProperty(userName)) gameState = 2;
 
-            console.log('a');
+            for (corpse of rec_corpses)
+            {
+                if (corpse[player_key] == userName)
+                {
+                    gameState = 2;
+                    currDeadTime = corpse[duration_key];
 
-            if (data[player_key][userName] != null)
+                    break;
+                }
+            }
+
+            if (gameState < 2)
             {
                 playerX     = data[player_key][userName][x_coordinate_key];
                 playerY     = data[player_key][userName][y_coordinate_key];
@@ -157,8 +156,6 @@ function socketHandler_init()
                 currWeapon  = data[player_key][userName][weapon_key];
                 weaponAnimTime = data[player_key][userName][justShot_animation];
             }
-
-            console.log('b');
 
             waiting_countdown_value = data[duration_key];
 
