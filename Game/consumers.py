@@ -330,27 +330,30 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         # Declare the message as update message
         event[type_key] = update_key
 
-        try:
+        #try:
             # look if the the own username is in the inactive array
-            event = event[inactive_key][self.userName]
-        except KeyError:
+            #event = event[inactive_key][self.userName]
+        #    event[inactive_key][self.userName]
+        #    print(event)
+        #except KeyError:
+        #    pass
 
+        try:
+            # drop the information about inactive players
+            event.pop(inactive_key)
+        except KeyError:
+            pass
+        # if the init was already sent 10 times
+        if(self.init > 10):
             try:
-                # drop the information about inactive players
-                event.pop(inactive_key)
+                event.pop(init_key)
             except KeyError:
-                pass
-            # if the init was already sent 10 times
-            if(self.init > 10):
-                try:
-                    event.pop(init_key)
-                except KeyError:
-                    #print("There is no init_key")
-                    pass       
-            # if the init was not sent that much yet
-            else:
-                self.init += 1
-                pass
+                #print("There is no init_key")
+                pass       
+        # if the init was not sent that much yet
+        else:
+            self.init += 1
+            pass
 
         # send the update information to the client
         await self.send(json.dumps(event))
