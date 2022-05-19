@@ -50,11 +50,13 @@ let weaponImageAnimationTime = 1;
 let playerWalkingAnimationTime = 1;
 let bulletFlyingAnimationTime = 1;
 let corpseTotalAnimationTime = 1;
+let deadTotalTime = 1;
 
 let rec_corpses = [];
 let rec_bullets = [];
 let rec_opponents = [];
 let rec_boxes = [];
+let currDeadTime;
 
 function socketHandler_init()
 {
@@ -94,14 +96,16 @@ function socketHandler_init()
     webSocket.onmessage = (e) => {
 
         let data = JSON.parse(e.data)
-        
-        if (data[type_key] == update_key)
+
+        if (data[type_key] == update_key && gameState < 3)
         {
+
             if (mapString == null)
             {
+                console.log(data);
                 function initValueIfReceived(key, func)
                 {
-                    if (data[init_key][key] != null)
+                    if (data[init_key] != null && data[init_key][key] != null)
                         func(data[init_key][key]);
                     else
                         console.log('Cannot initialize init value for key ' + key + ': Value was not received');
@@ -110,15 +114,10 @@ function socketHandler_init()
                 initValueIfReceived(map_key, (data) => onMapReceived(data['l'], data['m']));
                 //initValueIfReceived(hit_anim_key, );
                 initValueIfReceived(shot_anim_key, (data) => weaponImageAnimationTime = data);
-                initValueIfReceived(died_anim_key, (data) => corpseTotalAnimationTime = data);
+                initValueIfReceived(died_anim_key, (data) => corpseTotalAnimationTime = deadTotalTime = data);
                 initValueIfReceived(mov_b_anim_key, (data) => bulletFlyingAnimationTime = data);
                 initValueIfReceived(mov_p_anim_key, (data) => playerWalkingAnimationTime = data);
-            }
-
-
-            playerX     = data[player_key][userName][x_coordinate_key];
-            playerY     = data[player_key][userName][y_coordinate_key];
-            playerAngle = data[player_key][userName][direction_view_key];          
+            }       
 
             let rec_opponents_tmp = data[player_key]
             rec_opponents = [];
@@ -131,13 +130,34 @@ function socketHandler_init()
             rec_corpses = data[corpses_key];
             rec_bullets = data[bullet_key];
             rec_boxes = data[ammo_key];
+                        
+            gameState = 1;
+            if (waiting_countdown_value > 0) gameState = 0;
 
-            ammo        = data[player_key][userName][ammo_key];
-            health      = data[player_key][userName][health_key];
-            currWeapon  = data[player_key][userName][weapon_key];
-            weaponAnimTime = data[player_key][userName][justShot_animation];
+            for (corpse of rec_corpses)
+            {
+                if (corpse[player_key] == userName)
+                {
+                    gameState = 2;
+                    currDeadTime = corpse[duration_key];
 
-            if (data[corpses_key][userName]) console.log(data[corpses_key][userName][duration_key]);
+                    break;
+                }
+            }
+
+            if (gameState < 2)
+            {
+                playerX     = data[player_key][userName][x_coordinate_key];
+                playerY     = data[player_key][userName][y_coordinate_key];
+                playerAngle = data[player_key][userName][direction_view_key];   
+
+                ammo        = data[player_key][userName][ammo_key];
+                health      = data[player_key][userName][health_key];
+                currWeapon  = data[player_key][userName][weapon_key];
+                weaponAnimTime = data[player_key][userName][justShot_animation];
+            }
+
+            waiting_countdown_value = data[duration_key];
 
             let mouseDeltaX = lastRecordedMouseX - lastMouseX;
             lastMouseX = lastRecordedMouseX;
@@ -227,17 +247,16 @@ function socketHandler_init()
             //console.log(data[player_key][userName][justShot_animation]);
         }else if(data[type_key] == message_key){
             //TODO: Was soll passieren wenn er eine Nachricht erhält: Lobby kann nicht gefunden werden
-            console.log(data[message_key])
+            console.log(data[message_key]);
             window.location.replace(window.location.href.replace(/game([\s\S]*)$/ ,'menu/'));
         }else if(data[type_key] == event_key){
-            //TODO: Was soll passieren, wenn jemand auf dem Spielfeld stirbt
-            console.log(data)
+            gameState = 2;
         }else if(data[type_key] == win_key){
-            //TODO: Was soll beim Gewinnen passieren
-            console.log(data)
+            gameState = 3;
+            console.log(data);
         }else if(data[type_key] == loose_key){
-            //TODO: Was soll beim Verlieren getan werden
-            console.log(data)
+            gameState = 4;
+            console.log(data);
         }
     };
 

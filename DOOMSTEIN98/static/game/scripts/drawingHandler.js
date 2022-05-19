@@ -17,7 +17,7 @@ let gpu_kernel;
 
 let statusBar_Height;
 
-//#region Image (UI and Object) config
+//#region Billboard (UI and Object) config
 
 
 // Constants
@@ -31,18 +31,42 @@ const healthText_pivotY = 1;
 const ammoText_pivotX = 1;
 const ammoText_pivotY = 1;
 
-// We call it PIXELscale, as it the rendered size of the object must depend on the sprite's pixel count (width, height)
+const statusBar_pivotX = 0;
+const statusBar_pivotY = 0;
+const statusBar_startX = 0;
+
+const weaponFrame_pivotX = 0;
+const weaponFrame_pivotY = 0;
+
+const waiting_countdown_pivotX = 0.5;
+const waiting_countdown_pivotY = 0.5;
+
+const waiting_info_pivotX = 0.5;
+const waiting_info_pivotY = 0.5;
+
+const deadScreen_pivotX = 0.5;
+const deadScreen_pivotY = 0.5;
+
+const endscreen_pivotX = 0;
+const endscreen_pivotY = 0;
+const endscreen_startX = 0;
+const endscreen_startY = 0;
+
+// Note regarding scale: The rendered size of the object must depend on the sprite's pixel count (width, height)
 // We do not want to scale every sprite of an object to the same size
-// pixelScale => how we scale each pixel
-const opponent_pixelScale = 11;
+// scale => how much we scale each pixel
+const opponent_scaleX = 11;
+const opponent_scaleY = opponent_scaleX;
 const opponent_startY = 0; // Bottom of corridor
 const opponent_pivotY = 0; // Image's reference point is at the bottom
 
-const bullet_pixelScale = 5;
+const bullet_scaleX = 5;
+const bullet_scaleY = bullet_scaleX;
 const bullet_startY = 0.5; // Center of corridor
 const bullet_pivotY = 0.5; // Image's reference point is in the middle
 
-const boxes_pixelScale = 10;
+const boxes_scaleX = 10;
+const boxes_scaleY = boxes_scaleX;
 const boxes_startY = 0;
 const boxes_pivotY = 0;
 
@@ -51,15 +75,45 @@ const boxes_pivotY = 0;
 
 let weapon_startX;
 let weapon_startY;
-let weapon_scale;
+let weapon_scaleX;
+let weapon_scaleY;
 
 let healthText_startX;
 let healthText_startY;
-let healthText_scale;
+let healthText_scaleX;
+let healthText_scaleY;
 
 let ammoText_startX;
 let ammoText_startY;
-let ammoText_scale;
+let ammoText_scaleX;
+let ammoText_scaleY;
+
+let statusBar_startY;
+let statusBar_scaleX;
+let statusBar_scaleY;
+
+let weaponFrame_startX;
+//let weaponFrame_startY; Calculated in drawing function
+let weaponFrame_scaleX;
+let weaponFrame_scaleY;
+
+let waiting_countdown_startX;
+let waiting_countdown_startY;
+let waiting_countdown_scaleX;
+let waiting_countdown_scaleY;
+
+let waiting_info_startX;
+let waiting_info_startY;
+let waiting_info_scaleX;
+let waiting_info_scaleY;
+
+let deadScreen_startX;
+let deadScreen_startY;
+let deadScreen_scaleX;
+let deadScreen_scaleY;
+
+//let endscreen_scaleX; Calculated in drawing function (depends on the screen we want to draw)
+//let endscreen_scaleY;
 
 //#endregion
 
@@ -75,15 +129,36 @@ function drawingHandler_init()
 
     weapon_startX = screenWidth * 0.5;
     weapon_startY = gameWindowHeight();
-    weapon_scale = screenHeight / 250;
+    weapon_scaleX = weapon_scaleY = screenHeight / 250;
 
     healthText_startX = screenWidth * 0.43;
     healthText_startY = screenHeight * 0.94;
-    healthText_scale = screenWidth / 280;
+    healthText_scaleX = healthText_scaleY = screenWidth / 280;
 
     ammoText_startX = screenWidth * 0.706;
     ammoText_startY = screenHeight * 0.95;
-    ammoText_scale = screenWidth / 250;
+    ammoText_scaleX = ammoText_scaleY = screenWidth / 250;
+
+    statusBar_startY = screenHeight * 0.85;
+    statusBar_scaleX = screenWidth / statusBarSprite.width;
+    statusBar_scaleY = (screenHeight - statusBar_startY) / statusBarSprite.height;
+
+    weaponFrame_startX = (screenWidth / statusBarSprite.width) * 213;
+    weaponFrame_scaleX = statusBar_scaleX;
+    weaponFrame_scaleY = statusBar_scaleY;
+
+    waiting_countdown_startX = screenWidth * 0.5;
+    waiting_countdown_startY = screenHeight * 0.45;
+    waiting_countdown_scaleX = waiting_countdown_scaleY = screenHeight / 100;
+
+    waiting_info_startX = screenWidth * 0.5;
+    waiting_info_startY = screenHeight * 0.3;
+    waiting_info_scaleX = waiting_info_scaleY = screenHeight / 300;
+
+    deadScreen_startX = screenWidth * 0.5;
+    deadScreen_startY = screenHeight * 0.45;
+    deadScreen_scaleX = deadScreen_scaleY = screenHeight / 250;
+
 
     canvas = document.createElement('canvas');
     canvas.setAttribute('width', screenWidth);
@@ -107,8 +182,6 @@ function drawingHandler_init()
             screenHeight: screenHeight,
             screenWidth: screenWidth,
             cellSize: cellSize,
-            statusBar_Height: statusBar_Height,
-            weaponFrame_startX: (screenWidth / statusBarSprite.width) * 213,
             gun_SizeMultiplier: screenHeight / 250,   // ToDo: Usually each weapon should store its own separate reference height additionally, but for now it works fine without.
 
             fov: fov,
@@ -136,26 +209,18 @@ function drawingHandler_init()
             ceilingSprite_height: ceilingSprite.height,
             ceilingSprite_iterations_x: ceilingSprite.iterations_x,
             ceilingSprite_iterations_y: ceilingSprite.iterations_y,
-
-            statusBarSprite_width: statusBarSprite.width,
-            statusBarSprite_height: statusBarSprite.height,
-
-            weaponFrameSprite_width: weaponFrameSprite.width,
-            weaponFrameSprite_height: weaponFrameSprite.height
         }
     };
     gpu_kernel = gpu.createKernel(
         function(playerX, playerY, playerAngle, 
             map_numbers,
-            wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,
+            wallSprite, floorSprite, ceilingSprite,
             imageArray, imageStartIndezes, imageBounds, imageCount,
-            weaponFrame_startY,
             objectArray, objectStartIndezes, objectBounds, objectCount) {
             drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
                 map_numbers,
-                wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,
+                wallSprite, floorSprite, ceilingSprite,
                 imageArray, imageStartIndezes, imageBounds, imageCount,
-                weaponFrame_startY,
                 objectArray, objectStartIndezes, objectBounds, objectCount);
         },
         gpu_kernel_settings
@@ -167,7 +232,7 @@ function drawingHandler_init()
 function drawingHandler_initKernel()
 {
     let FourBitUnit = [0, 0, 0, 0];
-    let SevenBitUnit = [0, 0, 0, 0, 0, 0, 0];
+    let EightBitUnit = [0, 0, 0, 0, 0, 0, 0, 0];
 
     function createEmpty3DArray(width, height, unit)
     {
@@ -193,11 +258,17 @@ function drawingHandler_initKernel()
     let healthText = getHealthText(200); pushImage(healthText[0].length, healthText.length);
     let ammoText = getAmmoText(200); pushImage(ammoText[0].length, ammoText.length);
     let weaponBounds = shotgunSpriteSet.getBiggestBounds(); pushImage(weaponBounds[0], weaponBounds[1]);
+    pushImage(statusBarSprite.width, statusBarSprite.height);
+    pushImage(weaponFrameSprite.width, weaponFrameSprite.height);
+    let waiting_countdown_text = getWaitingCountdownText(3); pushImage(waiting_countdown_text[0].length, waiting_countdown_text.length);
+    let waiting_info_text = getWaitingInfoText(99); pushImage(waiting_info_text[0].length, waiting_info_text.length);
+    let deadScreen_text = getDeadScreenText(10); pushImage(deadScreen_text[0].length, deadScreen_text.length);
+    pushImage(victoryScreenSprite.width, victoryScreenSprite.height); // Note: Victory and Defeat Screen have the same bounds
     function pushImage(width, height) // biggestImage: image with the highest width * height (pixelCount) expected for a particular UI element.
     {
         imageArray.push(createEmpty3DArray(width, height, FourBitUnit));
         imageStartIndezes.push(0);
-        imageBounds.push(SevenBitUnit);
+        imageBounds.push(EightBitUnit);
     }
     imageArray = imageArray.flat(2);
 
@@ -206,12 +277,12 @@ function drawingHandler_initKernel()
     //#region 3D Objects
 
     let objectStartIndezes = []; // [0, 0, 0, ...]
-    let objectBounds = []; // array with elements of type [x, y, width, height, pixelScale, startY, pivotY]
+    let objectBounds = []; // array with elements of type [x, y, width, height, scaleX, scaleY, startY, pivotY]
 
     for (let i = 0; i < maxObjectCount; i++)
     {
         objectStartIndezes.push(0);
-        objectBounds.push(SevenBitUnit);
+        objectBounds.push(EightBitUnit);
     }
 
     let objectArray = []; // [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], ...]
@@ -237,9 +308,8 @@ function drawingHandler_initKernel()
 
     gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
-        wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
+        wallSprite.data, floorSprite.data, ceilingSprite.data,
         imageArray, imageStartIndezes, imageBounds, imageCount,
-        weaponFrame_startY,
         objectArray, objectStartIndezes, objectBounds, objectCount);
 }
 
@@ -255,19 +325,20 @@ function drawingHandler_draw()
     let imageBounds = [];
     let imageCount = 0;
 
-    function addImage(newImg, startX, startY, pivotX, pivotY, scale)
+    function addImage(newImg, startX, startY, pivotX, pivotY, scaleX, scaleY)
     {
         imageStartIndezes.push(imageArray.length);
-        imageBounds.push([startX, startY, newImg[0].length, newImg.length, pivotX, pivotY, scale]);
+        imageBounds.push([startX, startY, newImg[0].length, newImg.length, pivotX, pivotY, scaleX, scaleY]);
         imageArray = imageArray.concat(newImg.flat(1)); // Need to flat all sub-objects / -images already at this point, in order to correctly calculate imageStartIndezes
         imageCount++;
     }
 
-    addImage(getHealthText(), healthText_startX, healthText_startY, healthText_pivotX, healthText_pivotY, healthText_scale);
-    addImage(getAmmoText(), ammoText_startX, ammoText_startY, ammoText_pivotX, ammoText_pivotY, ammoText_scale);
+    addImage(statusBarSprite.data, statusBar_startX, statusBar_startY, statusBar_pivotX, statusBar_pivotY, statusBar_scaleX, statusBar_scaleY);
+    addImage(getHealthText(), healthText_startX, healthText_startY, healthText_pivotX, healthText_pivotY, healthText_scaleX, healthText_scaleY);
+    addImage(getAmmoText(), ammoText_startX, ammoText_startY, ammoText_pivotX, ammoText_pivotY, ammoText_scaleX, ammoText_scaleY);    
 
-
-    let weaponFrame_startY = 2 + currWeapon * 12;
+    let weaponFrame_startY = statusBar_startY + (2 + currWeapon * 12) * statusBar_scaleY;
+    addImage(weaponFrameSprite.data, weaponFrame_startX, weaponFrame_startY, weaponFrame_pivotX, weaponFrame_pivotY, weaponFrame_scaleX, weaponFrame_scaleY);
 
     let weaponToUse = currWeapon == 0 ? handgunSpriteSet : currWeapon == 1 ? chaingunSpriteSet : shotgunSpriteSet;
     let weaponImage;
@@ -282,7 +353,26 @@ function drawingHandler_draw()
         weaponImage = weaponToUse.getAnimationSprite(t, 'Shoot');
     }
 
-    addImage(weaponImage, weapon_startX, weapon_startY, weapon_pivotX[currWeapon], weapon_pivotY, weapon_scale)
+    addImage(weaponImage, weapon_startX, weapon_startY, weapon_pivotX[currWeapon], weapon_pivotY, weapon_scaleX, weapon_scaleY)
+
+    
+    if (gameState == 0)
+    {
+        addImage(getWaitingCountdownText(), waiting_countdown_startX, waiting_countdown_startY, waiting_countdown_pivotX, waiting_countdown_pivotY, waiting_countdown_scaleX, waiting_countdown_scaleY);
+        addImage(getWaitingInfoText(), waiting_info_startX, waiting_info_startY, waiting_info_pivotX, waiting_info_pivotY, waiting_info_scaleX, waiting_info_scaleY);
+    }
+    else if (gameState == 2)
+    {
+        addImage(getDeadScreenText(), deadScreen_startX, deadScreen_startY, deadScreen_pivotX, deadScreen_pivotY, deadScreen_scaleX, deadScreen_scaleY);
+    }
+    else if (gameState == 3)
+    {
+        addImage(victoryScreenSprite.data, endscreen_startX, endscreen_startY, endscreen_pivotX, endscreen_pivotY, screenWidth / victoryScreenSprite.width, screenHeight / victoryScreenSprite.height);
+    }
+    else if (gameState == 4)
+    {
+        addImage(defeatScreenSprite.data, endscreen_startX, endscreen_startY, endscreen_pivotX, endscreen_pivotY, screenWidth / defeatScreenSprite.width, screenHeight / defeatScreenSprite.height);
+    }
 
     //#endregion
 
@@ -293,7 +383,7 @@ function drawingHandler_draw()
     let objectBounds = [];
     let objectCount = 0;
 
-    function addObjects(maxCount, rec_objects, pixelScale, startY, pivotY, presentObject_Function)
+    function addObjects(maxCount, rec_objects, scaleX, scaleY, startY, pivotY, presentObject_Function)
     {
         for (let i = 0; i < maxCount; i++)
         {
@@ -309,7 +399,7 @@ function drawingHandler_draw()
                 if (typeof newObject != undefined && newObject != null)
                 {
                     objectStartIndezes.push(objectArray.length);
-                    objectBounds.push([x, y, newObject[0].length, newObject.length, pixelScale, startY, pivotY]);
+                    objectBounds.push([x, y, newObject[0].length, newObject.length, scaleX, scaleY, startY, pivotY]);
                     objectArray = objectArray.concat(newObject.flat(1));
                     objectCount++;
                 }
@@ -391,9 +481,9 @@ function drawingHandler_draw()
 
     }
 
-    addObjects(max_opponents, rec_opponents, opponent_pixelScale, opponent_startY, opponent_pivotY, (object) => getEightDirSprite(object, playerWalkingAnimationTime, opponentSpriteSet));
-    addObjects(max_bullets, rec_bullets, bullet_pixelScale, bullet_startY, bullet_pivotY, (object) => getEightDirSprite(object, bulletFlyingAnimationTime, fireBulletSpriteSet, 'Idle', 'Fly'));
-    addObjects(max_corpses, rec_corpses, opponent_pixelScale, opponent_startY, opponent_pivotY, (object) =>
+    addObjects(max_opponents, rec_opponents, opponent_scaleX, opponent_scaleY, opponent_startY, opponent_pivotY, (object) => getEightDirSprite(object, playerWalkingAnimationTime, opponentSpriteSet));
+    addObjects(max_bullets, rec_bullets, bullet_scaleX, bullet_scaleY, bullet_startY, bullet_pivotY, (object) => getEightDirSprite(object, bulletFlyingAnimationTime, fireBulletSpriteSet, 'Idle', 'Fly'));
+    addObjects(max_corpses, rec_corpses, opponent_scaleX, opponent_scaleY, opponent_startY, opponent_pivotY, (object) =>
     {
         let corpse;
         let t = object[duration_key];
@@ -413,7 +503,7 @@ function drawingHandler_draw()
         return corpse;
         
     });
-    addObjects(max_boxes, rec_boxes, boxes_pixelScale, boxes_startY, boxes_pivotY, (object) => 
+    addObjects(max_boxes, rec_boxes, boxes_scaleX, boxes_scaleY, boxes_startY, boxes_pivotY, (object) => 
     {
         return ammoBoxesSpriteSet.getSprite(object[name_key] == 'Pistol' ? 0 : object[name_key] == 'Chaingun' ? 1 : 2);
     });
@@ -429,24 +519,21 @@ function drawingHandler_draw()
 
     gpu_kernel(playerX, playerY, playerAngle,
         map_numbers,
-        wallSprite.data, floorSprite.data, ceilingSprite.data, statusBarSprite.data, weaponFrameSprite.data,
+        wallSprite.data, floorSprite.data, ceilingSprite.data,
         imageArray, imageStartIndezes, imageBounds, imageCount,
-        weaponFrame_startY,
         objectArray, objectStartIndezes, objectBounds, objectCount);
 }
 
 function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // Coordinates and Angle
     map_numbers,                                                            // Map
-    wallSprite, floorSprite, ceilingSprite, statusBarSprite, weaponFrameSprite,    // World Sprites                                              
+    wallSprite, floorSprite, ceilingSprite,                                 // World Sprites                                              
     imageArray, imageStartIndezes, imageBounds, imageCount,
-    weaponFrame_startY,                 // Status-Bar-Weapon-Frame
     objectArray, objectStartIndezes, objectBounds, objectCount)                                                     
 {
     //#region Init
 
     let screenWidth = this.constants.screenWidth;
     let screenHeight = this.constants.screenHeight;
-    let statusBarHeight = this.constants.statusBar_Height;
     //this.constants.statusBarSprite_height * (screenWidth / this.constants.statusBarSprite_width); This would force a correct aspect-ratio
 
     // Read values (y must be inverted, we're looking from top to bottom this time)
@@ -458,11 +545,6 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
     // Center of the cell
     x += (this.constants.cellSize - 1) * 0.5;
     y += (this.constants.cellSize - 1) * 0.5;
-
-    let gameWindowHeight = screenHeight - statusBarHeight; // Measured in pixels
-        // Somehow this still prints a 1px line when statusBar_Height == 0,
-        // so it seems that the bottom row has y = screenHeight + 1
-        // -> We'll ignore this for now
         
     let r = 0;
     let g = 0;
@@ -483,19 +565,20 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
             let height = imageBounds[image][3];
             let pivotX = imageBounds[image][4]; // [0, 1]: from left to right
             let pivotY = imageBounds[image][5]; // [0, 1]: from top to bottom
-            let scale = imageBounds[image][6];
+            let scaleX = imageBounds[image][6];
+            let scaleY = imageBounds[image][7];
 
             // ToMaybeDo: Calculate in cpu code
-            let startX = posX - pivotX * width * scale;
-            let startY = posY - pivotY * height * scale;
-            let endX = startX + (width * scale);
-            let endY = startY + (height * scale);
+            let startX = posX - pivotX * width * scaleX;
+            let startY = posY - pivotY * height * scaleY;
+            let endX = startX + (width * scaleX);
+            let endY = startY + (height * scaleY);
 
             
             if (x >= startX && x < endX && y >= startY && y < endY)
             {
-                let pix_x = Math.floor((x - startX) / scale);
-                let pix_y = Math.floor((y - startY) / scale);
+                let pix_x = Math.floor((x - startX) / scaleX);
+                let pix_y = Math.floor((y - startY) / scaleY);
 
                 let offset = imageStartIndezes[image];
                 let pixelIndex = offset + pix_y * width + pix_x;
@@ -510,58 +593,6 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                 }
             }   
         }     
-    }
-    //#endregion
-
-    //#region Status-Bar
-    if (depthBuffer > 0 && y > gameWindowHeight)
-    {
-        let localY = y - gameWindowHeight;
-
-        let spriteWidth = this.constants.statusBarSprite_width;
-        let spriteHeight = this.constants.statusBarSprite_height;
-
-        let pix_x = Math.floor((x / screenWidth) * spriteWidth);
-        let pix_y = Math.floor((localY / statusBarHeight) * spriteHeight);
-        pix_y = spriteHeight - pix_y - 1;
-
-        if (statusBarSprite[pix_y][pix_x][3] > 0)
-        {
-            r = statusBarSprite[pix_y][pix_x][0];
-            g = statusBarSprite[pix_y][pix_x][1];
-            b = statusBarSprite[pix_y][pix_x][2];
-
-            depthBuffer = 0;
-        }
-
-        //#region Weapon-Frame
-
-        {
-            let statusBarScale_width = screenWidth / spriteWidth;
-            let statusBarScale_height = statusBarHeight / spriteHeight;
-
-            let startX = this.constants.weaponFrame_startX;
-            let endX = startX + this.constants.weaponFrameSprite_width * statusBarScale_width;
-            let startY = gameWindowHeight + (weaponFrame_startY) * statusBarScale_height;
-            let endY = startY + this.constants.weaponFrameSprite_height * statusBarScale_height;
-
-            if (x >= startX && x < endX && y >= startY && y < endY)
-            {
-                let pix_x = Math.floor((x - startX) / statusBarScale_width);
-                let pix_y = Math.floor((y - startY) / statusBarScale_height);
-
-                if (weaponFrameSprite[pix_y][pix_x][3] > 0)
-                {
-                    r = weaponFrameSprite[pix_y][pix_x][0];
-                    g = weaponFrameSprite[pix_y][pix_x][1];
-                    b = weaponFrameSprite[pix_y][pix_x][2];
-                        
-                    depthBuffer = 0;
-                }
-            }
-        }
-        //#endregion
-        
     }
     //#endregion
 
@@ -733,9 +764,10 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                 let objY = objectBounds[object][1];
                 let spriteWidth = objectBounds[object][2];
                 let spriteHeight = objectBounds[object][3];
-                let pixelScale = objectBounds[object][4];
-                let startY = objectBounds[object][5]; // [0, 1]
-                let pivotY = objectBounds[object][6]; // [0, 1]
+                let scaleX = objectBounds[object][4];
+                let scaleY = objectBounds[object][5];
+                let startY = objectBounds[object][6]; // [0, 1]
+                let pivotY = objectBounds[object][7]; // [0, 1]
 
                 let vecX = objX - playerX;
                 let vecY = objY - playerY;
@@ -763,7 +795,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
                     // Note that dividing by screenHeight isn't really necessary, it just makes the values easier to work with
                     // as the last part of the equation is now in range [0, 1]
-                    let objHeight = (spriteHeight * pixelScale) * (corridorHeight / screenHeight);
+                    let objHeight = (spriteHeight * scaleX) * (corridorHeight / screenHeight);
 
                     let objRatio = spriteWidth / spriteHeight;
                     let objWidth = objHeight * objRatio;

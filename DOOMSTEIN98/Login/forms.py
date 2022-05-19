@@ -54,6 +54,7 @@ class RegistrationForm(UserCreationForm):
         user.set_password(self.cleaned_data["password1"])
         user.email = self.cleaned_data.get('email')
         user.user_name = self.cleaned_data.get('user_name')
+        user.is_active = True
 
         if commit:
             user.save()

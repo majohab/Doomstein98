@@ -98,7 +98,7 @@ def registerUser(request):
         form = RegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            send_activation_email(user, request)
+            #send_activation_email(user, request)
             messages.add_message(request, messages.SUCCESS,
                                  'We sent you an email to verify your account.')
             return redirect(reverse("login"))
