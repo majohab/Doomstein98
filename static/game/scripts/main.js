@@ -25,6 +25,7 @@ let ammo;
 let waiting_countdown_value;
 let weaponAnimTime;
 
+// Beginning of whole Game Frontend
 async function init()
 {    
     socketHandler_init();
@@ -126,7 +127,6 @@ function gameLoop()
     requestAnimationFrame(gameLoop, canvas);
 
     let currFrameTime = Date.now()
-    let deltaTime = currFrameTime - lastFrameTime;
     lastFrameTime = currFrameTime;
     //console.log('fps Frontend: ' + 1000 / deltaTime);
     

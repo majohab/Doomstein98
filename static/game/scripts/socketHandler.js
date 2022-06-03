@@ -58,6 +58,7 @@ let rec_opponents = [];
 let rec_boxes = [];
 let currDeadTime;
 
+// Establish socket-connection to backend
 function socketHandler_init()
 {
     const lobbyName = JSON.parse(document.getElementById('json-lobbyname').textContent);
@@ -93,13 +94,15 @@ function socketHandler_init()
         );
     }
 
+    // Got a new message from backend (60 times a second)
     webSocket.onmessage = (e) => {
 
         let data = JSON.parse(e.data)
 
         if (data[type_key] == update_key && gameState < 3)
         {
-
+            // During the first 20 or so frames, the backend sends init values.
+            // Here we use those values to initialize our local map and animation times.
             if (mapString == null)
             {
                 console.log(data);
@@ -119,6 +122,7 @@ function socketHandler_init()
                 initValueIfReceived(mov_p_anim_key, (data) => playerWalkingAnimationTime = data);
             }       
 
+            // Opponents are every player but us
             let rec_opponents_tmp = data[player_key]
             rec_opponents = [];
             for (users_name in rec_opponents_tmp)
@@ -134,6 +138,7 @@ function socketHandler_init()
             gameState = 1;
             if (waiting_countdown_value > 0) gameState = 0;
 
+            // In case we're dead, update the countdown
             for (corpse of rec_corpses)
             {
                 if (corpse[player_key] == userName)
@@ -145,6 +150,7 @@ function socketHandler_init()
                 }
             }
 
+            // Playing or waiting to play
             if (gameState < 2)
             {
                 playerX     = data[player_key][userName][x_coordinate_key];
@@ -158,6 +164,8 @@ function socketHandler_init()
             }
 
             waiting_countdown_value = data[duration_key];
+
+            //#region Inputs
 
             let mouseDeltaX = lastRecordedMouseX - lastMouseX;
             lastMouseX = lastRecordedMouseX;
@@ -220,6 +228,8 @@ function socketHandler_init()
             }else if(!keyStates[81]){
                 keyState81 = false
             }
+
+            //#endregion
 
 
             webSocket.send(
