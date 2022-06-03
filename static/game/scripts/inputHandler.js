@@ -47,16 +47,16 @@ function inputHandler_initMouseEvents()
 
 function inputHandler_initKeyEvents()
 {
-    document.addEventListener('keydown',function(e){
+    document.addEventListener('keydown', function(e) {
         keyStates[e.keyCode || e.which] = true;
     },true);    
-    document.addEventListener('keyup',function(e){
+    document.addEventListener('keyup', function(e) {
         keyStates[e.keyCode || e.which] = false;
     },true);
-    document.addEventListener('mousedown',function (){
+    document.addEventListener('mousedown', function() {
         longClicked = true;
     });
-    document.addEventListener('mouseup', function(){
+    document.addEventListener('mouseup', function() {
         longClicked = false;
     });
     window.addEventListener("wheel", event => mouseWheelDelta = event.deltaY);
@@ -68,6 +68,7 @@ function inputHandler_initPointerLock()
     {
         canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
         canvas.requestPointerLock();
+        
         // if mouse is already caught
         if(pointerLocked == false){
             pointerLockedClick = true;
