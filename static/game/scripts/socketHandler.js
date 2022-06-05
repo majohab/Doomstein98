@@ -1,3 +1,4 @@
+//Key constants for transmitted and recieved JSON-Data
 const mov_b_anim_key          = 'b';
 const channel_key             = 'c';
 const click_key               = 'c';
@@ -52,12 +53,14 @@ let bulletFlyingAnimationTime = 1;
 let corpseTotalAnimationTime = 1;
 let deadTotalTime = 1;
 
+//Boxes for the different game objects
 let rec_corpses = [];
 let rec_bullets = [];
 let rec_opponents = [];
 let rec_boxes = [];
 let currDeadTime;
 
+//function handling the input of the user and the recieved data from server
 function socketHandler_init()
 {
     const lobbyName = JSON.parse(document.getElementById('json-lobbyname').textContent);
@@ -65,13 +68,14 @@ function socketHandler_init()
     document.title = lobbyName;
     const protocol = window.location.protocol.match(/^https/) ? 'wss' : 'ws'
 
+    //init state for changing the weapon
     let keyState69 = false
     let keyState81 = false
     let keyState49 = false
     let keyState50 = false
     let keyState51 = false
 
-
+    //create a connection with the server
     const webSocket = new WebSocket(
         protocol
         + '://'
@@ -81,6 +85,7 @@ function socketHandler_init()
         + '/'
     );
 
+    //if the connection was successful, send some basic information about the lobby the user is trying to join
     webSocket.onopen = function(){ 
 
         webSocket.send(
@@ -93,16 +98,18 @@ function socketHandler_init()
         );
     }
 
+    // called if the user recieved any message from the server
     webSocket.onmessage = (e) => {
 
         let data = JSON.parse(e.data)
 
+        // if the package contains game information to update the game and the game is still going on
         if (data[type_key] == update_key && gameState < 3)
         {
-
+            // if no map was yet recieved
             if (mapString == null)
             {
-                console.log(data);
+                //console.log(data);
                 function initValueIfReceived(key, func)
                 {
                     if (data[init_key] != null && data[init_key][key] != null)
@@ -119,6 +126,7 @@ function socketHandler_init()
                 initValueIfReceived(mov_p_anim_key, (data) => playerWalkingAnimationTime = data);
             }       
 
+            // look for all opponents in the data which was recieved and save them in an array
             let rec_opponents_tmp = data[player_key]
             rec_opponents = [];
             for (users_name in rec_opponents_tmp)
@@ -127,13 +135,18 @@ function socketHandler_init()
                     rec_opponents.push(rec_opponents_tmp[users_name]);
             }
 
+            // save other objects in a list
             rec_corpses = data[corpses_key];
             rec_bullets = data[bullet_key];
             rec_boxes = data[ammo_key];
-                        
+            
+            // declare the game as waiting
+            // either game has not started yet or the player was killed
             gameState = 1;
             if (waiting_countdown_value > 0) gameState = 0;
 
+            //if the user itself is in the array of the corpses
+            //which indicates that he is dead, then change the state of the game
             for (corpse of rec_corpses)
             {
                 if (corpse[player_key] == userName)
@@ -145,6 +158,8 @@ function socketHandler_init()
                 }
             }
 
+            //if the game needs to be updated because player is playing or he is dead and viewing the game
+            // change all current states with data from server
             if (gameState < 2)
             {
                 playerX     = data[player_key][userName][x_coordinate_key];
@@ -157,14 +172,20 @@ function socketHandler_init()
                 weaponAnimTime = data[player_key][userName][justShot_animation];
             }
 
+            // if the player has to wait because either he is dead or game has not started yet
             waiting_countdown_value = data[duration_key];
 
+            // calculate the delta of the mouse movement
             let mouseDeltaX = lastRecordedMouseX - lastMouseX;
             lastMouseX = lastRecordedMouseX;
 
+            // get index of the current weapon from server
             let new_idx = currWeapon
 
+            //following logic handels the change of the weapon
+
             // Mousewheel
+            // relative index
             if(mouseWheelDelta > 0){
                 new_idx += 1
                 mouseWheelDelta = 0
@@ -174,7 +195,7 @@ function socketHandler_init()
             }
 
             // E key
-            // Relativer Index
+            // relative index
             if(keyStates[69] && !(keyState69)){
                 new_idx += 1
                 keyState69 = true
@@ -183,7 +204,7 @@ function socketHandler_init()
             }
 
             // 1 key
-            // Absoluter Index
+            // absolute index
             if(keyStates[49] && !(keyState49)){
                 new_idx = 0
                 keyState49 = true
@@ -193,7 +214,7 @@ function socketHandler_init()
 
 
             // 2 key
-            // Absoluter Index
+            // absolute index
             if(keyStates[50] && !(keyState50)){
                 new_idx = 1
                 keyState50 = true
@@ -203,7 +224,7 @@ function socketHandler_init()
 
 
             // 3 key
-            // Absoluter Index
+            // absolute index
             if(keyStates[51] && !(keyState51)){
                 new_idx = 2
                 keyState51 = true
@@ -213,7 +234,7 @@ function socketHandler_init()
 
 
             // Q Key
-            // Relativer Index
+            // relative index
             if(keyStates[81] && !(keyState81)){
                 new_idx -= 1
                 keyState81 = true
@@ -221,7 +242,7 @@ function socketHandler_init()
                 keyState81 = false
             }
 
-
+            // Send to server the current inputs
             webSocket.send(
                 JSON.stringify(
                     {
@@ -239,6 +260,7 @@ function socketHandler_init()
                 )
             );
 
+            //For long click
             if(shortClicked) {
                 shortClicked = false;
             }
@@ -260,6 +282,7 @@ function socketHandler_init()
         }
     };
 
+    //if websocket was closed
     webSocket.onclose = function(e) {
         console.log('The socket closed unexpectedly')
     };
