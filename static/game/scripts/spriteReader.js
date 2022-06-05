@@ -89,6 +89,10 @@ class Sprite
     }
 }
 
+/**
+ * Identifies a sprite (rectangular section) in a spriteSet (image)
+ */
+
 class Still
 {
     constructor(identifier, startX, startY, sizeX, sizeY)
@@ -101,6 +105,9 @@ class Still
     }
 }
 
+/**
+ * Sequence of stills => Animation
+ */
 class StillSequence
 {
     constructor(identifier, sprites)
@@ -110,8 +117,10 @@ class StillSequence
     }
 }
 
+// Consists of Stills and StillSequences
 class SpriteSet
 {
+    // flipped: Some images seem to be stored upside-down in the BMP file-format...
     constructor(img, stills, animations, flipped = false)
     {
         let imgData = new Sprite(img, 1, 1).data;
@@ -123,6 +132,7 @@ class SpriteSet
 
         let dict = {};
 
+        // returns sprite-data array
         function getStillData(still)
         {
             let stillData = [];
@@ -180,6 +190,9 @@ class SpriteSet
         return this.dict[identifier];
     }
 
+    /**
+     * Get Sprite of animation
+     */
     getAnimationSprite(t, animationIdentifier = 'Idle') // t: [0, 1]
     {
         if (this.dict[animationIdentifier] == null || typeof this.dict[animationIdentifier] == undefined)
@@ -214,7 +227,7 @@ class SpriteSet
 
         function getHighestValue(dict, getIsAnimation, valueFunction)
         {
-            let a = -1;
+            let a = -1; // stores the currently discovered highest value
             for (let key in dict)
             {
                 let content = dict[key];
@@ -244,8 +257,16 @@ class SpriteSet
     }
 }
 
+/**
+ * Represents a font
+ */
 class Font extends SpriteSet
 {
+    /**
+     * Creates an image-data array for the given chars
+     * @param {*} text text to be interpreted
+     * @returns image-data array (row, column, color)
+     */
     getTextImg(text)
     {
         let dict = this.dict;
@@ -323,7 +344,9 @@ let font;
 let victoryScreenSprite;
 let defeatScreenSprite;
 
-
+/**
+ * Load all sprites from Backend
+ */
 async function spriteReader_init()
 {
     let inits = 0;

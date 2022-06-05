@@ -1,5 +1,5 @@
 // Config
-const cellSize = 2; // Pixels per side of cell
+const cellSize = 1; // Pixels per side of cell, used to simulate older screens / lower resolutions. Higher value -> Lower resolution. Minimum 1
 const wallHeight = 1.5;
 const depth_cpu = 16.0;
 const depth_gpu = 32.0;
@@ -57,17 +57,17 @@ const endscreen_startY = 0;
 // scale => how much we scale each pixel
 const opponent_scaleX = 11;
 const opponent_scaleY = opponent_scaleX;
-const opponent_startY = 0; // Bottom of corridor
+const opponent_startZ = 0; // Bottom of corridor
 const opponent_pivotY = 0; // Image's reference point is at the bottom
 
 const bullet_scaleX = 5;
 const bullet_scaleY = bullet_scaleX;
-const bullet_startY = 0.5; // Center of corridor
+const bullet_startZ = 0.5; // Center of corridor
 const bullet_pivotY = 0.5; // Image's reference point is in the middle
 
 const boxes_scaleX = 10;
 const boxes_scaleY = boxes_scaleX;
-const boxes_startY = 0;
+const boxes_startZ = 0;
 const boxes_pivotY = 0;
 
 
@@ -123,7 +123,9 @@ gameWindowHeight = () => screenHeight - statusBar_Height;
 function drawingHandler_init()
 {
     screenWidth = 1000;
-    screenHeight = 750; // ToDo: Calculate dynamically
+    screenHeight = 750; // ToDo: Calculate dynamically based on screen bounds
+
+    //#region UI-bounds initialization
 
     statusBar_Height = screenHeight * 0.15;
 
@@ -159,10 +161,12 @@ function drawingHandler_init()
     deadScreen_startY = screenHeight * 0.45;
     deadScreen_scaleX = deadScreen_scaleY = screenHeight / 250;
 
+    //#endregion
+
 
     canvas = document.createElement('canvas');
     canvas.setAttribute('width', screenWidth);
-    canvas.setAttribute('height', screenHeight);//gpu_kernel.canvas;
+    canvas.setAttribute('height', screenHeight);
     document.getElementById("canvas-container").appendChild(canvas);
     ctx = canvas.getContext("webgl2", { premultipliedAlpha: false });
 
@@ -171,13 +175,14 @@ function drawingHandler_init()
         context: ctx
     });
 
+    // In order to use drawingHandler_draw_gpu_single inside the GPU-Code, we need to add it here
     gpu.addFunction(drawingHandler_draw_gpu_single);
 
-    let gpu_kernel_settings = {
-        output: { x: screenWidth, y: screenHeight },
-        graphical: true,
-        loopMaxIterations: 1000,
-        constants:
+    let gpu_kernel_settings = { // Define a few settings for the GPU-Kernel
+        output: { x: screenWidth, y: screenHeight }, // Determines how many pixels we want to calculate
+        graphical: true, // Output of a pixel-thread should be a color
+        loopMaxIterations: 1000, // A loop shouldn't loop more than a thousand times
+        constants: // Some constants...
         {
             screenHeight: screenHeight,
             screenWidth: screenWidth,
@@ -187,13 +192,14 @@ function drawingHandler_init()
             fov: fov,
             depth: depth_gpu,
             depth_step_gpu: depth_step_gpu,
-            nearClippingPane: 0.5,
+            nearClippingPlane: 0.5,
 
             mapWidth: mapWidth,
             mapHeight: mapHeight,
 
             wallHeight: wallHeight,
 
+            //#region Textures
 
             wallSprite_width: wallSprite.width,
             wallSprite_height: wallSprite.height,
@@ -209,6 +215,8 @@ function drawingHandler_init()
             ceilingSprite_height: ceilingSprite.height,
             ceilingSprite_iterations_x: ceilingSprite.iterations_x,
             ceilingSprite_iterations_y: ceilingSprite.iterations_y,
+
+            //#endregion
         }
     };
     gpu_kernel = gpu.createKernel(
@@ -217,7 +225,7 @@ function drawingHandler_init()
             wallSprite, floorSprite, ceilingSprite,
             imageArray, imageStartIndezes, imageBounds, imageCount,
             objectArray, objectStartIndezes, objectBounds, objectCount) {
-            drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, 
+            drawingHandler_draw_gpu_single(playerX, playerY, playerAngle, // Don't want to define such a long function under init, so we just call drawingHandler_draw_gpu_single() here
                 map_numbers,
                 wallSprite, floorSprite, ceilingSprite,
                 imageArray, imageStartIndezes, imageBounds, imageCount,
@@ -229,6 +237,7 @@ function drawingHandler_init()
     
 }
 
+// This is were we initialize the gpu-function with the longest expected / possible arrays (See documentation...)
 function drawingHandler_initKernel()
 {
     let FourBitUnit = [0, 0, 0, 0];
@@ -251,7 +260,6 @@ function drawingHandler_initKernel()
     let imageArray = [];
     let imageStartIndezes = [];
     let imageBounds = [];
-    let imageCount = 0;
 
     // Add biggest expected images
     
@@ -277,7 +285,7 @@ function drawingHandler_initKernel()
     //#region 3D Objects
 
     let objectStartIndezes = []; // [0, 0, 0, ...]
-    let objectBounds = []; // array with elements of type [x, y, width, height, scaleX, scaleY, startY, pivotY]
+    let objectBounds = []; // array with elements of type [x, y, width, height, scaleX, scaleY, startZ, pivotY]
 
     for (let i = 0; i < maxObjectCount; i++)
     {
@@ -303,7 +311,7 @@ function drawingHandler_initKernel()
     //#endregion
 
     // Not important (no arrays)
-    let weaponFrame_startY = 0;
+    let imageCount = 0;
     let objectCount = 0;
 
     gpu_kernel(playerX, playerY, playerAngle,
@@ -313,18 +321,24 @@ function drawingHandler_initKernel()
         objectArray, objectStartIndezes, objectBounds, objectCount);
 }
 
-//#region  GPU
+//#region Grahpical Processing
 
+/**
+ * CPU-Code right before the pixel-based GPU-Computations
+ */
 function drawingHandler_draw()
 {
-
     //#region UI Images
 
+    // Read documentation for details on this four-element array-structure.
     let imageArray = [];
     let imageStartIndezes = [];
     let imageBounds = [];
     let imageCount = 0;
 
+    /**
+     * Add one image to the image array. The documentation contains a bit more detail about these parameters.
+     */
     function addImage(newImg, startX, startY, pivotX, pivotY, scaleX, scaleY)
     {
         imageStartIndezes.push(imageArray.length);
@@ -333,15 +347,20 @@ function drawingHandler_draw()
         imageCount++;
     }
 
-    addImage(statusBarSprite.data, statusBar_startX, statusBar_startY, statusBar_pivotX, statusBar_pivotY, statusBar_scaleX, statusBar_scaleY);
-    addImage(getHealthText(), healthText_startX, healthText_startY, healthText_pivotX, healthText_pivotY, healthText_scaleX, healthText_scaleY);
-    addImage(getAmmoText(), ammoText_startX, ammoText_startY, ammoText_pivotX, ammoText_pivotY, ammoText_scaleX, ammoText_scaleY);    
+    // Status-Bar
+    addImage(statusBarSprite.data, statusBar_startX, statusBar_startY, statusBar_pivotX, statusBar_pivotY, statusBar_scaleX, statusBar_scaleY);     // Status-Bar Image
+    addImage(getHealthText(), healthText_startX, healthText_startY, healthText_pivotX, healthText_pivotY, healthText_scaleX, healthText_scaleY);    // Health-Text
+    addImage(getAmmoText(), ammoText_startX, ammoText_startY, ammoText_pivotX, ammoText_pivotY, ammoText_scaleX, ammoText_scaleY);                  // Ammo-Text
+
+    // Weapon-Frame and weapon
 
     let weaponFrame_startY = statusBar_startY + (2 + currWeapon * 12) * statusBar_scaleY;
-    addImage(weaponFrameSprite.data, weaponFrame_startX, weaponFrame_startY, weaponFrame_pivotX, weaponFrame_pivotY, weaponFrame_scaleX, weaponFrame_scaleY);
+    addImage(weaponFrameSprite.data, weaponFrame_startX, weaponFrame_startY, weaponFrame_pivotX, weaponFrame_pivotY, weaponFrame_scaleX, weaponFrame_scaleY); // Weapon-Frame
 
-    let weaponToUse = currWeapon == 0 ? handgunSpriteSet : currWeapon == 1 ? chaingunSpriteSet : shotgunSpriteSet;
+    let weaponToUse = currWeapon == 0 ? handgunSpriteSet : currWeapon == 1 ? chaingunSpriteSet : shotgunSpriteSet; // What weapon is equipped?
     let weaponImage;
+
+    // Get image of animation
     if (weaponAnimTime == -1)
     {
         weaponImage = weaponToUse.getSprite('Idle');        
@@ -353,23 +372,23 @@ function drawingHandler_draw()
         weaponImage = weaponToUse.getAnimationSprite(t, 'Shoot');
     }
 
-    addImage(weaponImage, weapon_startX, weapon_startY, weapon_pivotX[currWeapon], weapon_pivotY, weapon_scaleX, weapon_scaleY)
+    addImage(weaponImage, weapon_startX, weapon_startY, weapon_pivotX[currWeapon], weapon_pivotY, weapon_scaleX, weapon_scaleY) // Weapon
 
     
-    if (gameState == 0)
+    if (gameState == 0) // Waiting for more players
     {
         addImage(getWaitingCountdownText(), waiting_countdown_startX, waiting_countdown_startY, waiting_countdown_pivotX, waiting_countdown_pivotY, waiting_countdown_scaleX, waiting_countdown_scaleY);
         addImage(getWaitingInfoText(), waiting_info_startX, waiting_info_startY, waiting_info_pivotX, waiting_info_pivotY, waiting_info_scaleX, waiting_info_scaleY);
     }
-    else if (gameState == 2)
+    else if (gameState == 2) // Dead
     {
         addImage(getDeadScreenText(), deadScreen_startX, deadScreen_startY, deadScreen_pivotX, deadScreen_pivotY, deadScreen_scaleX, deadScreen_scaleY);
     }
-    else if (gameState == 3)
+    else if (gameState == 3) // Won
     {
         addImage(victoryScreenSprite.data, endscreen_startX, endscreen_startY, endscreen_pivotX, endscreen_pivotY, screenWidth / victoryScreenSprite.width, screenHeight / victoryScreenSprite.height);
     }
-    else if (gameState == 4)
+    else if (gameState == 4) // Lost
     {
         addImage(defeatScreenSprite.data, endscreen_startX, endscreen_startY, endscreen_pivotX, endscreen_pivotY, screenWidth / defeatScreenSprite.width, screenHeight / defeatScreenSprite.height);
     }
@@ -378,12 +397,19 @@ function drawingHandler_draw()
 
     //#region 3D Objects
 
+    // Read documentation for details on this four-element array-structure.
     let objectArray = [];
     let objectStartIndezes = [];
     let objectBounds = [];
     let objectCount = 0;
 
-    function addObjects(maxCount, rec_objects, scaleX, scaleY, startY, pivotY, presentObject_Function)
+    /**
+     * Add multiple objects of one type to the objects array. The documentation contains a bit more detail about most of these parameters.
+     * @param {*} maxCount maxCount of this object type
+     * @param {*} rec_objects The array received from backend
+     * @param {*} presentObject_Function Function calculating the current sprite inside of the spriteSet. Takes an element of rec_objects as an argument.
+     */
+    function addObjects(maxCount, rec_objects, scaleX, scaleY, startZ, pivotY, presentObject_Function)
     {
         for (let i = 0; i < maxCount; i++)
         {
@@ -399,7 +425,7 @@ function drawingHandler_draw()
                 if (typeof newObject != undefined && newObject != null)
                 {
                     objectStartIndezes.push(objectArray.length);
-                    objectBounds.push([x, y, newObject[0].length, newObject.length, scaleX, scaleY, startY, pivotY]);
+                    objectBounds.push([x, y, newObject[0].length, newObject.length, scaleX, scaleY, startZ, pivotY]);
                     objectArray = objectArray.concat(newObject.flat(1));
                     objectCount++;
                 }
@@ -411,6 +437,15 @@ function drawingHandler_draw()
         }
     }
 
+    /**
+     * Calculates which sprite should be rendered for the current situation, given the spriteSet contains eight directions
+     * @param {*} object Element of rec_objects
+     * @param {*} animTime Total animation time
+     * @param {*} spriteSet SpriteSet to use
+     * @param {*} spriteSet_stillName Name of a still
+     * @param {*} spriteSet_animationName Name of an animation
+     * @returns Image-data
+     */
     function getEightDirSprite(object, animTime, spriteSet, spriteSet_stillName = 'Idle', spriteSet_animationName = 'Walk')
     {
         function getDeltaBetweenAngles(a, b)
@@ -422,12 +457,13 @@ function drawingHandler_draw()
 
         const PI = Math.PI;
 
+        // Vector and angle from camera to other Object
         let vecX = object[x_coordinate_key] - playerX;
         let vecY = object[y_coordinate_key] - playerY;
-        let angleToOpponent = Math.atan2(vecX, vecY); // Yeah usually it is (y, x), but it only works like this (maybe there is (x, y) in the backend?)
+        let angleToObject = Math.atan2(vecX, vecY); // Yeah usually it is (y, x), but it only works like this (maybe there is (x, y) in the backend?)
 
         // delta is the angle which to opponent looks in relative to the vector between opponent and self
-        let delta = getDeltaBetweenAngles(object[direction_view_key], angleToOpponent);
+        let delta = getDeltaBetweenAngles(object[direction_view_key], angleToObject);
 
         let spriteDir;
         if (delta > PI * (7 / 8) || delta <= -PI * (7 / 8))
@@ -481,9 +517,14 @@ function drawingHandler_draw()
 
     }
 
-    addObjects(max_opponents, rec_opponents, opponent_scaleX, opponent_scaleY, opponent_startY, opponent_pivotY, (object) => getEightDirSprite(object, playerWalkingAnimationTime, opponentSpriteSet));
-    addObjects(max_bullets, rec_bullets, bullet_scaleX, bullet_scaleY, bullet_startY, bullet_pivotY, (object) => getEightDirSprite(object, bulletFlyingAnimationTime, fireBulletSpriteSet, 'Idle', 'Fly'));
-    addObjects(max_corpses, rec_corpses, opponent_scaleX, opponent_scaleY, opponent_startY, opponent_pivotY, (object) =>
+    // Opponents
+    addObjects(max_opponents, rec_opponents, opponent_scaleX, opponent_scaleY, opponent_startZ, opponent_pivotY, (object) => getEightDirSprite(object, playerWalkingAnimationTime, opponentSpriteSet));
+
+    // Bullets
+    addObjects(max_bullets, rec_bullets, bullet_scaleX, bullet_scaleY, bullet_startZ, bullet_pivotY, (object) => getEightDirSprite(object, bulletFlyingAnimationTime, fireBulletSpriteSet, 'Idle', 'Fly'));
+    
+    // Corpses
+    addObjects(max_corpses, rec_corpses, opponent_scaleX, opponent_scaleY, opponent_startZ, opponent_pivotY, (object) =>
     {
         let corpse;
         let t = object[duration_key];
@@ -503,12 +544,14 @@ function drawingHandler_draw()
         return corpse;
         
     });
-    addObjects(max_boxes, rec_boxes, boxes_scaleX, boxes_scaleY, boxes_startY, boxes_pivotY, (object) => 
+    
+    // Ammo Boxes
+    addObjects(max_boxes, rec_boxes, boxes_scaleX, boxes_scaleY, boxes_startZ, boxes_pivotY, (object) => 
     {
         return ammoBoxesSpriteSet.getSprite(object[name_key] == 'Pistol' ? 0 : object[name_key] == 'Chaingun' ? 1 : 2);
     });
 
-    if (objectCount == 0)
+    if (objectCount == 0) // Array cannot be empty...
     {
         objectArray.push(0);
         objectStartIndezes.push(0);
@@ -538,7 +581,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
     // Read values (y must be inverted, we're looking from top to bottom this time)
     let x = this.thread.x;
-    let y = screenHeight-this.thread.y;
+    let y = screenHeight - this.thread.y;
     // Round all pixels within cell to top-left of the cell
     x = Math.floor(x / this.constants.cellSize) * this.constants.cellSize;
     y = Math.round(y / this.constants.cellSize) * this.constants.cellSize;
@@ -616,40 +659,25 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
         let eyeX = Math.sin(rayAngle);
         let eyeY = Math.cos(rayAngle);
 
-        let sampleX_wall = 0;
+        // Current cell to check whether it is wall or not
+        let testX = 0;
+        let testY = 0;
 
         while (!hitWall && distanceToWall < depth)
         {      
-            distanceToWall += this.constants.depth_step_gpu;
+            distanceToWall += this.constants.depth_step_gpu; // ToDo: This shouldn't be a linear function / stepping (performance, viewing distance)
 
-            let testX = Math.floor(playerX + eyeX * distanceToWall);
-            let testY = Math.floor(playerY + eyeY * distanceToWall);
+            testX = Math.floor(playerX + eyeX * distanceToWall);
+            testY = Math.floor(playerY + eyeY * distanceToWall);
 
             if (testX < 0 || testX >= mapWidth || testY < 0 || testY >= mapHeight) // Out of map bounds
             {
                 hitWall = true;
                 distanceToWall = depth;
             }
-            else if (map_numbers[testY * mapWidth + testX] == 35)
+            else if (map_numbers[testY * mapWidth + testX] == 35) // ASCII char at 35 is '#'
             {
                 hitWall = true;
-            
-                let blockMidX = testX + 0.5;
-                let blockMidY = testY + 0.5;
-            
-                let testPointX = playerX + eyeX * distanceToWall;
-                let testPointY = playerY + eyeY * distanceToWall;
-            
-                let testAngle = Math.atan2((testPointY - blockMidY), (testPointX - blockMidX));
-            
-                if (testAngle >= -Math.PI * 0.25 && testAngle < Math.PI * 0.25)
-                    sampleX_wall = testPointY - testY;
-                if (testAngle >= Math.PI * 0.25 && testAngle < Math.PI * 0.75)
-                    sampleX_wall = testPointX - testX;
-                if (testAngle < -Math.PI * 0.25 && testAngle >= -Math.PI * 0.75)
-                    sampleX_wall = testPointX - testX;
-                if (testAngle >= Math.PI * 0.75 || testAngle < -Math.PI * 0.75)
-                    sampleX_wall = testPointY - testY;
             }
         }
 
@@ -662,7 +690,28 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
         if (y >= ceiling && y <= floor) // Wall
         {
-            sampleX = sampleX_wall;
+            sampleX = 0;
+
+            // Point of the middle of the cell that we've hit
+            let blockMidX = testX + 0.5;
+            let blockMidY = testY + 0.5;
+        
+            // Point of the collision
+            let testPointX = playerX + eyeX * distanceToWall;
+            let testPointY = playerY + eyeY * distanceToWall;
+        
+            let testAngle = Math.atan2((testPointY - blockMidY), (testPointX - blockMidX));
+        
+            // From which side did we hit the wall
+            if (testAngle >= -Math.PI * 0.25 && testAngle < Math.PI * 0.25)
+                sampleX = testPointY - testY;
+            if (testAngle >= Math.PI * 0.25 && testAngle < Math.PI * 0.75)
+                sampleX = testPointX - testX;
+            if (testAngle < -Math.PI * 0.25 && testAngle >= -Math.PI * 0.75)
+                sampleX = testPointX - testX;
+            if (testAngle >= Math.PI * 0.75 || testAngle < -Math.PI * 0.75)
+                sampleX = testPointY - testY;
+                
             let sampleY_percent = (y - ceiling) / (floor - ceiling); // percent-value between floor and ceiling
             sampleY = sampleY_percent * wallHeight;
 
@@ -714,25 +763,27 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
             //ctx.fillStyle = "rgb(" + sampleY * 255 + "," + sampleY * 255  + "," + sampleY * 255   + ")";
         }
 
+        // ToDo: Pass the static textures as arrays as well so we can get rid of this ugly if-conditioning...
+
         let spriteWidth = 0;
         let spriteHeight = 0;
         let iterations_x = 0;
         let iterations_y = 0;
-        if (spriteIndex == 0)
+        if (spriteIndex == 0) // Wall-Sprite
         {
             spriteWidth  = this.constants.wallSprite_width;
             spriteHeight = this.constants.wallSprite_height;
             iterations_x = this.constants.wallSprite_iterations_x;
             iterations_y = this.constants.wallSprite_iterations_y;
         }
-        else if (spriteIndex == 1)
+        else if (spriteIndex == 1) // Floor-Sprite
         {
             spriteWidth  = this.constants.floorSprite_width;
             spriteHeight = this.constants.floorSprite_height;
             iterations_x = this.constants.floorSprite_iterations_x;
             iterations_y = this.constants.floorSprite_iterations_y;
         }
-        else if (spriteIndex == 2)
+        else if (spriteIndex == 2) // Ceiling-Sprite
         {
             spriteWidth  = this.constants.ceilingSprite_width;
             spriteHeight = this.constants.ceilingSprite_height;
@@ -755,8 +806,6 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
         //#region Objects
 
-        //#endregion
-
         {
             for (let object = 0; object < objectCount; object++) // First element is 0
             {
@@ -765,8 +814,8 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                 let spriteWidth = objectBounds[object][2];
                 let spriteHeight = objectBounds[object][3];
                 let scaleX = objectBounds[object][4];
-                let scaleY = objectBounds[object][5];
-                let startY = objectBounds[object][6]; // [0, 1]
+                let scaleY = objectBounds[object][5]; // Not used atm
+                let startZ = objectBounds[object][6]; // [0, 1]
                 let pivotY = objectBounds[object][7]; // [0, 1]
 
                 let vecX = objX - playerX;
@@ -779,8 +828,9 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
 
                 let inFrontOfPlayer = (forwardX * vecX + forwardY * vecY) > 0;
 
+                // Is it possible that we can see the object for this pixel?
                 if (inFrontOfPlayer &&
-                    dstFromPlayer >= this.constants.nearClippingPane &&
+                    dstFromPlayer >= this.constants.nearClippingPlane &&
                     dstFromPlayer < depth &&
                     dstFromPlayer < depthBuffer)
                 {
@@ -798,11 +848,11 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                     let objHeight = (spriteHeight * scaleX) * (corridorHeight / screenHeight);
 
                     let objRatio = spriteWidth / spriteHeight;
-                    let objWidth = objHeight * objRatio;
+                    let objWidth = objHeight * objRatio; // Note that this should usually use scaleX instead of scaleY (as of now, we have no use case for this though)
                     let middleOfObject_x = (0.5 * (objAngle / (fov * 0.5)) + 0.5) * screenWidth; // middle pixel of object. Range [0, screenWidth] (I think, lol)
 
-                    // Absolutely zero idea what the following does and why the f*ck it works... It just works okay?! It just works... for now...
-                    // Also, note that this only seems to work for fov = PI / 3, we probably need to adapt that sh*t calculation for other fovs.
+                    // Absolutely zero idea what the following does and why the **** it works... Was a lot of trial and error to get this.
+                    // Also, note that this only seems to work for fov = PI / 3, we probably need to adapt that **** calculation for other fovs.
                     if (middleOfObject_x < 0 + objWidth * 0.5) middleOfObject_x += screenWidth * 3;
                     if (middleOfObject_x > screenWidth * 3 - objWidth * 0.5) middleOfObject_x -= screenWidth * 3;
 
@@ -813,7 +863,7 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                     let objMaxY = screenHeight * 0.5 + objHeight * 0.5;
 
                     let yOffset = 0;
-                    yOffset += ((startY - 0.5) * corridorHeight);
+                    yOffset += ((startZ - 0.5) * corridorHeight);
                     yOffset += ((0.5 - pivotY) * objHeight);
                     objMinY -= yOffset; objMaxY -= yOffset;
 
@@ -825,17 +875,19 @@ function drawingHandler_draw_gpu_single(playerX, playerY, playerAngle,      // C
                         let offset = objectStartIndezes[object];
                         let pixelIndex = offset + pix_y * spriteWidth + pix_x;
 
-                        if (objectArray[pixelIndex][3] > 0)  // If not transparent
+                        if (objectArray[pixelIndex][3] > 0) // If not transparent
                         {
-                            r = objectArray[pixelIndex][0]; //r = corpses[offset + pix_y][pix_x][0];
-                            g = objectArray[pixelIndex][1]; //g = corpses[offset + pix_y][pix_x][1];
-                            b = objectArray[pixelIndex][2]; //b = corpses[offset + pix_y][pix_x][2];
+                            r = objectArray[pixelIndex][0];
+                            g = objectArray[pixelIndex][1];
+                            b = objectArray[pixelIndex][2];
                             depthBuffer = dstFromPlayer;
                         }
                     }
                 }
             }
         }
+
+        //#endregion
     }
 
     //#endregion
