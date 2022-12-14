@@ -200,6 +200,7 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         if(lobby):
             print(F"Join lobby {lobby.name}")
 
+            # Get current amount of players and maybe the user 
             current_players_count, user = await self.get_filtered_user(lobby, self.userName)
 
             # If the max player was not reached yet or the player is already in the game
